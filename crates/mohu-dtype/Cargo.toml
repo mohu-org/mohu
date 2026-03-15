@@ -10,8 +10,21 @@ homepage.workspace    = true
 keywords.workspace    = true
 categories.workspace  = true
 
+[features]
+serde = ["dep:serde"]
+arrow = ["dep:arrow"]
+
 [dependencies]
 mohu-error.workspace  = true
 num-traits.workspace  = true
 num-complex.workspace = true
 half.workspace        = true
+
+[dependencies.serde]
+version  = "1"
+features = ["derive"]
+optional = true
+
+[dependencies.arrow]
+workspace = true
+optional  = true

@@ -548,10 +548,12 @@ dependencies = [
 name = "mohu-dtype"
 version = "0.1.0"
 dependencies = [
+ "arrow",
  "half",
  "mohu-error",
  "num-complex",
  "num-traits",
+ "serde",
 ]
 
 [[package]]
