@@ -1,0 +1,23 @@
+[package]
+name        = "mohu-compute"
+description = "SIMD-accelerated compute kernels: reductions, element-wise ops, casts, and bitmap validity"
+version.workspace     = true
+edition.workspace     = true
+license.workspace     = true
+authors.workspace     = true
+repository.workspace  = true
+homepage.workspace    = true
+keywords.workspace    = true
+categories.workspace  = true
+
+[dependencies]
+mohu-error.workspace  = true
+mohu-core.workspace   = true
+num-traits.workspace  = true
+rayon.workspace       = true
+
+[features]
+# Portable SIMD via std::simd (requires nightly until stabilised, or use wide/pulp)
+simd    = []
+# AVX-512 — opt-in, not default
+avx512  = ["simd"]

@@ -1,0 +1,15 @@
+[package]
+name        = "mohu-buffer"
+description = "Raw buffer allocation, memory layout, and stride arithmetic for mohu arrays"
+version.workspace     = true
+edition.workspace     = true
+license.workspace     = true
+authors.workspace     = true
+repository.workspace  = true
+homepage.workspace    = true
+keywords.workspace    = true
+categories.workspace  = true
+
+[dependencies]
+mohu-error.workspace  = true
+mohu-dtype.workspace  = true

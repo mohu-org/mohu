@@ -1,0 +1,22 @@
+[package]
+name        = "mohu-error"
+description = "Shared error types for mohu — zero-dependency foundation used by every crate"
+version.workspace     = true
+edition.workspace     = true
+license.workspace     = true
+authors.workspace     = true
+repository.workspace  = true
+homepage.workspace    = true
+keywords.workspace    = true
+categories.workspace  = true
+
+[dependencies]
+thiserror.workspace   = true
+
+[features]
+# Pull in PyO3 error conversions only when building the Python module
+python = ["dep:pyo3"]
+
+[dependencies.pyo3]
+workspace = true
+optional  = true

@@ -1,0 +1,9 @@
+pub mod cholesky;
+pub mod decomp;
+pub mod eig;
+pub mod lu;
+pub mod matmul;
+pub mod norm;
+pub mod qr;
+pub mod solve;
+pub mod svd;

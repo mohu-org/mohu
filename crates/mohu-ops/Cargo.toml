@@ -1,0 +1,17 @@
+[package]
+name        = "mohu-ops"
+description = "Element-wise arithmetic, comparison, logical, and broadcasting operations for mohu arrays"
+version.workspace     = true
+edition.workspace     = true
+license.workspace     = true
+authors.workspace     = true
+repository.workspace  = true
+homepage.workspace    = true
+keywords.workspace    = true
+categories.workspace  = true
+
+[dependencies]
+mohu-core.workspace   = true
+num-traits.workspace  = true
+rayon.workspace       = true
+thiserror.workspace   = true

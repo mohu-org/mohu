@@ -1,6 +1,92 @@
-[package]
-name = "mohu"
-version = "0.1.0"
-edition = "2024"
+[workspace]
+members = [
+    # Foundation layer (order = dependency depth)
+    "crates/mohu-error",
+    "crates/mohu-dtype",
+    "crates/mohu-buffer",
+    "crates/mohu-array",
+    "crates/mohu-core",    # re-export facade of the four above
+    # Compute layer
+    "crates/mohu-compute",
+    "crates/mohu-ops",
+    "crates/mohu-linalg",
+    "crates/mohu-stats",
+    "crates/mohu-io",
+    # Python bindings
+    "crates/mohu-py",
+]
+resolver = "2"
 
-[dependencies]
+[workspace.package]
+version      = "0.1.0"
+edition      = "2024"
+license      = "MIT"
+authors      = ["mohu contributors"]
+repository   = "https://github.com/mohu-org/mohu"
+homepage     = "https://github.com/mohu-org/mohu"
+keywords     = ["array", "ndarray", "numpy", "scientific", "python"]
+categories   = ["science", "mathematics", "api-bindings"]
+
+[workspace.dependencies]
+# Internal crates — foundation layer
+mohu-error   = { path = "crates/mohu-error",   version = "0.1.0" }
+mohu-dtype   = { path = "crates/mohu-dtype",   version = "0.1.0" }
+mohu-buffer  = { path = "crates/mohu-buffer",  version = "0.1.0" }
+mohu-array   = { path = "crates/mohu-array",   version = "0.1.0" }
+mohu-core    = { path = "crates/mohu-core",    version = "0.1.0" }
+# Internal crates — compute layer
+mohu-compute = { path = "crates/mohu-compute", version = "0.1.0" }
+mohu-ops     = { path = "crates/mohu-ops",     version = "0.1.0" }
+mohu-linalg  = { path = "crates/mohu-linalg",  version = "0.1.0" }
+mohu-stats   = { path = "crates/mohu-stats",   version = "0.1.0" }
+mohu-io      = { path = "crates/mohu-io",      version = "0.1.0" }
+
+# Parallelism
+rayon        = "1.10"
+
+# Numerics
+half         = { version = "2.4", features = ["num-traits"] }
+num-traits   = "0.2"
+num-complex  = "0.4"
+
+# Arrow columnar memory
+arrow        = { version = "54", default-features = false, features = ["ffi"] }
+
+# Python bindings
+pyo3         = { version = "0.23", features = ["extension-module", "abi3-py310", "multiple-pymethods"] }
+numpy        = "0.23"
+
+# Allocator (Unix only — better perf for large arrays, added per-crate not workspace)
+# tikv-jemallocator = "0.6"  # referenced directly in mohu-py
+
+# Error handling
+thiserror    = "2"
+
+# Serialization
+serde        = { version = "1", features = ["derive"] }
+
+# I/O
+memmap2      = "0.9"
+
+# Logging
+tracing      = "0.1"
+
+# ----- Build profiles -----
+
+[profile.release]
+opt-level     = 3
+lto           = "thin"
+strip         = true
+panic         = "abort"
+
+# Wheel distribution — maximum optimization, slower to build
+[profile.dist-release]
+inherits      = "release"
+lto           = "fat"
+codegen-units = 1
+debug         = false
+
+[profile.bench]
+inherits      = "release"
+strip         = false
+debug         = true

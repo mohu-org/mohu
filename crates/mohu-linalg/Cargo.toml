@@ -1,0 +1,19 @@
+[package]
+name        = "mohu-linalg"
+description = "Linear algebra routines: matmul, decompositions (LU, QR, SVD, Cholesky), solvers, and eigenvalues"
+version.workspace     = true
+edition.workspace     = true
+license.workspace     = true
+authors.workspace     = true
+repository.workspace  = true
+homepage.workspace    = true
+keywords.workspace    = true
+categories.workspace  = true
+
+[dependencies]
+mohu-core.workspace   = true
+mohu-ops.workspace    = true
+num-traits.workspace  = true
+num-complex.workspace = true
+rayon.workspace       = true
+thiserror.workspace   = true

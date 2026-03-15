@@ -1,0 +1,18 @@
+[package]
+name        = "mohu-io"
+description = "Array serialization and I/O: .npy/.npz, CSV, Apache Arrow IPC, and memory-mapped files"
+version.workspace     = true
+edition.workspace     = true
+license.workspace     = true
+authors.workspace     = true
+repository.workspace  = true
+homepage.workspace    = true
+keywords.workspace    = true
+categories.workspace  = true
+
+[dependencies]
+mohu-core.workspace   = true
+arrow.workspace       = true
+serde.workspace       = true
+memmap2.workspace     = true
+thiserror.workspace   = true

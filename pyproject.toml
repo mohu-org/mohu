@@ -1,0 +1,32 @@
+[build-system]
+requires      = ["maturin>=1.7,<2"]
+build-backend = "maturin"
+
+[project]
+name            = "mohu"
+requires-python = ">=3.10"
+description     = "Rust-powered N-dimensional arrays for Python"
+license         = { text = "MIT" }
+keywords        = ["array", "ndarray", "numpy", "scientific"]
+classifiers     = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Rust",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering",
+]
+
+[tool.maturin]
+manifest-path   = "crates/mohu-py/Cargo.toml"
+module-name     = "mohu"
+python-packages = ["python/mohu"]
+features        = ["pyo3/extension-module"]
+profile         = "dist-release"
+
+[dependency-groups]
+dev = ["pytest>=8", "numpy>=1.26"]

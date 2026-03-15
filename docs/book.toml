@@ -1,0 +1,14 @@
+[book]
+title       = "mohu"
+description = "Rust-powered N-dimensional arrays for Python"
+authors     = ["mohu contributors"]
+language    = "en"
+src         = "src"
+
+[output.html]
+site-url          = "/mohu/"
+git-repository-url = "https://github.com/mohu-org/mohu"
+edit-url-template  = "https://github.com/mohu-org/mohu/edit/main/docs/{path}"
+
+[output.html.fold]
+enable = true

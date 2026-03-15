@@ -1,0 +1,17 @@
+[package]
+name        = "mohu-dtype"
+description = "DType enum, scalar type traits, and type promotion rules for mohu"
+version.workspace     = true
+edition.workspace     = true
+license.workspace     = true
+authors.workspace     = true
+repository.workspace  = true
+homepage.workspace    = true
+keywords.workspace    = true
+categories.workspace  = true
+
+[dependencies]
+mohu-error.workspace  = true
+num-traits.workspace  = true
+num-complex.workspace = true
+half.workspace        = true
