@@ -11,12 +11,4 @@ keywords.workspace    = true
 categories.workspace  = true
 
 [dependencies]
-thiserror.workspace   = true
-
-[features]
-# Pull in PyO3 error conversions only when building the Python module
-python = ["dep:pyo3"]
-
-[dependencies.pyo3]
-workspace = true
-optional  = true
+thiserror.workspace = true
