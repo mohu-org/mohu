@@ -142,7 +142,7 @@ macro_rules! dispatch_dtype {
 /// # Example
 ///
 /// ```rust
-/// # use mohu_dtype::{dtype::DType, dispatch_numeric};
+/// # use mohu_dtype::{dtype::DType, dispatch_numeric, scalar::Scalar};
 /// fn sum_zeros(dtype: DType) -> f64 {
 ///     macro_rules! zero_as_f64 { ($T:ty) => {
 ///         <$T as mohu_dtype::scalar::Scalar>::ZERO.to_f64_lossy()

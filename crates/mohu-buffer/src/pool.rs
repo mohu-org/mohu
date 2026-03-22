@@ -59,9 +59,13 @@ thread_local! {
 /// Per-thread pool cache statistics.  Accumulated locally — no atomics needed.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct TlStats {
+    /// Number of TL cache hits.
     pub hits:         u64,
+    /// Number of TL cache misses (fell through to global pool).
     pub misses:       u64,
+    /// Number of handles returned to the TL cache.
     pub returns:      u64,
+    /// Total bytes currently cached in this thread's TL cache.
     pub cached_bytes: usize,
 }
 
@@ -161,14 +165,20 @@ impl PoolInner {
 /// Statistics snapshot for a `BufferPool`.
 #[derive(Debug, Clone, Copy)]
 pub struct PoolStats {
+    /// Total bytes currently cached in the pool.
     pub cached_bytes:  usize,
+    /// Total number of cached allocation handles.
     pub cached_blocks: usize,
+    /// Number of successful acquisitions from the cache.
     pub hit_count:     u64,
+    /// Number of acquisitions that required a new allocation.
     pub miss_count:    u64,
+    /// Number of handles returned to the pool.
     pub return_count:  u64,
+    /// Cache hit rate as a fraction in `[0.0, 1.0]`.
     pub hit_rate:      f64,
-    /// Per-size-class breakdown.
-    pub size_classes:  usize, // count of active size classes
+    /// Number of distinct active size classes.
+    pub size_classes:  usize,
 }
 
 impl BufferPool {

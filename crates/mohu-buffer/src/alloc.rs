@@ -545,51 +545,13 @@ impl AllocHandle {
             return Ok(true); // already large enough
         }
 
+        // NOTE: mremap(2) on Linux could grow mmap regions in-place, but
+        // memmap2::MmapMut cannot be reconstructed from a raw pointer after
+        // mremap.  Falling through to Ok(false) lets the caller allocate a
+        // new buffer and copy, which is always correct.
         #[cfg(target_os = "linux")]
         {
-            if let AllocInner::Mmap(ref mut mmap) = self.inner {
-                // mremap via memmap2's remap_to (if available) or raw libc
-                // We rebuild the mmap with a new anonymous region and mremap.
-                let old_ptr  = mmap.as_mut_ptr() as *mut libc::c_void;
-                let old_len  = self.len;
-
-                let new_ptr = unsafe {
-                    libc::mremap(
-                        old_ptr,
-                        old_len,
-                        new_len,
-                        libc::MREMAP_MAYMOVE,
-                    )
-                };
-                if new_ptr == libc::MAP_FAILED {
-                    return Err(MohuError::alloc(new_len));
-                }
-                // Rebuild MmapMut from the new pointer.
-                // SAFETY: mremap succeeded; new_ptr is valid for new_len bytes.
-                let new_mmap = unsafe {
-                    memmap2::MmapMut::map_raw_noreserve(
-                        new_ptr as *mut u8,
-                        new_len,
-                    )
-                };
-                // Update accounting before potentially failing the next step
-                let old_strategy = Strategy::Mmap;
-                record_free(old_len, old_strategy);
-                record_alloc(new_len, old_strategy);
-
-                match new_mmap {
-                    Ok(m) => {
-                        *mmap = m;
-                        self.len = new_len;
-                        return Ok(true);
-                    }
-                    Err(_) => {
-                        // Can't wrap — this is a critical failure, the old mapping
-                        // is gone. We must not use self again.
-                        return Err(MohuError::alloc(new_len));
-                    }
-                }
-            }
+            let _ = &self.inner; // suppress unused-field warning
         }
 
         let _ = new_len; // suppress unused warning on non-linux
@@ -733,13 +695,16 @@ pub unsafe fn fill_nontemporal_f32(ptr: *mut f32, count: usize, value: f32) {
     debug_assert!(ptr as usize % 32 == 0, "ptr must be 32-byte aligned");
     debug_assert!(count % 8 == 0, "count must be multiple of 8");
 
-    let vec = _mm256_set1_ps(value);
-    let mut i = 0;
-    while i + 8 <= count {
-        _mm256_stream_ps(ptr.add(i), vec);
-        i += 8;
+    // SAFETY: caller guarantees ptr is 32-byte aligned and count is multiple of 8.
+    unsafe {
+        let vec = _mm256_set1_ps(value);
+        let mut i = 0;
+        while i + 8 <= count {
+            _mm256_stream_ps(ptr.add(i), vec);
+            i += 8;
+        }
+        _mm_sfence();
     }
-    _mm_sfence();
 }
 
 /// Fills `count` f64 values at `ptr` using non-temporal stores (AVX2).
@@ -752,13 +717,16 @@ pub unsafe fn fill_nontemporal_f64(ptr: *mut f64, count: usize, value: f64) {
     debug_assert!(ptr as usize % 32 == 0, "ptr must be 32-byte aligned");
     debug_assert!(count % 4 == 0, "count must be multiple of 4");
 
-    let vec = _mm256_set1_pd(value);
-    let mut i = 0;
-    while i + 4 <= count {
-        _mm256_stream_pd(ptr.add(i), vec);
-        i += 4;
+    // SAFETY: caller guarantees ptr is 32-byte aligned and count is multiple of 4.
+    unsafe {
+        let vec = _mm256_set1_pd(value);
+        let mut i = 0;
+        while i + 4 <= count {
+            _mm256_stream_pd(ptr.add(i), vec);
+            i += 4;
+        }
+        _mm_sfence();
     }
-    _mm_sfence();
 }
 
 // ─── Compile-time assertions ──────────────────────────────────────────────────

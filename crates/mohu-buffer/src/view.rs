@@ -50,12 +50,19 @@ impl<'buf, T: Scalar> BufferView<'buf, T> {
 
     // ─── Properties ───────────────────────────────────────────────────────────
 
+    /// Returns the element data type.
     #[inline] pub fn dtype(&self)    -> DType  { self.buf.dtype() }
+    /// Returns the number of dimensions.
     #[inline] pub fn ndim(&self)     -> usize  { self.buf.ndim() }
+    /// Returns the shape as a slice of dimension sizes.
     #[inline] pub fn shape(&self)    -> &[usize] { self.buf.shape() }
+    /// Returns the byte strides.
     #[inline] pub fn strides(&self)  -> &[isize] { self.buf.strides() }
+    /// Returns the total number of elements.
     #[inline] pub fn len(&self)      -> usize  { self.buf.len() }
+    /// Returns `true` if the buffer has zero elements.
     #[inline] pub fn is_empty(&self) -> bool   { self.buf.is_empty() }
+    /// Returns `true` if the buffer is C-contiguous.
     #[inline] pub fn is_c_contiguous(&self) -> bool { self.buf.is_c_contiguous() }
 
     // ─── Slice access (contiguous only) ───────────────────────────────────────
@@ -143,10 +150,15 @@ impl<'buf, T: Scalar> BufferViewMut<'buf, T> {
 
     // ─── Properties ───────────────────────────────────────────────────────────
 
+    /// Returns the element data type.
     #[inline] pub fn dtype(&self)    -> DType  { self.buf.dtype() }
+    /// Returns the number of dimensions.
     #[inline] pub fn ndim(&self)     -> usize  { self.buf.ndim() }
+    /// Returns the shape as a slice of dimension sizes.
     #[inline] pub fn shape(&self)    -> &[usize] { self.buf.shape() }
+    /// Returns the total number of elements.
     #[inline] pub fn len(&self)      -> usize  { self.buf.len() }
+    /// Returns `true` if the buffer has zero elements.
     #[inline] pub fn is_empty(&self) -> bool   { self.buf.is_empty() }
 
     // ─── Slice access ─────────────────────────────────────────────────────────

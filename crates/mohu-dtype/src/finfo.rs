@@ -90,6 +90,7 @@ impl FloatInfo {
 
     // ─── F16 ──────────────────────────────────────────────────────────────────
 
+    /// Returns `FloatInfo` for IEEE 754 binary16 (half-precision).
     pub fn f16() -> Self {
         // IEEE 754 binary16: sign=1, exp=5, mantissa=10
         let eps             = half::f16::EPSILON.to_f64();
@@ -119,6 +120,7 @@ impl FloatInfo {
 
     // ─── BF16 ─────────────────────────────────────────────────────────────────
 
+    /// Returns `FloatInfo` for Google Brain Float16 (bfloat16).
     pub fn bf16() -> Self {
         // Google Brain Float16: sign=1, exp=8, mantissa=7
         let eps             = half::bf16::EPSILON.to_f64();
@@ -147,6 +149,7 @@ impl FloatInfo {
 
     // ─── F32 ──────────────────────────────────────────────────────────────────
 
+    /// Returns `FloatInfo` for IEEE 754 binary32 (single-precision).
     pub fn f32() -> Self {
         let eps             = f32::EPSILON as f64;
         let max             = f32::MAX as f64;
@@ -174,6 +177,7 @@ impl FloatInfo {
 
     // ─── F64 ──────────────────────────────────────────────────────────────────
 
+    /// Returns `FloatInfo` for IEEE 754 binary64 (double-precision).
     pub fn f64() -> Self {
         let eps             = f64::EPSILON;
         let max             = f64::MAX;

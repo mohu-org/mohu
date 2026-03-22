@@ -58,18 +58,22 @@ impl IntInfo {
 
     // ─── signed ────────────────────────────────────────────────────────────────
 
+    /// Returns `IntInfo` for `i8` (signed 8-bit integer).
     pub const fn i8() -> Self {
         Self { dtype: DType::I8,  bits: 8,  is_signed: true,
                min: i8::MIN as i128,  max: i8::MAX as u128 }
     }
+    /// Returns `IntInfo` for `i16` (signed 16-bit integer).
     pub const fn i16() -> Self {
         Self { dtype: DType::I16, bits: 16, is_signed: true,
                min: i16::MIN as i128, max: i16::MAX as u128 }
     }
+    /// Returns `IntInfo` for `i32` (signed 32-bit integer).
     pub const fn i32() -> Self {
         Self { dtype: DType::I32, bits: 32, is_signed: true,
                min: i32::MIN as i128, max: i32::MAX as u128 }
     }
+    /// Returns `IntInfo` for `i64` (signed 64-bit integer).
     pub const fn i64() -> Self {
         Self { dtype: DType::I64, bits: 64, is_signed: true,
                min: i64::MIN as i128, max: i64::MAX as u128 }
@@ -77,18 +81,22 @@ impl IntInfo {
 
     // ─── unsigned ──────────────────────────────────────────────────────────────
 
+    /// Returns `IntInfo` for `u8` (unsigned 8-bit integer).
     pub const fn u8() -> Self {
         Self { dtype: DType::U8,  bits: 8,  is_signed: false,
                min: 0, max: u8::MAX as u128 }
     }
+    /// Returns `IntInfo` for `u16` (unsigned 16-bit integer).
     pub const fn u16() -> Self {
         Self { dtype: DType::U16, bits: 16, is_signed: false,
                min: 0, max: u16::MAX as u128 }
     }
+    /// Returns `IntInfo` for `u32` (unsigned 32-bit integer).
     pub const fn u32() -> Self {
         Self { dtype: DType::U32, bits: 32, is_signed: false,
                min: 0, max: u32::MAX as u128 }
     }
+    /// Returns `IntInfo` for `u64` (unsigned 64-bit integer).
     pub const fn u64() -> Self {
         Self { dtype: DType::U64, bits: 64, is_signed: false,
                min: 0, max: u64::MAX as u128 }

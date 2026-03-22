@@ -28,45 +28,53 @@ pub enum MohuError {
     // Shape & dimension errors  (1xxx)
     // -------------------------------------------------------------------------
 
+    /// Two arrays have incompatible shapes for an element-wise operation.
     #[error(
         "shape mismatch: expected {expected:?}, got {got:?}\n\
          hint: shapes must be identical for this operation, or broadcastable"
     )]
     ShapeMismatch { expected: Vec<usize>, got: Vec<usize> },
 
+    /// Two shapes cannot be broadcast together under NumPy-style rules.
     #[error(
         "cannot broadcast shapes {lhs:?} and {rhs:?}\n\
          hint: trailing dimensions must be equal or one of them must be 1"
     )]
     BroadcastError { lhs: Vec<usize>, rhs: Vec<usize> },
 
+    /// An operation received an array with the wrong number of dimensions.
     #[error(
         "dimension mismatch: expected a {expected}D array, got {got}D\n\
          hint: use reshape() or squeeze() to adjust the number of dimensions"
     )]
     DimensionMismatch { expected: usize, got: usize },
 
+    /// An axis index is out of the valid range for the array's dimensionality.
     #[error(
         "axis {axis} is out of range for a {ndim}D array\n\
          hint: valid axes are {valid}"
     )]
     AxisOutOfRange { axis: i64, ndim: usize, valid: String },
 
+    /// An operation that requires at least one dimension was called on a scalar.
     #[error(
         "cannot perform this operation on a zero-dimensional (scalar) array\n\
          hint: use at_least_1d() to promote a scalar to a 1D array"
     )]
     ScalarArray,
 
+    /// A dimension has size zero, making the operation undefined.
     #[error("dimension {axis} has size 0 — operations on empty arrays are undefined")]
     ZeroSizedDimension { axis: usize },
 
+    /// The total number of elements overflows `usize`.
     #[error(
         "shape overflow: the product of dimensions exceeds usize::MAX ({max})\n\
          hint: split the array into smaller chunks"
     )]
     ShapeOverflow { max: usize },
 
+    /// A reshape cannot be performed because the element counts differ.
     #[error(
         "reshape is impossible: cannot reshape array with {src_len} elements \
          into shape {dst_shape:?} ({dst_len} elements)"
@@ -77,9 +85,11 @@ pub enum MohuError {
         dst_len: usize,
     },
 
+    /// `stack` or `concatenate` was called with an empty sequence of arrays.
     #[error("stack requires at least one array, but an empty sequence was given")]
     EmptyStackSequence,
 
+    /// Arrays passed to `stack`/`concatenate` have mismatched shapes on non-concat axes.
     #[error(
         "all arrays passed to stack/concatenate must have the same shape except \
          on the concatenation axis — mismatch at index {index}: \
@@ -95,36 +105,43 @@ pub enum MohuError {
     // DType errors  (2xxx)
     // -------------------------------------------------------------------------
 
+    /// An operation received arrays with incompatible data types.
     #[error(
         "dtype mismatch: expected {expected}, got {got}\n\
          hint: use array.astype(\"{expected}\") to cast"
     )]
     DTypeMismatch { expected: String, got: String },
 
+    /// A type cast between two dtypes is not valid or would lose data.
     #[error("cannot cast {from} to {to}: {reason}")]
     InvalidCast { from: String, to: String, reason: String },
 
+    /// A value exceeds the representable range of the target dtype.
     #[error(
         "value overflows {dtype}: {detail}\n\
          hint: use a wider dtype or clamp values before casting"
     )]
     Overflow { dtype: String, detail: String },
 
+    /// A value is too small to be represented by the target dtype.
     #[error(
         "value underflows {dtype}: {detail}\n\
          hint: use a floating-point dtype to preserve small values"
     )]
     Underflow { dtype: String, detail: String },
 
+    /// A dtype string could not be recognized or is not supported.
     #[error("unknown or unsupported dtype: \"{0}\"")]
     UnknownDType(String),
 
+    /// An operation does not support the given dtype.
     #[error(
         "operation '{op}' is not defined for dtype {dtype}\n\
          hint: cast to a compatible dtype first"
     )]
     UnsupportedDType { op: &'static str, dtype: String },
 
+    /// Automatic type promotion between two dtypes is ambiguous.
     #[error(
         "type promotion between {lhs} and {rhs} is ambiguous — \
          specify the output dtype explicitly"
@@ -135,24 +152,29 @@ pub enum MohuError {
     // Index & slice errors  (3xxx)
     // -------------------------------------------------------------------------
 
+    /// An integer index is outside the valid range for its axis.
     #[error(
         "index {index} is out of bounds for axis {axis} with size {size}\n\
          hint: valid indices are -{size}..{size}"
     )]
     IndexOutOfBounds { index: i64, axis: usize, size: usize },
 
+    /// More indices were provided than the array has dimensions.
     #[error(
         "too many indices: array is {ndim}D but {given} indices were given\n\
          hint: use None/newaxis to add dimensions rather than extra indices"
     )]
     TooManyIndices { given: usize, ndim: usize },
 
+    /// A slice was constructed with a step of zero, which is undefined.
     #[error("slice step cannot be zero")]
     ZeroSliceStep,
 
+    /// A slice range is out of bounds for the axis it indexes.
     #[error("slice [{start}:{stop}:{step}] is invalid for axis with size {size}")]
     SliceOutOfBounds { start: i64, stop: i64, step: i64, size: usize },
 
+    /// A boolean mask has a different shape than the array it indexes.
     #[error(
         "boolean index shape {index_shape:?} does not match array shape {array_shape:?}\n\
          hint: the boolean mask must have the same shape as the array it indexes"
@@ -162,6 +184,7 @@ pub enum MohuError {
         array_shape: Vec<usize>,
     },
 
+    /// A fancy (integer-array) index contains a value outside the axis range.
     #[error(
         "fancy index on axis {axis} is out of bounds: \
          index value {index} exceeds axis size {size}"
@@ -172,30 +195,35 @@ pub enum MohuError {
     // Buffer & memory errors  (4xxx)
     // -------------------------------------------------------------------------
 
+    /// A memory allocation request failed (likely OOM).
     #[error(
         "memory allocation failed: requested {bytes} bytes ({human})\n\
          hint: the system may be out of memory, or the requested size is unreasonable"
     )]
     AllocationFailed { bytes: usize, human: String },
 
+    /// A pointer does not satisfy the alignment requirement for the element type.
     #[error(
         "pointer alignment error: operation requires {required}-byte alignment, \
          but the pointer is only {got}-byte aligned"
     )]
     AlignmentError { required: usize, got: usize },
 
+    /// The provided buffer is smaller than what the operation needs.
     #[error(
         "buffer too small: operation requires {required} bytes, \
          but the buffer only holds {got} bytes"
     )]
     BufferTooSmall { required: usize, got: usize },
 
+    /// A stride value is invalid for the given element size.
     #[error(
         "invalid stride on axis {axis}: stride {stride} is not a multiple \
          of the element size {element_size}"
     )]
     InvalidStride { axis: usize, stride: isize, element_size: usize },
 
+    /// The combination of shape and strides would produce overlapping elements.
     #[error(
         "strides {strides:?} would cause overlapping elements for shape {shape:?} \
          with element size {element_size} — this would allow aliased mutable access"
@@ -206,24 +234,28 @@ pub enum MohuError {
         element_size: usize,
     },
 
+    /// An operation requires a contiguous (C-order) memory layout.
     #[error(
         "this operation requires a contiguous (C-order) array\n\
          hint: call .contiguous() to get a contiguous copy"
     )]
     NonContiguous,
 
+    /// A mutation was attempted on a read-only array view.
     #[error(
         "this operation requires a writeable array, but the array is read-only\n\
          hint: call .to_owned() to get a mutable copy"
     )]
     ReadOnly,
 
+    /// A resize or reallocation was attempted on an array that shares memory.
     #[error(
         "cannot resize or reallocate an array that shares memory with another array\n\
          hint: call .to_owned() to get an independent copy first"
     )]
     CannotResizeShared,
 
+    /// An arithmetic overflow occurred while computing a buffer byte offset.
     #[error(
         "integer overflow computing buffer offset for shape {shape:?}, \
          strides {strides:?}, index {index:?}"
@@ -238,12 +270,14 @@ pub enum MohuError {
     // Compute / math errors  (5xxx)
     // -------------------------------------------------------------------------
 
+    /// A matrix is singular (rank-deficient) and cannot be inverted or solved.
     #[error(
         "singular matrix: rank-deficient and cannot be inverted or solved\n\
          hint: use lstsq() for least-squares solutions of rank-deficient systems"
     )]
     SingularMatrix,
 
+    /// An iterative solver did not converge within the allowed iterations.
     #[error(
         "iterative solver did not converge after {iterations} iterations \
          (tolerance = {tolerance:.3e}, final residual = {residual:.3e})\n\
@@ -255,15 +289,18 @@ pub enum MohuError {
         residual: f64,
     },
 
+    /// An operation is mathematically undefined for the given input.
     #[error("'{op}' is mathematically undefined: {reason}")]
     DomainError { op: &'static str, reason: String },
 
+    /// A division by zero was detected.
     #[error(
         "division by zero\n\
          hint: use nan_to_num() to replace NaN/Inf results, or check divisors beforehand"
     )]
     DivisionByZero,
 
+    /// Matrix dimensions are incompatible for a linear-algebra operation.
     #[error(
         "matrix dimensions incompatible for '{op}': \
          lhs is {lhs_rows}×{lhs_cols}, rhs is {rhs_rows}×{rhs_cols}"
@@ -276,26 +313,31 @@ pub enum MohuError {
         rhs_cols: usize,
     },
 
+    /// Eigenvalue decomposition failed due to matrix properties.
     #[error(
         "eigenvalue decomposition failed: matrix is not {kind}\n\
          hint: check for NaN/Inf values or extreme conditioning"
     )]
     EigenDecompositionFailed { kind: &'static str },
 
+    /// Cholesky decomposition failed because the matrix is not positive definite.
     #[error(
         "Cholesky decomposition failed: matrix is not positive definite\n\
          hint: add a small diagonal regularisation (ridge = ε·I) to make it SPD"
     )]
     NotPositiveDefinite,
 
+    /// QR decomposition found a rank-deficient matrix when full rank was expected.
     #[error(
         "QR decomposition failed: matrix has rank {actual}, expected full rank {expected}"
     )]
     QRRankDeficient { expected: usize, actual: usize },
 
+    /// SVD iteration did not converge.
     #[error("SVD did not converge after {iterations} iterations")]
     SVDNonConvergence { iterations: usize },
 
+    /// The requested norm order is not supported for the given array dimensionality.
     #[error(
         "norm order '{order}' is not supported for {ndim}D arrays\n\
          hint: supported matrix norms are 1, 2, inf, fro, nuc"

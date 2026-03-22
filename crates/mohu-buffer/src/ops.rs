@@ -1348,9 +1348,8 @@ pub fn fill_nontemporal_f32_buf(buf: &mut Buffer, value: f32) -> MohuResult<()> 
     {
         let slice = unsafe { std::slice::from_raw_parts_mut(ptr, len) };
         slice.par_iter_mut().for_each(|x| *x = value);
+        return Ok(());
     }
-
-    Ok(())
 }
 
 // ─── Parallel strided binary zip ─────────────────────────────────────────────

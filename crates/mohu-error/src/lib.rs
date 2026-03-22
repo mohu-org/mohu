@@ -1,3 +1,34 @@
+//! Unified error handling for the mohu scientific computing library.
+//!
+//! This crate provides [`MohuError`], a single non-exhaustive error enum that
+//! every crate in the mohu workspace returns via [`MohuResult<T>`]. Errors are
+//! organized by domain (shape, dtype, index, buffer, compute, I/O, DLPack,
+//! Arrow, Python) with stable numeric [`ErrorCode`]s and a coarse four-way
+//! [`ErrorKind`] classification.
+//!
+//! # Key types
+//!
+//! | Type | Purpose |
+//! |------|---------|
+//! | [`MohuError`] | The central error enum — every mohu function returns this |
+//! | [`ErrorCode`] | Stable numeric code for programmatic branching |
+//! | [`ErrorKind`] | Coarse category: `Usage`, `Runtime`, `System`, `Internal` |
+//! | [`ErrorChain`] | Iterator over nested `Context` wrappers |
+//! | [`MultiError`] | Accumulates multiple errors in a single pass |
+//! | [`ErrorReporter`] | Rich terminal formatting (compact / full / JSON) |
+//! | [`ResultExt`] | `.context()` and `.with_context()` extension trait |
+//!
+//! # Example
+//!
+//! ```rust
+//! use mohu_error::{MohuResult, MohuError, bail, ensure};
+//!
+//! fn safe_divide(a: f64, b: f64) -> MohuResult<f64> {
+//!     ensure!(b != 0.0, MohuError::DivisionByZero);
+//!     Ok(a / b)
+//! }
+//! ```
+
 pub mod chain;
 pub mod codes;
 pub mod context;

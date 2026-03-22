@@ -75,7 +75,7 @@ macro_rules! assert_shape_eq {
 /// ```rust
 /// # use mohu_error::{MohuResult, assert_axis_valid};
 /// fn check(axis: i64, ndim: usize) -> MohuResult<usize> {
-///     assert_axis_valid!(axis, ndim)
+///     Ok(assert_axis_valid!(axis, ndim))
 /// }
 /// ```
 #[macro_export]

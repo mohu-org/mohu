@@ -48,9 +48,13 @@ impl BufferFlags {
     /// Backing memory is SIMD-aligned (≥ 64 bytes).
     pub const ALIGNED:       Self = Self(1 << 4);
 
+    /// Returns an empty flag set with no flags enabled.
     pub const fn empty() -> Self { Self(0) }
+    /// Returns `true` if all flags in `other` are set in `self`.
     pub const fn contains(self, other: Self) -> bool { self.0 & other.0 == other.0 }
+    /// Returns a new flag set with all flags from both `self` and `other`.
     pub const fn insert(self, other: Self) -> Self { Self(self.0 | other.0) }
+    /// Returns a new flag set with `other`'s flags cleared from `self`.
     pub const fn remove(self, other: Self) -> Self { Self(self.0 & !other.0) }
 }
 
@@ -522,23 +526,40 @@ impl Buffer {
 
     // ─── Properties ───────────────────────────────────────────────────────────
 
+    /// Returns the element data type of this buffer.
     #[inline] pub fn dtype(&self)    -> DType   { self.dtype }
+    /// Returns a reference to this buffer's layout descriptor.
     #[inline] pub fn layout(&self)   -> &Layout { &self.layout }
+    /// Returns the shape of this buffer as a slice of dimension sizes.
     #[inline] pub fn shape(&self)    -> &[usize] { self.layout.shape() }
+    /// Returns the byte strides of this buffer.
     #[inline] pub fn strides(&self)  -> &[isize] { self.layout.strides() }
+    /// Returns the number of dimensions (axes) of this buffer.
     #[inline] pub fn ndim(&self)     -> usize    { self.layout.ndim() }
+    /// Returns the total number of elements in this buffer.
     #[inline] pub fn len(&self)      -> usize    { self.layout.size() }
+    /// Returns the total byte size of this buffer's data (`len * itemsize`).
     #[inline] pub fn nbytes(&self)   -> usize    { self.layout.nbytes() }
+    /// Returns the byte size of a single element.
     #[inline] pub fn itemsize(&self) -> usize    { self.dtype.itemsize() }
+    /// Returns the byte offset from the backing buffer start to element `[0, …, 0]`.
     #[inline] pub fn offset(&self)   -> usize    { self.layout.offset() }
+    /// Returns the bitfield flags describing this buffer's properties.
     #[inline] pub fn flags(&self)    -> BufferFlags { self.flags }
 
+    /// Returns `true` if any dimension is zero (zero-element buffer).
     pub fn is_empty(&self)         -> bool { self.layout.is_empty() }
+    /// Returns `true` if this buffer is writeable.
     pub fn is_writeable(&self)     -> bool { self.flags.contains(BufferFlags::WRITEABLE) }
+    /// Returns `true` if this buffer is C-contiguous (row-major).
     pub fn is_c_contiguous(&self)  -> bool { self.layout.is_c_contiguous() }
+    /// Returns `true` if this buffer is Fortran-contiguous (column-major).
     pub fn is_f_contiguous(&self)  -> bool { self.layout.is_f_contiguous() }
+    /// Returns `true` if this buffer is contiguous in either C or F order.
     pub fn is_contiguous(&self)    -> bool { self.layout.is_contiguous() }
+    /// Returns `true` if the backing memory is SIMD-aligned.
     pub fn is_aligned(&self)       -> bool { self.flags.contains(BufferFlags::ALIGNED) }
+    /// Returns `true` if the backing memory is shared with other `Buffer` instances.
     pub fn is_shared(&self)        -> bool { Arc::strong_count(&self.raw) > 1 }
 
     /// Returns a raw const pointer to element `[0, 0, …, 0]`.

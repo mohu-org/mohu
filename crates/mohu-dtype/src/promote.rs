@@ -230,27 +230,30 @@ pub fn common_type(dtypes: &[DType]) -> crate::MohuResult<DType> {
 ///
 /// ```rust
 /// # use mohu_dtype::{dtype::DType, promote::minimum_scalar_type};
-/// assert_eq!(minimum_scalar_type(0.0),    DType::I8);
+/// assert_eq!(minimum_scalar_type(0.0),    DType::U8);
 /// assert_eq!(minimum_scalar_type(200.0),  DType::U8);
 /// assert_eq!(minimum_scalar_type(-1.5),   DType::F32);
 /// assert_eq!(minimum_scalar_type(1e308),  DType::F64);
 /// ```
 pub fn minimum_scalar_type(v: f64) -> DType {
-    // Check if the value is an exact integer.
+    // Check if the value is an exact integer that fits in a Rust integer type.
+    // Guard against f64 values outside i64/u64 range — casting such values
+    // saturates in Rust, producing incorrect results.
     if v.fract() == 0.0 && v.is_finite() {
-        let i = v as i64;
-        if v >= 0.0 {
+        if v >= 0.0 && v <= u64::MAX as f64 {
             let u = v as u64;
             if u <= u8::MAX as u64  { return DType::U8;  }
             if u <= u16::MAX as u64 { return DType::U16; }
             if u <= u32::MAX as u64 { return DType::U32; }
-            if u <= u64::MAX        { return DType::U64; }
-        } else {
+            return DType::U64;
+        } else if v < 0.0 && v >= i64::MIN as f64 {
+            let i = v as i64;
             if i >= i8::MIN as i64  { return DType::I8;  }
             if i >= i16::MIN as i64 { return DType::I16; }
             if i >= i32::MIN as i64 { return DType::I32; }
             return DType::I64;
         }
+        // Value is an integer but too large for i64/u64 — fall through to float.
     }
     // Non-integer: check if f32 can represent it faithfully.
     if (v as f32) as f64 == v { DType::F32 } else { DType::F64 }
