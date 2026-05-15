@@ -167,6 +167,31 @@ impl DType {
         matches!(self, Self::BF16)
     }
 
+    
+    pub fn is_float(self) -> bool {
+        matches!(self, DType::F16 | DType::BF16 | DType::F32 | DType::F64)
+    }
+    
+    pub fn is_integer(self) -> bool {
+        matches!(self,
+            DType::I8 | DType::I16 | DType::I32 | DType::I64 |
+            DType::U8 | DType::U16 | DType::U32 | DType::U64
+        )
+    }
+    
+    pub fn is_complex(self) -> bool {
+        matches!(self, DType::C64 | DType::C128)
+    }
+    
+    pub fn is_signed(self) -> bool {
+        matches!(self,
+            DType::I8 | DType::I16 | DType::I32 | DType::I64 |
+            DType::F16 | DType::BF16 | DType::F32 | DType::F64 |
+            DType::C64 | DType::C128
+        )
+    }
+
+
     // -------------------------------------------------------------------------
     // Type conversion helpers
     // -------------------------------------------------------------------------
