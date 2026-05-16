@@ -140,6 +140,18 @@ impl DType {
         matches!(self, Self::C64|Self::C128)
     }
 
+    
+    /// Returns `true` for any type that can represent negative values —
+    /// signed integers, floats (including BF16/F16), and complex types.
+    /// Bool and unsigned integers return `false`.
+    #[inline] pub const fn is_signed(self) -> bool {
+        matches!(self,
+            Self::I8  | Self::I16 | Self::I32 | Self::I64 |
+            Self::F16 | Self::BF16 | Self::F32 | Self::F64 |
+            Self::C64 | Self::C128)
+    }
+
+
     /// Returns `true` for any floating-point type, including complex.
     #[inline] pub const fn is_floating_point(self) -> bool {
         self.is_float() || self.is_complex()
@@ -559,3 +571,47 @@ const _: () = {
     assert!(DType::Bool as u8 == 0);
     assert!(DType::C128 as u8 == 14);
 };
+
+#[cfg(test)]
+mod predicate_tests {
+    use super::DType;
+
+    #[test]
+    fn test_is_float() {
+        assert!(DType::F16.is_float());
+        assert!(DType::BF16.is_float());
+        assert!(DType::F32.is_float());
+        assert!(DType::F64.is_float());
+        assert!(!DType::I32.is_float());
+        assert!(!DType::C64.is_float());
+        assert!(!DType::Bool.is_float());
+    }
+
+    #[test]
+    fn test_is_integer() {
+        assert!(DType::I8.is_integer());
+        assert!(DType::U64.is_integer());
+        assert!(!DType::F32.is_integer());
+        assert!(!DType::Bool.is_integer());
+    }
+
+    #[test]
+    fn test_is_complex() {
+        assert!(DType::C64.is_complex());
+        assert!(DType::C128.is_complex());
+        assert!(!DType::F64.is_complex());
+    }
+
+    #[test]
+    fn test_is_signed() {
+        assert!(DType::I8.is_signed());
+        assert!(DType::I64.is_signed());
+        assert!(DType::F16.is_signed());
+        assert!(DType::BF16.is_signed());
+        assert!(DType::F32.is_signed());
+        assert!(DType::C64.is_signed());
+        assert!(!DType::U8.is_signed());
+        assert!(!DType::U32.is_signed());
+        assert!(!DType::Bool.is_signed());
+    }
+}
