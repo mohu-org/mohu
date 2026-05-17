@@ -15,3 +15,7 @@ mohu-error.workspace  = true
 mohu-dtype.workspace  = true
 mohu-buffer.workspace = true
 mohu-array.workspace  = true
+
+[[example]]
+name = "buffer_basics"
+path = "../../examples/buffer_basics.rs"
