@@ -30,3 +30,6 @@ libc.workspace = true
 [dependencies.memmap2]
 workspace = true
 optional  = true
+
+[dev-dependencies]
+proptest.workspace = true
