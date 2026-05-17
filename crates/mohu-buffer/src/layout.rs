@@ -31,6 +31,12 @@ pub enum Order {
     F,
 }
 
+impl Default for Order {
+    fn default() -> Self {
+        Self::C
+    }
+}
+
 // ─── SliceArg ────────────────────────────────────────────────────────────────
 
 /// Arguments for slicing a single axis: `start:stop:step`.
