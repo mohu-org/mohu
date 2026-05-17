@@ -34,6 +34,7 @@ resolver = "2"
 [workspace.package]
 version      = "0.1.0"
 edition      = "2024"
+rust-version = "1.85"
 license      = "MIT"
 authors      = ["mohu contributors"]
 repository   = "https://github.com/mohu-org/mohu"
@@ -104,6 +105,7 @@ serde        = { version = "1", features = ["derive"] }
 
 # ── I/O ───────────────────────────────────────────────────────────────────────
 memmap2      = "0.9"
+zip          = "2"
 
 # ── Python bindings ───────────────────────────────────────────────────────────
 pyo3         = { version = "0.23", features = ["extension-module"] }

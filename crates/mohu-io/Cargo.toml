@@ -16,3 +16,8 @@ arrow.workspace       = true
 serde.workspace       = true
 memmap2.workspace     = true
 thiserror.workspace   = true
+zip.workspace         = true
+num-complex.workspace = true
+
+[dev-dependencies]
+tempfile = "3"
