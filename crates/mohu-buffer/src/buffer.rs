@@ -532,6 +532,22 @@ impl Buffer {
     #[inline] pub fn layout(&self)   -> &Layout { &self.layout }
     /// Returns the shape of this buffer as a slice of dimension sizes.
     #[inline] pub fn shape(&self)    -> &[usize] { self.layout.shape() }
+
+    /// Returns `Ok(())` when `self` and `other` have the same shape.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`MohuError::ShapeMismatch`] when shapes differ.
+    pub fn shape_matches(&self, other: &Buffer) -> MohuResult<()> {
+        if self.shape() != other.shape() {
+            return Err(MohuError::ShapeMismatch {
+                expected: self.shape().to_vec(),
+                got:      other.shape().to_vec(),
+            });
+        }
+        Ok(())
+    }
+
     /// Returns the byte strides of this buffer.
     #[inline] pub fn strides(&self)  -> &[isize] { self.layout.strides() }
     /// Returns the number of dimensions (axes) of this buffer.
@@ -561,6 +577,26 @@ impl Buffer {
     pub fn is_aligned(&self)       -> bool { self.flags.contains(BufferFlags::ALIGNED) }
     /// Returns `true` if the backing memory is shared with other `Buffer` instances.
     pub fn is_shared(&self)        -> bool { Arc::strong_count(&self.raw) > 1 }
+
+    /// Returns `true` if the buffer is 2D and both dimensions are equal.
+    pub fn is_square(&self) -> bool {
+        self.ndim() == 2 && self.shape()[0] == self.shape()[1]
+    }
+
+    /// Returns `true` if the buffer is 1D (a vector).
+    pub fn is_vector(&self) -> bool {
+        self.ndim() == 1
+    }
+
+    /// Returns `true` if the buffer is 2D (a matrix).
+    pub fn is_matrix(&self) -> bool {
+        self.ndim() == 2
+    }
+
+    /// Returns `true` if the buffer is 0D (a scalar — shape `[]`).
+    pub fn is_scalar_shape(&self) -> bool {
+        self.ndim() == 0
+    }
 
     /// Returns a raw const pointer to element `[0, 0, …, 0]`.
     #[inline]

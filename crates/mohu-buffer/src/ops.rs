@@ -160,12 +160,7 @@ pub fn copy_to_contiguous(src: &Buffer, dst: &mut Buffer) -> MohuResult<()> {
             got:      dst.dtype().to_string(),
         });
     }
-    if src.len() != dst.len() {
-        return Err(MohuError::ShapeMismatch {
-            expected: src.shape().to_vec(),
-            got:      dst.shape().to_vec(),
-        });
-    }
+    src.shape_matches(dst)?;
     if !dst.is_writeable() {
         return Err(MohuError::ReadOnly);
     }
@@ -214,12 +209,7 @@ pub fn copy_to_contiguous(src: &Buffer, dst: &mut Buffer) -> MohuResult<()> {
 /// pairs with zero virtual dispatch.  For the identity cast (same dtype),
 /// delegates to `copy_to_contiguous`.
 pub fn cast_copy(src: &Buffer, dst: &mut Buffer, mode: CastMode) -> MohuResult<()> {
-    if src.len() != dst.len() {
-        return Err(MohuError::ShapeMismatch {
-            expected: src.shape().to_vec(),
-            got:      dst.shape().to_vec(),
-        });
-    }
+    src.shape_matches(dst)?;
     if src.dtype() == dst.dtype() {
         return copy_to_contiguous(src, dst);
     }
@@ -305,12 +295,7 @@ where
     if !src.is_c_contiguous() || !dst.is_c_contiguous() {
         return Err(MohuError::NonContiguous);
     }
-    if src.len() != dst.len() {
-        return Err(MohuError::ShapeMismatch {
-            expected: src.shape().to_vec(),
-            got:      dst.shape().to_vec(),
-        });
-    }
+    src.shape_matches(dst)?;
     if !dst.is_writeable() {
         return Err(MohuError::ReadOnly);
     }
@@ -466,12 +451,7 @@ where
             got:      src.dtype().to_string(),
         });
     }
-    if src.len() != dst.len() {
-        return Err(MohuError::ShapeMismatch {
-            expected: src.shape().to_vec(),
-            got:      dst.shape().to_vec(),
-        });
-    }
+    src.shape_matches(dst)?;
     if !src.is_c_contiguous() || !dst.is_c_contiguous() {
         return Err(MohuError::NonContiguous);
     }
@@ -554,24 +534,14 @@ pub fn where_select<T: Scalar + Copy + Send + Sync>(
                 got:      buf.dtype().to_string(),
             });
         }
-        if buf.shape() != mask.shape() {
-            return Err(MohuError::ShapeMismatch {
-                expected: mask.shape().to_vec(),
-                got:      buf.shape().to_vec(),
-            });
-        }
+        mask.shape_matches(buf)?;
         if !buf.is_c_contiguous() {
             let _ = name;
             return Err(MohuError::NonContiguous);
         }
     }
     if !dst.is_writeable() { return Err(MohuError::ReadOnly); }
-    if dst.shape() != mask.shape() {
-        return Err(MohuError::ShapeMismatch {
-            expected: mask.shape().to_vec(),
-            got:      dst.shape().to_vec(),
-        });
-    }
+    mask.shape_matches(dst)?;
     dst.make_unique()?;
 
     let len    = mask.len();
@@ -611,12 +581,7 @@ where
             got:      src.dtype().to_string(),
         });
     }
-    if src.len() != dst.len() {
-        return Err(MohuError::ShapeMismatch {
-            expected: src.shape().to_vec(),
-            got:      dst.shape().to_vec(),
-        });
-    }
+    src.shape_matches(dst)?;
     if !src.is_c_contiguous() || !dst.is_c_contiguous() {
         return Err(MohuError::NonContiguous);
     }
@@ -660,12 +625,7 @@ pub fn gather(src: &Buffer, indices: &Buffer, dst: &mut Buffer) -> MohuResult<()
     if !src.is_c_contiguous() || !indices.is_c_contiguous() || !dst.is_c_contiguous() {
         return Err(MohuError::NonContiguous);
     }
-    if indices.len() != dst.len() {
-        return Err(MohuError::ShapeMismatch {
-            expected: indices.shape().to_vec(),
-            got:      dst.shape().to_vec(),
-        });
-    }
+    indices.shape_matches(dst)?;
     if !dst.is_writeable() { return Err(MohuError::ReadOnly); }
     dst.make_unique()?;
 
@@ -727,12 +687,7 @@ pub fn scatter(dst: &mut Buffer, indices: &Buffer, src: &Buffer) -> MohuResult<(
     if !src.is_c_contiguous() || !indices.is_c_contiguous() || !dst.is_c_contiguous() {
         return Err(MohuError::NonContiguous);
     }
-    if indices.len() != src.len() {
-        return Err(MohuError::ShapeMismatch {
-            expected: indices.shape().to_vec(),
-            got:      src.shape().to_vec(),
-        });
-    }
+    indices.shape_matches(src)?;
     if !dst.is_writeable() { return Err(MohuError::ReadOnly); }
     dst.make_unique()?;
 
@@ -947,12 +902,7 @@ pub fn flip_axis_copy(src: &Buffer, dst: &mut Buffer, axis: usize) -> MohuResult
             got:      dst.dtype().to_string(),
         });
     }
-    if src.shape() != dst.shape() {
-        return Err(MohuError::ShapeMismatch {
-            expected: src.shape().to_vec(),
-            got:      dst.shape().to_vec(),
-        });
-    }
+    src.shape_matches(dst)?;
     if axis >= src.ndim() {
         return Err(MohuError::bug(format!(
             "flip_axis_copy: axis {axis} out of bounds for ndim {}", src.ndim()
@@ -1373,12 +1323,8 @@ where
             got:      a.dtype().to_string(),
         });
     }
-    if a.len() != b.len() || a.len() != dst.len() {
-        return Err(MohuError::ShapeMismatch {
-            expected: a.shape().to_vec(),
-            got:      b.shape().to_vec(),
-        });
-    }
+    a.shape_matches(b)?;
+    a.shape_matches(dst)?;
     if !a.is_c_contiguous() || !b.is_c_contiguous() || !dst.is_c_contiguous() {
         return Err(MohuError::NonContiguous);
     }
