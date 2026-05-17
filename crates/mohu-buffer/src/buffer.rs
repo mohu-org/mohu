@@ -562,6 +562,26 @@ impl Buffer {
     /// Returns `true` if the backing memory is shared with other `Buffer` instances.
     pub fn is_shared(&self)        -> bool { Arc::strong_count(&self.raw) > 1 }
 
+    /// Returns `true` if the buffer is 2D and both dimensions are equal.
+    pub fn is_square(&self) -> bool {
+        self.ndim() == 2 && self.shape()[0] == self.shape()[1]
+    }
+
+    /// Returns `true` if the buffer is 1D (a vector).
+    pub fn is_vector(&self) -> bool {
+        self.ndim() == 1
+    }
+
+    /// Returns `true` if the buffer is 2D (a matrix).
+    pub fn is_matrix(&self) -> bool {
+        self.ndim() == 2
+    }
+
+    /// Returns `true` if the buffer is 0D (a scalar — shape `[]`).
+    pub fn is_scalar_shape(&self) -> bool {
+        self.ndim() == 0
+    }
+
     /// Returns a raw const pointer to element `[0, 0, …, 0]`.
     #[inline]
     pub fn as_ptr(&self) -> *const u8 {
