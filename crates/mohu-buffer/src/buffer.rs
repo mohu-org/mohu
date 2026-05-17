@@ -561,7 +561,10 @@ impl Buffer {
     pub fn is_aligned(&self)       -> bool { self.flags.contains(BufferFlags::ALIGNED) }
     /// Returns `true` if the backing memory is shared with other `Buffer` instances.
     pub fn is_shared(&self)        -> bool { Arc::strong_count(&self.raw) > 1 }
-
+    /// Returns `true` if this buffer is a square 2-D matrix.
+    #[must_use]
+    pub fn is_square(&self)        -> bool { self.ndim() == 2 && self.shape()[0] == self.shape()[1] }
+    
     /// Returns a raw const pointer to element `[0, 0, …, 0]`.
     #[inline]
     pub fn as_ptr(&self) -> *const u8 {
