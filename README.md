@@ -1,5 +1,7 @@
 # mohu
 
+[![MSRV](https://img.shields.io/badge/MSRV-1.85-blue?logo=rust)](https://github.com/mohu-org/mohu/blob/main/rust-toolchain.toml)
+
 Rust-powered arrays for Python. Fast, parallel, and built for the future.
 
 mohu is an early-stage NumPy replacement with its core written in Rust. The goal is simple — take everything Python's scientific stack does and do it without the bottlenecks that have been accepted for decades.

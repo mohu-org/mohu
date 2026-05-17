@@ -3,6 +3,7 @@ name        = "mohu-fft"
 description = "FFT, IFFT, RFFT, and 2-D transforms for mohu arrays"
 version.workspace     = true
 edition.workspace     = true
+rust-version.workspace = true
 license.workspace     = true
 authors.workspace     = true
 repository.workspace  = true

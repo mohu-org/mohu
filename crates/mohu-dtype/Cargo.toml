@@ -3,6 +3,7 @@ name        = "mohu-dtype"
 description = "DType enum, scalar type traits, and type promotion rules for mohu"
 version.workspace     = true
 edition.workspace     = true
+rust-version.workspace = true
 license.workspace     = true
 authors.workspace     = true
 repository.workspace  = true

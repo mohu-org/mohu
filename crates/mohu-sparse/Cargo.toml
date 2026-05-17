@@ -3,6 +3,7 @@ name        = "mohu-sparse"
 description = "COO / CSR / CSC sparse matrix formats and operations for mohu"
 version.workspace     = true
 edition.workspace     = true
+rust-version.workspace = true
 license.workspace     = true
 authors.workspace     = true
 repository.workspace  = true
