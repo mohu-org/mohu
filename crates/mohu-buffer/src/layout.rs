@@ -45,6 +45,22 @@ pub struct SliceArg {
     pub step:  Option<i64>,
 }
 
+impl From<std::ops::Range<usize>> for SliceArg {
+    fn from(range: std::ops::Range<usize>) -> Self {
+        Self {
+            start: Some(range.start as i64),
+            stop: Some(range.end as i64),
+            step: None,
+        }
+    }
+}
+
+impl From<std::ops::RangeFull> for SliceArg {
+    fn from(_: std::ops::RangeFull) -> Self {
+        Self::FULL
+    }
+}
+
 impl SliceArg {
     /// A slice that selects the full axis (`..`).
     pub const FULL: Self = Self { start: None, stop: None, step: None };
