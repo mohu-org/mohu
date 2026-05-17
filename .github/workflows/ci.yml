@@ -123,13 +123,12 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - run: cargo bench --workspace --no-run --all-features
 
-  # ── Semver (PR only; non-blocking until crates are published) ────────────────
+  # ── Semver (PR only — cargo-semver-checks skips unpublished crates gracefully) ─
   semver:
     name: Semver Check
     runs-on: ubuntu-latest
     needs: [fmt, clippy]
     if: github.event_name == 'pull_request'
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
         with:
@@ -142,12 +141,11 @@ jobs:
         with:
           feature-group: all-features
 
-  # ── Cross-compilation (push to main only — too expensive per PR) ─────────────
+  # ── Cross-compilation (all targets, push and PR) ─────────────────────────────
   cross:
     name: Cross (${{ matrix.target }})
     runs-on: ${{ matrix.os }}
     needs: [build]
-    if: github.event_name == 'push'
     strategy:
       fail-fast: false
       matrix:
@@ -197,7 +195,7 @@ jobs:
           files: lcov.info
           fail_ci_if_error: false
 
-  # ── Miri (nightly, non-blocking — toolchain breakage is out of our control) ──
+  # ── Miri (non-blocking — nightly toolchain breaks outside our control) ────────
   miri:
     name: Miri
     runs-on: ubuntu-latest
@@ -218,8 +216,8 @@ jobs:
           RUSTFLAGS: ""
 
   # ── Final gate ───────────────────────────────────────────────────────────────
-  # All blocking jobs listed here. Non-blocking jobs use continue-on-error and
-  # are excluded. Jobs that are skipped (e.g. dco on push) count as success.
+  # skipped jobs (e.g. dco/semver on push) count as success.
+  # miri/coverage are excluded — continue-on-error makes them always succeed anyway.
   ci-pass:
     name: CI Pass
     runs-on: ubuntu-latest
@@ -234,6 +232,8 @@ jobs:
       - doc
       - msrv
       - bench-check
+      - semver
+      - cross
     steps:
       - name: Check all blocking jobs passed
         env:
