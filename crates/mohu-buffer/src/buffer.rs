@@ -1291,40 +1291,90 @@ impl Buffer {
                 "sum_axis: axis {axis} out of bounds for ndim {}", self.ndim()
             )));
         }
-        // Build output shape
         let mut out_shape: Vec<usize> = self.shape().to_vec();
         let axis_size = out_shape[axis];
-        if keepdims { out_shape[axis] = 1; } else { out_shape.remove(axis); }
+        if keepdims {
+            out_shape[axis] = 1;
+        } else {
+            out_shape.remove(axis);
+        }
 
         let out = Self::zeros(DType::F64, &out_shape)?;
-        let out_raw = unsafe { out.as_mut_ptr() as *mut f64 };
-        let _ = out.len(); // shape check only; iteration is index-driven
+        let out_len = out.len();
+        if out_len == 0 {
+            return Ok(out);
+        }
 
-        // For each output element, sum the corresponding slice along axis.
-        // Iterate over all positions in the output.
-        use crate::strides::NdIndexIter;
+        let out_base = unsafe { out.as_mut_ptr() as usize };
         let out_shape_full: Vec<usize> = out.shape().to_vec();
-
-        // Build src index from out index by inserting the axis.
+        let ndim = self.ndim();
+        let axis_stride = self.strides()[axis];
         let itemsize = self.dtype.itemsize();
-        let src_raw  = self.as_ptr();
+        let src_base = self.as_ptr() as usize;
+        let dtype = self.dtype;
+        let layout = &self.layout;
 
-        for (out_flat, out_idx) in NdIndexIter::new(&out_shape_full).enumerate() {
-            let mut acc = 0.0f64;
-            for k in 0..axis_size {
-                // Build source index
-                let mut src_idx = out_idx.to_vec();
-                if keepdims {
-                    src_idx[axis] = k;
-                } else {
-                    src_idx.insert(axis, k);
+        let write_src_idx = |src_idx: &mut [usize], out_idx: &[usize]| {
+            if keepdims {
+                src_idx.copy_from_slice(out_idx);
+            } else {
+                let mut j = 0;
+                for i in 0..ndim {
+                    if i == axis {
+                        src_idx[i] = 0;
+                    } else {
+                        src_idx[i] = out_idx[j];
+                        j += 1;
+                    }
                 }
-                let off = self.layout.byte_offset(&src_idx)?;
-                // Read element as f64 via dispatch
-                let val = read_as_f64(unsafe { src_raw.add(off) }, self.dtype, itemsize);
-                acc += val;
             }
-            unsafe { out_raw.add(out_flat).write(acc); }
+        };
+
+        if out_len >= 512 {
+            use rayon::prelude::*;
+            (0..out_len).into_par_iter().for_each(|out_flat| {
+                let mut out_idx = vec![0usize; out_shape_full.len()];
+                let mut rest = out_flat;
+                for i in (0..out_shape_full.len()).rev() {
+                    let dim = out_shape_full[i];
+                    out_idx[i] = rest % dim;
+                    rest /= dim;
+                }
+                let mut src_idx = vec![0usize; ndim];
+                write_src_idx(&mut src_idx, &out_idx);
+                let base = layout.byte_offset_unchecked(&src_idx) as isize;
+                let mut acc = 0.0f64;
+                for k in 0..axis_size {
+                    let off = (base + k as isize * axis_stride) as usize;
+                    acc += read_as_f64(
+                        unsafe { (src_base + off) as *const u8 },
+                        dtype,
+                        itemsize,
+                    );
+                }
+                unsafe {
+                    (out_base as *mut f64).add(out_flat).write(acc);
+                }
+            });
+        } else {
+            use crate::strides::NdIndexIter;
+            let mut src_idx = vec![0usize; ndim];
+            for (out_flat, out_idx) in NdIndexIter::new(&out_shape_full).enumerate() {
+                write_src_idx(&mut src_idx, out_idx.as_slice());
+                let base = layout.byte_offset_unchecked(&src_idx) as isize;
+                let mut acc = 0.0f64;
+                for k in 0..axis_size {
+                    let off = (base + k as isize * axis_stride) as usize;
+                    acc += read_as_f64(
+                        unsafe { (src_base + off) as *const u8 },
+                        dtype,
+                        itemsize,
+                    );
+                }
+                unsafe {
+                    (out_base as *mut f64).add(out_flat).write(acc);
+                }
+            }
         }
 
         Ok(out)
