@@ -639,6 +639,18 @@ impl Buffer {
         Ok(unsafe { ptr.read_unaligned() })
     }
 
+    /// Returns the sole element when this buffer contains exactly one value.
+    ///
+    /// Equivalent to NumPy's `.item()` for 0-D arrays and length-1 views.
+    #[must_use]
+    pub fn item<T: Scalar>(&self) -> MohuResult<T> {
+        if self.len() != 1 {
+            return Err(MohuError::bug("item() requires a single-element array"));
+        }
+        let indices = vec![0; self.ndim()];
+        self.get::<T>(&indices)
+    }
+
     /// Sets the element at `indices` to `value`.
     pub fn set<T: Scalar>(&mut self, indices: &[usize], value: T) -> MohuResult<()> {
         if T::DTYPE != self.dtype {
