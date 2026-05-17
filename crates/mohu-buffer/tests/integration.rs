@@ -279,3 +279,22 @@ fn nd_index_iter_c_order() {
     assert_eq!(indices[3].as_slice(), &[1, 0]);
     assert_eq!(indices[5].as_slice(), &[1, 2]);
 }
+
+#[test]
+fn test_is_square() {
+    let sq = Buffer::from_slice_2d(&[
+        &[1.0f64, 2.0, 3.0],
+        &[4.0, 5.0, 6.0],
+        &[7.0, 8.0, 9.0],
+    ]).unwrap();
+    assert!(sq.is_square());
+
+    let rect = Buffer::from_slice_2d(&[
+        &[1.0f64, 2.0, 3.0, 4.0],
+        &[5.0, 6.0, 7.0, 8.0],
+    ]).unwrap();
+    assert!(!rect.is_square());
+
+    let flat = Buffer::from_slice(&[1.0f64, 2.0, 3.0]).unwrap();
+    assert!(!flat.is_square());
+}
