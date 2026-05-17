@@ -169,6 +169,13 @@ impl ErrorCode {
     pub fn is_python(self) -> bool { matches!(self as u32, 9000..=9999) }
 }
 
+
+impl From<ErrorCode> for u32 {
+    fn from(code: ErrorCode) -> u32 {
+        code as u32
+    }
+}
+
 impl TryFrom<u32> for ErrorCode {
     type Error = ();
 

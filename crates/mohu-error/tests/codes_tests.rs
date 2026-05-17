@@ -18,3 +18,9 @@ fn display_includes_variant_and_number() {
     let code = ErrorCode::ShapeMismatch;
     assert_eq!(format!("{code}"), "ShapeMismatch (1000)");
 }
+
+#[test]
+fn from_u32_roundtrip() {
+    let code = ErrorCode::ShapeMismatch;
+    assert_eq!(u32::from(code), 1000);
+}
