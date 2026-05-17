@@ -513,6 +513,31 @@ impl DType {
     pub fn all() -> impl Iterator<Item = DType> {
         ALL_DTYPES.iter().copied()
     }
+
+    /// All floating-point (non-complex) dtype variants: F16, BF16, F32, F64.
+    pub fn iter_floats() -> impl Iterator<Item = DType> {
+        Self::all().filter(|dtype| dtype.is_float())
+    }
+
+    /// All integer dtype variants: I8, I16, I32, I64, U8, U16, U32, U64.
+    pub fn iter_integers() -> impl Iterator<Item = DType> {
+        Self::all().filter(|dtype| dtype.is_integer())
+    }
+
+    /// All complex dtype variants: C64, C128.
+    pub fn iter_complex() -> impl Iterator<Item = DType> {
+        Self::all().filter(|dtype| dtype.is_complex())
+    }
+
+    /// All signed integer variants: I8, I16, I32, I64.
+    pub fn iter_signed() -> impl Iterator<Item = DType> {
+        Self::all().filter(|dtype| dtype.is_signed_integer())
+    }
+
+    /// All unsigned integer variants: U8, U16, U32, U64.
+    pub fn iter_unsigned() -> impl Iterator<Item = DType> {
+        Self::all().filter(|dtype| dtype.is_unsigned_integer())
+    }
 }
 
 // ─── Display ─────────────────────────────────────────────────────────────────
