@@ -1282,9 +1282,22 @@ impl Buffer {
         crate::ops::argmax_flat(self)
     }
 
+    /// Chooses the accumulation dtype for [`sum_axis`](Self::sum_axis) results.
+    fn sum_axis_output_dtype(input: DType) -> DType {
+        use DType::*;
+        match input {
+            Bool | I8 | I16 | I32 | I64 | U8 | U16 | U32 | U64 => I64,
+            F16 | BF16 | F32 => F32,
+            F64 => F64,
+            C64 => C64,
+            C128 => C128,
+        }
+    }
+
     /// Sums over `axis`, returning a buffer with that axis collapsed.
     ///
     /// If `keepdims` is true, the result has a size-1 axis in place of `axis`.
+    /// The output dtype follows NumPy-style promotion (integers → `I64`, half → `F32`, etc.).
     pub fn sum_axis(&self, axis: usize, keepdims: bool) -> MohuResult<Self> {
         if axis >= self.ndim() {
             return Err(MohuError::bug(format!(
@@ -1296,23 +1309,19 @@ impl Buffer {
         let axis_size = out_shape[axis];
         if keepdims { out_shape[axis] = 1; } else { out_shape.remove(axis); }
 
-        let out = Self::zeros(DType::F64, &out_shape)?;
-        let out_raw = unsafe { out.as_mut_ptr() as *mut f64 };
-        let _ = out.len(); // shape check only; iteration is index-driven
+        let out_dtype = Self::sum_axis_output_dtype(self.dtype);
+        let mut out_f64 = Self::zeros(DType::F64, &out_shape)?;
+        let out_raw = unsafe { out_f64.as_mut_ptr() as *mut f64 };
 
         // For each output element, sum the corresponding slice along axis.
-        // Iterate over all positions in the output.
         use crate::strides::NdIndexIter;
-        let out_shape_full: Vec<usize> = out.shape().to_vec();
-
-        // Build src index from out index by inserting the axis.
+        let out_shape_full: Vec<usize> = out_f64.shape().to_vec();
         let itemsize = self.dtype.itemsize();
         let src_raw  = self.as_ptr();
 
         for (out_flat, out_idx) in NdIndexIter::new(&out_shape_full).enumerate() {
             let mut acc = 0.0f64;
             for k in 0..axis_size {
-                // Build source index
                 let mut src_idx = out_idx.to_vec();
                 if keepdims {
                     src_idx[axis] = k;
@@ -1320,14 +1329,17 @@ impl Buffer {
                     src_idx.insert(axis, k);
                 }
                 let off = self.layout.byte_offset(&src_idx)?;
-                // Read element as f64 via dispatch
                 let val = read_as_f64(unsafe { src_raw.add(off) }, self.dtype, itemsize);
                 acc += val;
             }
             unsafe { out_raw.add(out_flat).write(acc); }
         }
 
-        Ok(out)
+        if out_dtype == DType::F64 {
+            Ok(out_f64)
+        } else {
+            out_f64.cast(out_dtype, CastMode::Unsafe)
+        }
     }
 
     // ─── Boolean reductions ───────────────────────────────────────────────────
