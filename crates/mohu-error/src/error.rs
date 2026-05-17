@@ -647,6 +647,28 @@ impl MohuError {
         )
     }
 
+    /// Returns `true` if this is an out-of-memory allocation failure.
+    pub fn is_oom(&self) -> bool {
+        matches!(self, Self::AllocationFailed { .. })
+    }
+
+    /// Returns `true` if this is a system I/O error.
+    pub fn is_io(&self) -> bool {
+        matches!(self, Self::Io(_))
+    }
+
+    /// Returns `true` if this is a DLPack interop error.
+    pub fn is_dlpack(&self) -> bool {
+        matches!(
+            self,
+            Self::DLPackUnsupportedDevice { .. }
+                | Self::DLPackVersionMismatch { .. }
+                | Self::DLPackNullPointer
+                | Self::DLPackUnsupportedDType { .. }
+                | Self::DLPackInvalid(_)
+        )
+    }
+
     // -------------------------------------------------------------------------
     // Convenience constructors
     // -------------------------------------------------------------------------
