@@ -1546,11 +1546,11 @@ impl Buffer {
     ///
     /// NaN == NaN for this comparison (unlike IEEE 754).
     pub fn allclose(&self, other: &Buffer, rtol: f64, atol: f64) -> MohuResult<bool> {
-        if self.shape() != other.shape() {
-            return Ok(false);
-        }
-        let a = self.cast(DType::F64, CastMode::Unsafe)?;
-        let b = other.cast(DType::F64, CastMode::Unsafe)?;
+        let shape = crate::strides::broadcast_shapes(self.shape(), other.shape())?;
+        let a = self.broadcast_to(&shape)?;
+        let b = other.broadcast_to(&shape)?;
+        let a = a.cast(DType::F64, CastMode::Unsafe)?;
+        let b = b.cast(DType::F64, CastMode::Unsafe)?;
         let as_ = a.as_slice::<f64>()?;
         let bs  = b.as_slice::<f64>()?;
         use rayon::prelude::*;

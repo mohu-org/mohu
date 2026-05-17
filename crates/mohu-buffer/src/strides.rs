@@ -102,6 +102,37 @@ pub fn contiguous_nbytes(shape: &[usize], itemsize: usize) -> MohuResult<usize> 
 /// 3. For source dimensions of size 1, the stride is set to 0 (broadcast).
 /// 4. Dimensions where both source and target are > 1 must be equal.
 ///
+/// Returns the shape that results from broadcasting `lhs` and `rhs` together.
+///
+/// Follows NumPy trailing-axis broadcast rules.
+pub fn broadcast_shapes(lhs: &[usize], rhs: &[usize]) -> MohuResult<ShapeVec> {
+    let ndim = lhs.len().max(rhs.len());
+    let mut out = ShapeVec::with_capacity(ndim);
+    for axis in 0..ndim {
+        let l = lhs
+            .get(lhs.len().wrapping_sub(ndim - axis))
+            .copied()
+            .unwrap_or(1);
+        let r = rhs
+            .get(rhs.len().wrapping_sub(ndim - axis))
+            .copied()
+            .unwrap_or(1);
+        if l == r {
+            out.push(l);
+        } else if l == 1 {
+            out.push(r);
+        } else if r == 1 {
+            out.push(l);
+        } else {
+            return Err(MohuError::BroadcastError {
+                lhs: lhs.to_vec(),
+                rhs: rhs.to_vec(),
+            });
+        }
+    }
+    Ok(out)
+}
+
 /// Returns `Err(BroadcastError)` if broadcasting is impossible.
 pub fn broadcast_strides(
     src_shape:   &[usize],
