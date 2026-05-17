@@ -509,6 +509,31 @@ impl DType {
         }
     }
 
+    /// Returns an iterator over all floating-point (non-complex) dtypes.
+    pub fn iter_floats() -> impl Iterator<Item = DType> {
+        Self::all().filter(|d| d.is_float())
+    }
+
+    /// Returns an iterator over all integer dtypes (signed and unsigned).
+    pub fn iter_integers() -> impl Iterator<Item = DType> {
+        Self::all().filter(|d| d.is_integer())
+    }
+
+    /// Returns an iterator over complex dtypes (`C64`, `C128`).
+    pub fn iter_complex() -> impl Iterator<Item = DType> {
+        Self::all().filter(|d| d.is_complex())
+    }
+
+    /// Returns an iterator over signed integer dtypes.
+    pub fn iter_signed() -> impl Iterator<Item = DType> {
+        Self::all().filter(|d| d.is_signed_integer())
+    }
+
+    /// Returns an iterator over unsigned integer dtypes.
+    pub fn iter_unsigned() -> impl Iterator<Item = DType> {
+        Self::all().filter(|d| d.is_unsigned_integer())
+    }
+
     /// Returns an iterator over all variants in definition order.
     pub fn all() -> impl Iterator<Item = DType> {
         ALL_DTYPES.iter().copied()
