@@ -32,6 +32,11 @@ use crate::{
 ///
 /// For contiguous buffers, uses a fast Rayon chunk-parallel fill.
 /// For non-contiguous buffers, falls back to stride iteration.
+
+///
+/// # Errors
+///
+/// Returns [`MohuError::ReadOnly`], [`MohuError::DTypeMismatch`], [`MohuError::ShapeMismatch`], [`MohuError::NonContiguous`], or [`MohuError::InvalidCast`] when preconditions are not met.
 pub fn fill_raw(buf: &mut Buffer, fill_bytes: &[u8]) -> MohuResult<()> {
     let itemsize = buf.itemsize();
     if fill_bytes.len() != itemsize {
@@ -82,6 +87,11 @@ pub fn fill_raw(buf: &mut Buffer, fill_bytes: &[u8]) -> MohuResult<()> {
 /// Fills every element of `buf` with `value`.
 ///
 /// `T::DTYPE` must match `buf.dtype()`.
+
+///
+/// # Errors
+///
+/// Returns [`MohuError::ReadOnly`], [`MohuError::DTypeMismatch`], [`MohuError::ShapeMismatch`], [`MohuError::NonContiguous`], or [`MohuError::InvalidCast`] when preconditions are not met.
 pub fn fill<T>(buf: &mut Buffer, value: T) -> MohuResult<()>
 where
     T: Scalar + Copy + Send + Sync,
@@ -118,6 +128,11 @@ where
 // ─── fill_zero / fill_one ─────────────────────────────────────────────────────
 
 /// Fills every byte of the buffer's element range with zero.
+
+///
+/// # Errors
+///
+/// Returns [`MohuError::ReadOnly`], [`MohuError::DTypeMismatch`], [`MohuError::ShapeMismatch`], [`MohuError::NonContiguous`], or [`MohuError::InvalidCast`] when preconditions are not met.
 pub fn fill_zero(buf: &mut Buffer) -> MohuResult<()> {
     if !buf.is_writeable() {
         return Err(MohuError::ReadOnly);
@@ -138,6 +153,11 @@ pub fn fill_zero(buf: &mut Buffer) -> MohuResult<()> {
 /// Fills every element with its type's "one" value.
 ///
 /// Dispatches at runtime over all 15 dtypes.
+
+///
+/// # Errors
+///
+/// Returns [`MohuError::ReadOnly`], [`MohuError::DTypeMismatch`], [`MohuError::ShapeMismatch`], [`MohuError::NonContiguous`], or [`MohuError::InvalidCast`] when preconditions are not met.
 pub fn fill_one(buf: &mut Buffer) -> MohuResult<()> {
     macro_rules! do_fill_one {
         ($T:ty) => {{
@@ -153,6 +173,11 @@ pub fn fill_one(buf: &mut Buffer) -> MohuResult<()> {
 ///
 /// Works with any combination of contiguous and non-contiguous source/dst.
 /// For the fully-contiguous case, uses a Rayon parallel `memcpy`.
+
+///
+/// # Errors
+///
+/// Returns [`MohuError::ReadOnly`], [`MohuError::DTypeMismatch`], [`MohuError::ShapeMismatch`], [`MohuError::NonContiguous`], or [`MohuError::InvalidCast`] when preconditions are not met.
 pub fn copy_to_contiguous(src: &Buffer, dst: &mut Buffer) -> MohuResult<()> {
     if src.dtype() != dst.dtype() {
         return Err(MohuError::DTypeMismatch {
@@ -213,6 +238,11 @@ pub fn copy_to_contiguous(src: &Buffer, dst: &mut Buffer) -> MohuResult<()> {
 /// Uses nested `dispatch_dtype!` to monomorphise over all 225 (src, dst) type
 /// pairs with zero virtual dispatch.  For the identity cast (same dtype),
 /// delegates to `copy_to_contiguous`.
+
+///
+/// # Errors
+///
+/// Returns [`MohuError::ReadOnly`], [`MohuError::DTypeMismatch`], [`MohuError::ShapeMismatch`], [`MohuError::NonContiguous`], or [`MohuError::InvalidCast`] when preconditions are not met.
 pub fn cast_copy(src: &Buffer, dst: &mut Buffer, mode: CastMode) -> MohuResult<()> {
     if src.len() != dst.len() {
         return Err(MohuError::ShapeMismatch {
@@ -296,6 +326,11 @@ fn cast_typed<S: Scalar + Send + Sync, D: Scalar + Send + Sync>(
 
 /// Applies `f` to every `S`-typed element of `src`, writing `D`-typed results
 /// to `dst`.  Both must be C-contiguous.
+
+///
+/// # Errors
+///
+/// Returns [`MohuError::ReadOnly`], [`MohuError::DTypeMismatch`], [`MohuError::ShapeMismatch`], [`MohuError::NonContiguous`], or [`MohuError::InvalidCast`] when preconditions are not met.
 pub fn parallel_map<S, D, F>(src: &Buffer, dst: &mut Buffer, f: F) -> MohuResult<()>
 where
     S: Scalar + Send + Sync,
@@ -333,6 +368,11 @@ where
 // ─── parallel_inplace ─────────────────────────────────────────────────────────
 
 /// Applies `f` in-place to every element of `buf`.  Requires C-contiguous.
+
+///
+/// # Errors
+///
+/// Returns [`MohuError::ReadOnly`], [`MohuError::DTypeMismatch`], [`MohuError::ShapeMismatch`], [`MohuError::NonContiguous`], or [`MohuError::InvalidCast`] when preconditions are not met.
 pub fn parallel_inplace<T, F>(buf: &mut Buffer, f: F) -> MohuResult<()>
 where
     T: Scalar + Send + Sync,
@@ -359,6 +399,11 @@ where
 ///
 /// Computes `init` combined with every element using `combine`.
 /// Uses Rayon's `map_reduce` to parallelise across chunks.
+
+///
+/// # Errors
+///
+/// Returns [`MohuError::ReadOnly`], [`MohuError::DTypeMismatch`], [`MohuError::ShapeMismatch`], [`MohuError::NonContiguous`], or [`MohuError::InvalidCast`] when preconditions are not met.
 pub fn reduce<T, R, F, G>(
     buf:     &Buffer,
     init:    R,
@@ -396,6 +441,11 @@ where
 ///
 /// Equivalent to `np.arange` applied in-place.  Uses Rayon to compute each
 /// element independently in parallel (no dependency between elements).
+
+///
+/// # Errors
+///
+/// Returns [`MohuError::ReadOnly`], [`MohuError::DTypeMismatch`], [`MohuError::ShapeMismatch`], [`MohuError::NonContiguous`], or [`MohuError::InvalidCast`] when preconditions are not met.
 pub fn fill_sequential<T>(buf: &mut Buffer, start: T, step: T) -> MohuResult<()>
 where
     T: Scalar + Copy + Send + Sync + std::ops::Add<Output = T> + std::ops::Mul<Output = T>,
@@ -450,6 +500,11 @@ where
 /// 3. **Up-sweep**: each chunk adds its carry offset in parallel.
 ///
 /// This achieves O(n) work and O(log n) span, identical to serial complexity.
+
+///
+/// # Errors
+///
+/// Returns [`MohuError::ReadOnly`], [`MohuError::DTypeMismatch`], [`MohuError::ShapeMismatch`], [`MohuError::NonContiguous`], or [`MohuError::InvalidCast`] when preconditions are not met.
 pub fn parallel_scan<T, F>(
     src:      &Buffer,
     dst:      &mut Buffer,
@@ -533,6 +588,11 @@ where
 /// `mask` must have dtype `U8` (boolean mask: 0 = false, non-zero = true).
 /// `a`, `b`, and `dst` must have the same dtype and shape.
 /// All four buffers must be C-contiguous.
+
+///
+/// # Errors
+///
+/// Returns [`MohuError::ReadOnly`], [`MohuError::DTypeMismatch`], [`MohuError::ShapeMismatch`], [`MohuError::NonContiguous`], or [`MohuError::InvalidCast`] when preconditions are not met.
 pub fn where_select<T: Scalar + Copy + Send + Sync>(
     mask: &Buffer,
     a:    &Buffer,
@@ -601,6 +661,11 @@ pub fn where_select<T: Scalar + Copy + Send + Sync>(
 /// Clips every element of `src` to `[lo, hi]`, writing into `dst`.
 ///
 /// Equivalent to `np.clip`.  Both buffers must be C-contiguous.
+
+///
+/// # Errors
+///
+/// Returns [`MohuError::ReadOnly`], [`MohuError::DTypeMismatch`], [`MohuError::ShapeMismatch`], [`MohuError::NonContiguous`], or [`MohuError::InvalidCast`] when preconditions are not met.
 pub fn clip<T>(src: &Buffer, dst: &mut Buffer, lo: T, hi: T) -> MohuResult<()>
 where
     T: Scalar + PartialOrd + Copy + Send + Sync,
@@ -642,6 +707,15 @@ where
 ///
 /// `indices` must have dtype `I64`.  `src` and `dst` must be 1-D and C-contiguous.
 /// Panics in debug mode on out-of-bounds indices.
+
+///
+/// # Errors
+///
+/// Returns [`MohuError::ReadOnly`], [`MohuError::DTypeMismatch`], [`MohuError::ShapeMismatch`], [`MohuError::NonContiguous`], or [`MohuError::InvalidCast`] when preconditions are not met.
+///
+/// # Panics
+///
+/// Panics in debug builds when index bounds checks fail.
 pub fn gather(src: &Buffer, indices: &Buffer, dst: &mut Buffer) -> MohuResult<()> {
     use mohu_dtype::DType;
 
@@ -709,6 +783,11 @@ pub fn gather(src: &Buffer, indices: &Buffer, dst: &mut Buffer) -> MohuResult<()
 /// **Warning**: if two indices are equal, the result is non-deterministic (a
 /// data race between Rayon threads).  For safe scatter with duplicates, use
 /// the sequential variant or ensure indices are unique.
+
+///
+/// # Errors
+///
+/// Returns [`MohuError::ReadOnly`], [`MohuError::DTypeMismatch`], [`MohuError::ShapeMismatch`], [`MohuError::NonContiguous`], or [`MohuError::InvalidCast`] when preconditions are not met.
 pub fn scatter(dst: &mut Buffer, indices: &Buffer, src: &Buffer) -> MohuResult<()> {
     use mohu_dtype::DType;
 
@@ -770,6 +849,11 @@ pub fn scatter(dst: &mut Buffer, indices: &Buffer, src: &Buffer) -> MohuResult<(
 // ─── Arithmetic scalar ops ────────────────────────────────────────────────────
 
 /// Adds `scalar` to every element of `buf` in-place.
+
+///
+/// # Errors
+///
+/// Returns [`MohuError::ReadOnly`], [`MohuError::DTypeMismatch`], [`MohuError::ShapeMismatch`], [`MohuError::NonContiguous`], or [`MohuError::InvalidCast`] when preconditions are not met.
 pub fn add_scalar_inplace<T>(buf: &mut Buffer, scalar: T) -> MohuResult<()>
 where
     T: Scalar + Copy + Send + Sync + std::ops::Add<Output = T>,
@@ -778,6 +862,11 @@ where
 }
 
 /// Subtracts `scalar` from every element of `buf` in-place.
+
+///
+/// # Errors
+///
+/// Returns [`MohuError::ReadOnly`], [`MohuError::DTypeMismatch`], [`MohuError::ShapeMismatch`], [`MohuError::NonContiguous`], or [`MohuError::InvalidCast`] when preconditions are not met.
 pub fn sub_scalar_inplace<T>(buf: &mut Buffer, scalar: T) -> MohuResult<()>
 where
     T: Scalar + Copy + Send + Sync + std::ops::Sub<Output = T>,
@@ -786,6 +875,11 @@ where
 }
 
 /// Multiplies every element of `buf` by `scalar` in-place.
+
+///
+/// # Errors
+///
+/// Returns [`MohuError::ReadOnly`], [`MohuError::DTypeMismatch`], [`MohuError::ShapeMismatch`], [`MohuError::NonContiguous`], or [`MohuError::InvalidCast`] when preconditions are not met.
 pub fn mul_scalar_inplace<T>(buf: &mut Buffer, scalar: T) -> MohuResult<()>
 where
     T: Scalar + Copy + Send + Sync + std::ops::Mul<Output = T>,
@@ -794,6 +888,11 @@ where
 }
 
 /// Divides every element of `buf` by `scalar` in-place.
+
+///
+/// # Errors
+///
+/// Returns [`MohuError::ReadOnly`], [`MohuError::DTypeMismatch`], [`MohuError::ShapeMismatch`], [`MohuError::NonContiguous`], or [`MohuError::InvalidCast`] when preconditions are not met.
 pub fn div_scalar_inplace<T>(buf: &mut Buffer, scalar: T) -> MohuResult<()>
 where
     T: Scalar + Copy + Send + Sync + std::ops::Div<Output = T>,
@@ -809,6 +908,11 @@ where
 /// a byte-for-byte copy.  For signed integer and float types the absolute value
 /// is computed via an f64 round-trip.  For complex types each component (re, im)
 /// is made non-negative independently.
+
+///
+/// # Errors
+///
+/// Returns [`MohuError::ReadOnly`], [`MohuError::DTypeMismatch`], [`MohuError::ShapeMismatch`], [`MohuError::NonContiguous`], or [`MohuError::InvalidCast`] when preconditions are not met.
 pub fn abs_copy(src: &Buffer, dst: &mut Buffer) -> MohuResult<()> {
     use mohu_dtype::DType;
     use num_complex::Complex;
@@ -851,6 +955,11 @@ pub fn abs_copy(src: &Buffer, dst: &mut Buffer) -> MohuResult<()> {
 /// For unsigned integer types, wraps around (two's-complement negation via i128).
 /// For `Bool`, negation is undefined — produces a copy.
 /// For complex types both real and imaginary parts are negated.
+
+///
+/// # Errors
+///
+/// Returns [`MohuError::ReadOnly`], [`MohuError::DTypeMismatch`], [`MohuError::ShapeMismatch`], [`MohuError::NonContiguous`], or [`MohuError::InvalidCast`] when preconditions are not met.
 pub fn neg_copy(src: &Buffer, dst: &mut Buffer) -> MohuResult<()> {
     use mohu_dtype::DType;
     use num_complex::Complex;
@@ -896,6 +1005,11 @@ pub fn neg_copy(src: &Buffer, dst: &mut Buffer) -> MohuResult<()> {
 /// Computes element-wise sqrt: `dst[i] = sqrt(src[i])`.
 ///
 /// Src must have dtype F32 or F64.  Negative values produce NaN.
+
+///
+/// # Errors
+///
+/// Returns [`MohuError::ReadOnly`], [`MohuError::DTypeMismatch`], [`MohuError::ShapeMismatch`], [`MohuError::NonContiguous`], or [`MohuError::InvalidCast`] when preconditions are not met.
 pub fn sqrt_copy(src: &Buffer, dst: &mut Buffer) -> MohuResult<()> {
     use mohu_dtype::DType;
     match src.dtype() {
@@ -909,6 +1023,11 @@ pub fn sqrt_copy(src: &Buffer, dst: &mut Buffer) -> MohuResult<()> {
 }
 
 /// Computes element-wise natural log: `dst[i] = ln(src[i])`.
+
+///
+/// # Errors
+///
+/// Returns [`MohuError::ReadOnly`], [`MohuError::DTypeMismatch`], [`MohuError::ShapeMismatch`], [`MohuError::NonContiguous`], or [`MohuError::InvalidCast`] when preconditions are not met.
 pub fn ln_copy(src: &Buffer, dst: &mut Buffer) -> MohuResult<()> {
     use mohu_dtype::DType;
     match src.dtype() {
@@ -922,6 +1041,11 @@ pub fn ln_copy(src: &Buffer, dst: &mut Buffer) -> MohuResult<()> {
 }
 
 /// Computes element-wise exp: `dst[i] = e^src[i]`.
+
+///
+/// # Errors
+///
+/// Returns [`MohuError::ReadOnly`], [`MohuError::DTypeMismatch`], [`MohuError::ShapeMismatch`], [`MohuError::NonContiguous`], or [`MohuError::InvalidCast`] when preconditions are not met.
 pub fn exp_copy(src: &Buffer, dst: &mut Buffer) -> MohuResult<()> {
     use mohu_dtype::DType;
     match src.dtype() {
@@ -940,6 +1064,11 @@ pub fn exp_copy(src: &Buffer, dst: &mut Buffer) -> MohuResult<()> {
 ///
 /// `dst` must be C-contiguous and have the same shape as `src`.
 /// `src` may be non-contiguous.
+
+///
+/// # Errors
+///
+/// Returns [`MohuError::ReadOnly`], [`MohuError::DTypeMismatch`], [`MohuError::ShapeMismatch`], [`MohuError::NonContiguous`], or [`MohuError::InvalidCast`] when preconditions are not met.
 pub fn flip_axis_copy(src: &Buffer, dst: &mut Buffer, axis: usize) -> MohuResult<()> {
     if src.dtype() != dst.dtype() {
         return Err(MohuError::DTypeMismatch {
@@ -997,6 +1126,11 @@ pub fn flip_axis_copy(src: &Buffer, dst: &mut Buffer, axis: usize) -> MohuResult
 /// Computes the sum of all elements as f64 (works for any numeric dtype).
 ///
 /// Non-contiguous arrays are first converted to contiguous.
+
+///
+/// # Errors
+///
+/// Returns [`MohuError::ReadOnly`], [`MohuError::DTypeMismatch`], [`MohuError::ShapeMismatch`], [`MohuError::NonContiguous`], or [`MohuError::InvalidCast`] when preconditions are not met.
 pub fn sum_all_f64(buf: &Buffer) -> MohuResult<f64> {
     use mohu_dtype::DType;
     // Complex: no canonical scalar sum; error out.
@@ -1059,6 +1193,11 @@ pub fn sum_all_f64(buf: &Buffer) -> MohuResult<f64> {
 }
 
 /// Computes the minimum element value as f64.
+
+///
+/// # Errors
+///
+/// Returns [`MohuError::ReadOnly`], [`MohuError::DTypeMismatch`], [`MohuError::ShapeMismatch`], [`MohuError::NonContiguous`], or [`MohuError::InvalidCast`] when preconditions are not met.
 pub fn min_all_f64(buf: &Buffer) -> MohuResult<f64> {
     use mohu_dtype::DType;
     if matches!(buf.dtype(), DType::C64 | DType::C128) {
@@ -1117,6 +1256,11 @@ pub fn min_all_f64(buf: &Buffer) -> MohuResult<f64> {
 }
 
 /// Computes the maximum element value as f64.
+
+///
+/// # Errors
+///
+/// Returns [`MohuError::ReadOnly`], [`MohuError::DTypeMismatch`], [`MohuError::ShapeMismatch`], [`MohuError::NonContiguous`], or [`MohuError::InvalidCast`] when preconditions are not met.
 pub fn max_all_f64(buf: &Buffer) -> MohuResult<f64> {
     use mohu_dtype::DType;
     if matches!(buf.dtype(), DType::C64 | DType::C128) {
@@ -1175,6 +1319,11 @@ pub fn max_all_f64(buf: &Buffer) -> MohuResult<f64> {
 }
 
 /// Returns the flat index of the minimum element.
+
+///
+/// # Errors
+///
+/// Returns [`MohuError::ReadOnly`], [`MohuError::DTypeMismatch`], [`MohuError::ShapeMismatch`], [`MohuError::NonContiguous`], or [`MohuError::InvalidCast`] when preconditions are not met.
 pub fn argmin_flat(buf: &Buffer) -> MohuResult<usize> {
     use mohu_dtype::DType;
     if matches!(buf.dtype(), DType::C64 | DType::C128) {
@@ -1233,6 +1382,11 @@ pub fn argmin_flat(buf: &Buffer) -> MohuResult<usize> {
 }
 
 /// Returns the flat index of the maximum element.
+
+///
+/// # Errors
+///
+/// Returns [`MohuError::ReadOnly`], [`MohuError::DTypeMismatch`], [`MohuError::ShapeMismatch`], [`MohuError::NonContiguous`], or [`MohuError::InvalidCast`] when preconditions are not met.
 pub fn argmax_flat(buf: &Buffer) -> MohuResult<usize> {
     use mohu_dtype::DType;
     if matches!(buf.dtype(), DType::C64 | DType::C128) {
@@ -1297,6 +1451,11 @@ pub fn argmax_flat(buf: &Buffer) -> MohuResult<usize> {
 /// Bypasses the CPU cache — achieves peak DRAM write bandwidth for buffers
 /// > a few MiB where the data will not be immediately re-read.
 /// Falls back to the standard Rayon fill on non-x86_64 platforms.
+
+///
+/// # Errors
+///
+/// Returns [`MohuError::ReadOnly`], [`MohuError::DTypeMismatch`], [`MohuError::ShapeMismatch`], [`MohuError::NonContiguous`], or [`MohuError::InvalidCast`] when preconditions are not met.
 pub fn fill_nontemporal_f32_buf(buf: &mut Buffer, value: f32) -> MohuResult<()> {
     use mohu_dtype::DType;
     if buf.dtype() != DType::F32 {
@@ -1356,6 +1515,11 @@ pub fn fill_nontemporal_f32_buf(buf: &mut Buffer, value: f32) -> MohuResult<()> 
 
 /// Applies `f(a[i], b[i]) -> T` over all elements of two same-shape C-contiguous
 /// buffers, writing results into `dst`.  Generalises element-wise arithmetic.
+
+///
+/// # Errors
+///
+/// Returns [`MohuError::ReadOnly`], [`MohuError::DTypeMismatch`], [`MohuError::ShapeMismatch`], [`MohuError::NonContiguous`], or [`MohuError::InvalidCast`] when preconditions are not met.
 pub fn parallel_zip<S, D, F>(
     a:   &Buffer,
     b:   &Buffer,
