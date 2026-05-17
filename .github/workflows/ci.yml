@@ -49,6 +49,8 @@ jobs:
         run: cargo fmt --all -- --check
 
   python-test:
+    # Skip until crates/mohu-py is bootstrapped (see issue #7).
+    if: ${{ hashFiles('crates/mohu-py/Cargo.toml') != '' }}
     name: Python — ${{ matrix.python-version }}
     runs-on: ubuntu-latest
     needs: rust-build
