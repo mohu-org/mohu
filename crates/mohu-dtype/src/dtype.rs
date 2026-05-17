@@ -124,6 +124,11 @@ impl DType {
         matches!(self, Self::I8|Self::I16|Self::I32|Self::I64)
     }
 
+    /// Returns `true` for signed integers and all floating-point types (real and complex).
+    #[inline] pub const fn is_signed(self) -> bool {
+        self.is_signed_integer() || self.is_floating_point()
+    }
+
     /// Returns `true` if this is an unsigned integer.
     #[inline] pub const fn is_unsigned_integer(self) -> bool {
         matches!(self, Self::U8|Self::U16|Self::U32|Self::U64)
@@ -559,3 +564,17 @@ const _: () = {
     assert!(DType::Bool as u8 == 0);
     assert!(DType::C128 as u8 == 14);
 };
+
+#[cfg(test)]
+mod tests {
+    use super::DType;
+
+    #[test]
+    fn is_signed_covers_integers_and_floats() {
+        assert!(DType::I32.is_signed());
+        assert!(DType::F64.is_signed());
+        assert!(DType::C128.is_signed());
+        assert!(!DType::U32.is_signed());
+        assert!(!DType::Bool.is_signed());
+    }
+}
