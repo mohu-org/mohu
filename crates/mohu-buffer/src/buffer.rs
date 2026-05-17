@@ -527,20 +527,43 @@ impl Buffer {
     // ─── Properties ───────────────────────────────────────────────────────────
 
     /// Returns the element data type of this buffer.
+    #[must_use]
     #[inline] pub fn dtype(&self)    -> DType   { self.dtype }
     /// Returns a reference to this buffer's layout descriptor.
     #[inline] pub fn layout(&self)   -> &Layout { &self.layout }
     /// Returns the shape of this buffer as a slice of dimension sizes.
+    #[must_use]
     #[inline] pub fn shape(&self)    -> &[usize] { self.layout.shape() }
+
+    /// Returns `Ok(())` when `self` and `other` have the same shape.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`MohuError::ShapeMismatch`] when shapes differ.
+    pub fn shape_matches(&self, other: &Buffer) -> MohuResult<()> {
+        if self.shape() != other.shape() {
+            return Err(MohuError::ShapeMismatch {
+                expected: self.shape().to_vec(),
+                got:      other.shape().to_vec(),
+            });
+        }
+        Ok(())
+    }
+
     /// Returns the byte strides of this buffer.
+    #[must_use]
     #[inline] pub fn strides(&self)  -> &[isize] { self.layout.strides() }
     /// Returns the number of dimensions (axes) of this buffer.
+    #[must_use]
     #[inline] pub fn ndim(&self)     -> usize    { self.layout.ndim() }
     /// Returns the total number of elements in this buffer.
+    #[must_use]
     #[inline] pub fn len(&self)      -> usize    { self.layout.size() }
     /// Returns the total byte size of this buffer's data (`len * itemsize`).
+    #[must_use]
     #[inline] pub fn nbytes(&self)   -> usize    { self.layout.nbytes() }
     /// Returns the byte size of a single element.
+    #[must_use]
     #[inline] pub fn itemsize(&self) -> usize    { self.dtype.itemsize() }
     /// Returns the byte offset from the backing buffer start to element `[0, …, 0]`.
     #[inline] pub fn offset(&self)   -> usize    { self.layout.offset() }
@@ -548,19 +571,46 @@ impl Buffer {
     #[inline] pub fn flags(&self)    -> BufferFlags { self.flags }
 
     /// Returns `true` if any dimension is zero (zero-element buffer).
+    #[must_use]
     pub fn is_empty(&self)         -> bool { self.layout.is_empty() }
     /// Returns `true` if this buffer is writeable.
+    #[must_use]
     pub fn is_writeable(&self)     -> bool { self.flags.contains(BufferFlags::WRITEABLE) }
     /// Returns `true` if this buffer is C-contiguous (row-major).
+    #[must_use]
     pub fn is_c_contiguous(&self)  -> bool { self.layout.is_c_contiguous() }
     /// Returns `true` if this buffer is Fortran-contiguous (column-major).
+    #[must_use]
     pub fn is_f_contiguous(&self)  -> bool { self.layout.is_f_contiguous() }
     /// Returns `true` if this buffer is contiguous in either C or F order.
+    #[must_use]
     pub fn is_contiguous(&self)    -> bool { self.layout.is_contiguous() }
     /// Returns `true` if the backing memory is SIMD-aligned.
+    #[must_use]
     pub fn is_aligned(&self)       -> bool { self.flags.contains(BufferFlags::ALIGNED) }
     /// Returns `true` if the backing memory is shared with other `Buffer` instances.
+    #[must_use]
     pub fn is_shared(&self)        -> bool { Arc::strong_count(&self.raw) > 1 }
+
+    /// Returns `true` if the buffer is 2D and both dimensions are equal.
+    pub fn is_square(&self) -> bool {
+        self.ndim() == 2 && self.shape()[0] == self.shape()[1]
+    }
+
+    /// Returns `true` if the buffer is 1D (a vector).
+    pub fn is_vector(&self) -> bool {
+        self.ndim() == 1
+    }
+
+    /// Returns `true` if the buffer is 2D (a matrix).
+    pub fn is_matrix(&self) -> bool {
+        self.ndim() == 2
+    }
+
+    /// Returns `true` if the buffer is 0D (a scalar — shape `[]`).
+    pub fn is_scalar_shape(&self) -> bool {
+        self.ndim() == 0
+    }
 
     /// Returns a raw const pointer to element `[0, 0, …, 0]`.
     #[inline]
@@ -639,6 +689,18 @@ impl Buffer {
         Ok(unsafe { ptr.read_unaligned() })
     }
 
+    /// Returns the sole element when this buffer contains exactly one value.
+    ///
+    /// Equivalent to NumPy's `.item()` for 0-D arrays and length-1 views.
+    #[must_use]
+    pub fn item<T: Scalar>(&self) -> MohuResult<T> {
+        if self.len() != 1 {
+            return Err(MohuError::bug("item() requires a single-element array"));
+        }
+        let indices = vec![0; self.ndim()];
+        self.get::<T>(&indices)
+    }
+
     /// Sets the element at `indices` to `value`.
     pub fn set<T: Scalar>(&mut self, indices: &[usize], value: T) -> MohuResult<()> {
         if T::DTYPE != self.dtype {
@@ -664,6 +726,7 @@ impl Buffer {
     ///
     /// Both the original and the clone share the same backing bytes.
     /// To get an independent copy, call [`make_unique`](Self::make_unique).
+    #[must_use]
     pub fn share(&self) -> Self {
         Self {
             raw:    Arc::clone(&self.raw),
@@ -778,6 +841,7 @@ impl Buffer {
     }
 
     /// Removes all axes of size 1.
+    #[must_use]
     pub fn squeeze(&self) -> Self {
         Self {
             raw:    Arc::clone(&self.raw),
@@ -888,6 +952,14 @@ impl Buffer {
         };
 
         let buf = Self::alloc(DType::F64, &[n], Order::C)?;
+        if dtype.is_integer() {
+            let mut out = Self::alloc(dtype, &[n], Order::C)?;
+            if n > 0 {
+                Self::fill_arange_integer(&mut out, start, step)?;
+            }
+            return Ok(out);
+        }
+
         if n > 0 {
             let ptr   = unsafe { buf.as_mut_ptr() as *mut f64 };
             let slice = unsafe { std::slice::from_raw_parts_mut(ptr, n) };
@@ -899,6 +971,36 @@ impl Buffer {
         }
 
         if dtype == DType::F64 { Ok(buf) } else { buf.cast(dtype, CastMode::Unsafe) }
+    }
+
+    fn fill_arange_integer(buf: &mut Buffer, start: f64, step: f64) -> MohuResult<()> {
+        macro_rules! fill_int {
+            ($ty:ty) => {{
+                let s = start as $ty;
+                let st = step as $ty;
+                let slice = buf.as_mut_slice::<$ty>()?;
+                for (i, v) in slice.iter_mut().enumerate() {
+                    *v = s.wrapping_add(st.wrapping_mul(i as $ty));
+                }
+            }};
+        }
+
+        match buf.dtype() {
+            DType::I8 => fill_int!(i8),
+            DType::I16 => fill_int!(i16),
+            DType::I32 => fill_int!(i32),
+            DType::I64 => fill_int!(i64),
+            DType::U8 => fill_int!(u8),
+            DType::U16 => fill_int!(u16),
+            DType::U32 => fill_int!(u32),
+            DType::U64 => fill_int!(u64),
+            other => {
+                return Err(MohuError::bug(format!(
+                    "fill_arange_integer: unexpected dtype {other}"
+                )));
+            }
+        }
+        Ok(())
     }
 
     /// Creates a 1-D buffer of `n` evenly-spaced values from `start` to `stop`.
