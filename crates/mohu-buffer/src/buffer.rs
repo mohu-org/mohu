@@ -1101,19 +1101,20 @@ impl Buffer {
         let out = self.to_contiguous()?;
         let (rows, cols) = (out.shape()[0], out.shape()[1]);
         let itemsize = out.dtype().itemsize();
-        let zero_bytes = vec![0u8; itemsize];
-        let ptr = unsafe { out.as_mut_ptr() };
-        for r in 0..rows {
-            for c in 0..cols {
-                // zero element if c > r + k
-                if c as i64 > r as i64 + k {
-                    let off = out.layout.byte_offset(&[r, c])?;
-                    unsafe {
-                        std::ptr::copy_nonoverlapping(zero_bytes.as_ptr(), ptr.add(off), itemsize);
-                    }
+        let base = unsafe { out.as_mut_ptr() } as usize;
+        let layout = out.layout.clone();
+        use rayon::prelude::*;
+        (0..rows).into_par_iter().for_each(|r| {
+            let start_col = (r as i64 + k + 1).max(0) as usize;
+            if start_col < cols {
+                let off = layout.byte_offset(&[r, start_col]).expect("valid tril index");
+                let nbytes = (cols - start_col) * itemsize;
+                // SAFETY: each row zeros a disjoint contiguous span in the unique `out` buffer.
+                unsafe {
+                    std::ptr::write_bytes((base + off) as *mut u8, 0, nbytes);
                 }
             }
-        }
+        });
         Ok(out)
     }
 
@@ -1127,18 +1128,20 @@ impl Buffer {
         let out = self.to_contiguous()?;
         let (rows, cols) = (out.shape()[0], out.shape()[1]);
         let itemsize = out.dtype().itemsize();
-        let zero_bytes = vec![0u8; itemsize];
-        let ptr = unsafe { out.as_mut_ptr() };
-        for r in 0..rows {
-            for c in 0..cols {
-                if (c as i64) < (r as i64 + k) {
-                    let off = out.layout.byte_offset(&[r, c])?;
-                    unsafe {
-                        std::ptr::copy_nonoverlapping(zero_bytes.as_ptr(), ptr.add(off), itemsize);
-                    }
+        let base = unsafe { out.as_mut_ptr() } as usize;
+        let layout = out.layout.clone();
+        use rayon::prelude::*;
+        (0..rows).into_par_iter().for_each(|r| {
+            let end_col = (r as i64 + k).max(0).min(cols as i64) as usize;
+            if end_col > 0 {
+                let off = layout.byte_offset(&[r, 0]).expect("valid triu index");
+                let nbytes = end_col * itemsize;
+                // SAFETY: each row zeros a disjoint prefix span in the unique `out` buffer.
+                unsafe {
+                    std::ptr::write_bytes((base + off) as *mut u8, 0, nbytes);
                 }
             }
-        }
+        });
         Ok(out)
     }
 
