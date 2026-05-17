@@ -146,7 +146,7 @@ unsafe impl Sync for BufferSource {}
 impl Drop for BufferSource {
     fn drop(&mut self) {
         if let BufferSource::DLPack { managed } = self {
-            if !(*managed).is_null() {
+            if !managed.is_null() {
                 let m = unsafe { &**managed };
                 if let Some(deleter) = m.deleter {
                     unsafe { deleter(*managed) };
@@ -1854,3 +1854,16 @@ fn flat_to_indices(mut flat: usize, shape: &[usize]) -> Vec<usize> {
 use num_traits;
 #[cfg(unix)]
 use libc;
+
+#[cfg(test)]
+mod dlpack_drop_tests {
+    use super::*;
+    use std::ptr::NonNull;
+
+    #[test]
+    fn drop_accepts_null_dlpack_managed_pointer() {
+        let _buf = unsafe {
+            RawBuffer::from_dlpack_ptr(std::ptr::null_mut(), NonNull::dangling(), 0)
+        };
+    }
+}
