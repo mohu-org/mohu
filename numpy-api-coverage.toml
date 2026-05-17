@@ -1,0 +1,199 @@
+# NumPy API coverage tracker for mohu (see issue #33).
+# Status: implemented | partial | missing
+# Update this file when adding NumPy-compatible APIs.
+
+[meta]
+schema  = 1
+updated = "2026-05-17"
+
+# ── Array creation ─────────────────────────────────────────────────────────────
+
+[[api]]
+numpy  = "np.zeros"
+mohu   = "mohu_buffer::Buffer::zeros"
+status = "implemented"
+crate  = "mohu-buffer"
+
+[[api]]
+numpy  = "np.ones"
+mohu   = "mohu_buffer::Buffer::ones"
+status = "implemented"
+crate  = "mohu-buffer"
+
+[[api]]
+numpy  = "np.full"
+mohu   = "mohu_buffer::Buffer::full"
+status = "implemented"
+crate  = "mohu-buffer"
+
+[[api]]
+numpy  = "np.array"
+mohu   = "mohu_buffer::Buffer::from_slice"
+status = "partial"
+notes  = "1-D contiguous only; no nested sequences yet"
+crate  = "mohu-buffer"
+
+[[api]]
+numpy  = "np.arange"
+mohu   = "mohu_buffer::Buffer::arange"
+status = "implemented"
+crate  = "mohu-buffer"
+
+[[api]]
+numpy  = "np.linspace"
+mohu   = "mohu_buffer::Buffer::linspace"
+status = "implemented"
+crate  = "mohu-buffer"
+
+[[api]]
+numpy  = "np.eye"
+mohu   = "mohu_buffer::Buffer::eye"
+status = "implemented"
+crate  = "mohu-buffer"
+
+[[api]]
+numpy  = "np.diag"
+mohu   = "mohu_buffer::Buffer::diag"
+status = "implemented"
+crate  = "mohu-buffer"
+
+# ── Shape & layout ─────────────────────────────────────────────────────────────
+
+[[api]]
+numpy  = "np.reshape"
+mohu   = "mohu_buffer::Buffer::reshape"
+status = "implemented"
+crate  = "mohu-buffer"
+
+[[api]]
+numpy  = "np.transpose"
+mohu   = "mohu_buffer::Buffer::transpose"
+status = "partial"
+notes  = "2-D swap only; use permute for general axes"
+crate  = "mohu-buffer"
+
+[[api]]
+numpy  = "np.transpose (axes)"
+mohu   = "mohu_buffer::Buffer::permute"
+status = "implemented"
+crate  = "mohu-buffer"
+
+[[api]]
+numpy  = "np.expand_dims"
+mohu   = "mohu_buffer::Buffer::expand_dims"
+status = "implemented"
+crate  = "mohu-buffer"
+
+[[api]]
+numpy  = "np.squeeze"
+mohu   = "mohu_buffer::Buffer::squeeze"
+status = "implemented"
+crate  = "mohu-buffer"
+
+[[api]]
+numpy  = "np.broadcast_to"
+mohu   = "mohu_buffer::Buffer::broadcast_to"
+status = "implemented"
+crate  = "mohu-buffer"
+
+# ── Indexing & manipulation ────────────────────────────────────────────────────
+
+[[api]]
+numpy  = "ndarray.__getitem__ (slice)"
+mohu   = "mohu_buffer::Buffer::slice_axis"
+status = "partial"
+notes  = "Per-axis SliceArg; not full tuple slicing yet"
+crate  = "mohu-buffer"
+
+[[api]]
+numpy  = "np.flip"
+mohu   = "mohu_buffer::Buffer::flip"
+status = "implemented"
+crate  = "mohu-buffer"
+
+[[api]]
+numpy  = "np.tril"
+mohu   = "mohu_buffer::Buffer::tril"
+status = "implemented"
+crate  = "mohu-buffer"
+
+[[api]]
+numpy  = "np.triu"
+mohu   = "mohu_buffer::Buffer::triu"
+status = "implemented"
+crate  = "mohu-buffer"
+
+# ── Type system ────────────────────────────────────────────────────────────────
+
+[[api]]
+numpy  = "np.dtype"
+mohu   = "mohu_dtype::DType"
+status = "implemented"
+crate  = "mohu-dtype"
+
+[[api]]
+numpy  = "np.result_type"
+mohu   = "mohu_dtype::promote::result_type"
+status = "implemented"
+crate  = "mohu-dtype"
+
+[[api]]
+numpy  = "np.can_cast"
+mohu   = "mohu_dtype::promote::can_cast"
+status = "implemented"
+crate  = "mohu-dtype"
+
+[[api]]
+numpy  = "astype"
+mohu   = "mohu_buffer::Buffer::cast"
+status = "implemented"
+crate  = "mohu-buffer"
+
+# ── Reductions ─────────────────────────────────────────────────────────────────
+
+[[api]]
+numpy  = "np.sum"
+mohu   = "mohu_buffer::Buffer::sum_all_f64 / sum_axis"
+status = "partial"
+notes  = "sum_axis dtype promotion in progress; no full ufunc yet"
+crate  = "mohu-buffer"
+
+[[api]]
+numpy  = "np.mean"
+mohu   = "mohu_buffer::Buffer::mean_all_f64"
+status = "partial"
+notes  = "Global mean only"
+crate  = "mohu-buffer"
+
+[[api]]
+numpy  = "np.allclose"
+mohu   = "mohu_buffer::Buffer::allclose"
+status = "implemented"
+crate  = "mohu-buffer"
+
+# ── Planned / missing (representative) ─────────────────────────────────────────
+
+[[api]]
+numpy  = "np.matmul"
+mohu   = ""
+status = "missing"
+crate  = "mohu-ops"
+
+[[api]]
+numpy  = "np.where"
+mohu   = "mohu_buffer::ops::where_select"
+status = "partial"
+notes  = "Buffer-level select; not full np.where broadcasting"
+crate  = "mohu-buffer"
+
+[[api]]
+numpy  = "np.fft.fft"
+mohu   = "mohu_fft::fft"
+status = "missing"
+crate  = "mohu-fft"
+
+[[api]]
+numpy  = "np.save / np.load"
+mohu   = "mohu_io"
+status = "missing"
+crate  = "mohu-io"
