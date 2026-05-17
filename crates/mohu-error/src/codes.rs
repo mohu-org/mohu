@@ -167,6 +167,21 @@ impl ErrorCode {
 
     /// Returns `true` if this code falls in the Python domain (9000–9999).
     pub fn is_python(self) -> bool { matches!(self as u32, 9000..=9999) }
+
+    /// Returns `true` if this code falls in the shape domain (1000–1999).
+    pub fn is_shape_error(self) -> bool {
+        self.is_shape()
+    }
+
+    /// Returns `true` if this code falls in the dtype domain (2000–2999).
+    pub fn is_dtype_error(self) -> bool {
+        self.is_dtype()
+    }
+
+    /// Returns `true` if this code falls in the I/O domain (6000–6999).
+    pub fn is_io_error(self) -> bool {
+        self.is_io()
+    }
 }
 
 impl std::fmt::Display for ErrorCode {
