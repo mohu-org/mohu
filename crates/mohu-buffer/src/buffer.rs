@@ -127,7 +127,6 @@ unsafe extern "C" fn dlmanaged_deleter(ptr: *mut DLManagedTensor) {
 // ─── RawBuffer ────────────────────────────────────────────────────────────────
 
 /// The source of a `RawBuffer`'s backing bytes.
-#[allow(dead_code)]
 enum BufferSource {
     /// Memory owned by mohu's allocator.
     Owned(AllocHandle),
