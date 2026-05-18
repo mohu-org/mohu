@@ -23,30 +23,24 @@ pub mod view;
 
 // ─── Re-exports ───────────────────────────────────────────────────────────────
 
-pub use alloc::{
-    AllocHandle, AllocStats, Strategy,
-    CACHE_LINE, MMAP_THRESHOLD, SIMD_ALIGN,
-};
+pub use alloc::{AllocHandle, AllocStats, CACHE_LINE, MMAP_THRESHOLD, SIMD_ALIGN, Strategy};
 
 pub use buffer::{
-    Buffer, BufferFlags, RawBuffer,
-    DLManagedTensor, DLTensor, RawDLDataType, RawDLDevice,
+    Buffer, BufferFlags, DLManagedTensor, DLTensor, RawBuffer, RawDLDataType, RawDLDevice,
 };
 
 pub use layout::{Layout, Order, SliceArg};
 
 pub use ops::{
-    cast_copy, copy_to_contiguous, fill, fill_one, fill_raw, fill_zero,
-    parallel_inplace, parallel_map, reduce,
+    cast_copy, copy_to_contiguous, fill, fill_one, fill_raw, fill_zero, parallel_inplace,
+    parallel_map, reduce,
 };
 
-pub use pool::{BufferPool, PoolStats, GLOBAL_POOL};
+pub use pool::{BufferPool, GLOBAL_POOL, PoolStats};
 
 pub use strides::{
-    NdIndexIter, ShapeVec, StrideVec, StridedByteIter,
-    broadcast_strides, c_strides, contiguous_nbytes, f_strides,
-    ravel_multi_index, shape_size, unravel_index, validate_strides,
-    byte_offset,
+    NdIndexIter, ShapeVec, StrideVec, StridedByteIter, broadcast_strides, byte_offset, c_strides,
+    contiguous_nbytes, f_strides, ravel_multi_index, shape_size, unravel_index, validate_strides,
 };
 
 pub use view::{BufferView, BufferViewMut};
