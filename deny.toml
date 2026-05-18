@@ -21,4 +21,9 @@ unknown-git      = "deny"
 allow-registry   = ["https://github.com/rust-lang/crates.io-index"]
 
 [advisories]
-ignore = []
+ignore = [
+    # pyo3 0.23.5 buffer overflow in PyString::from_object (RUSTSEC-2025-0020).
+    # mohu-py is not yet implemented (#7); pyo3 is unused at runtime.
+    # Remove once pyo3 is bumped when activating Python bindings.
+    "RUSTSEC-2025-0020",
+]
