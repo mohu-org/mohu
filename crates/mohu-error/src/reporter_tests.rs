@@ -26,6 +26,7 @@ fn json_report_contains_message_field() {
 
     assert!(result.contains("\"message\""));
     assert!(result.contains("json error"));
+    
 }
 
 #[test]
