@@ -52,3 +52,5 @@ pub use reporter::{ErrorReporter, ReportMode, Severity};
 
 /// The universal result type used by every mohu crate.
 pub type MohuResult<T> = std::result::Result<T, MohuError>;
+#[cfg(test)]
+mod reporter_tests;
