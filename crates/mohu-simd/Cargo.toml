@@ -13,7 +13,7 @@ categories.workspace  = true
 [features]
 default   = []
 avx2      = []          # x86-64 AVX2 (256-bit)
-avx512    = ["avx2"]    # x86-64 AVX-512 (512-bit) — superset of AVX2
+avx512    = ["avx2"]    # x86-64 AVX-512 (512-bit) â€” superset of AVX2
 neon      = []          # AArch64 NEON / Advanced SIMD
 # runtime CPU detection: automatically picks the best available ISA
 runtime-dispatch = []
@@ -21,6 +21,5 @@ runtime-dispatch = []
 [dependencies]
 mohu-error.workspace  = true
 mohu-dtype.workspace  = true
-cfg-if.workspace      = true
 
 [build-dependencies]
