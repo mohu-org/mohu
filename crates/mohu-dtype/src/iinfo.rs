@@ -1,4 +1,4 @@
-/// Integer type metadata — the Rust equivalent of `numpy.iinfo`.
+/// Integer type metadata â€” the Rust equivalent of `numpy.iinfo`.
 ///
 /// Every field mirrors NumPy's `iinfo` object exactly.
 ///
@@ -56,7 +56,7 @@ impl IntInfo {
         }
     }
 
-    // ─── signed ────────────────────────────────────────────────────────────────
+    // â”€â”€â”€ signed â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     /// Returns `IntInfo` for `i8` (signed 8-bit integer).
     pub const fn i8() -> Self {
@@ -79,7 +79,7 @@ impl IntInfo {
                min: i64::MIN as i128, max: i64::MAX as u128 }
     }
 
-    // ─── unsigned ──────────────────────────────────────────────────────────────
+    // â”€â”€â”€ unsigned â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     /// Returns `IntInfo` for `u8` (unsigned 8-bit integer).
     pub const fn u8() -> Self {
@@ -102,7 +102,7 @@ impl IntInfo {
                min: 0, max: u64::MAX as u128 }
     }
 
-    // ─── convenience ───────────────────────────────────────────────────────────
+    // â”€â”€â”€ convenience â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     /// Returns `true` if the integer value `v` fits in this dtype without
     /// overflow.
@@ -112,11 +112,7 @@ impl IntInfo {
 
     /// Returns `true` if the unsigned value `v` fits in this dtype.
     pub fn can_hold_u128(self, v: u128) -> bool {
-        if self.is_signed {
-            v <= self.max
-        } else {
-            v <= self.max
-        }
+        v <= self.max
     }
 
     /// Returns the minimum scalar type (smallest integer dtype) that can
