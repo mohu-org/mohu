@@ -1,4 +1,4 @@
-/// Floating-point type metadata — the Rust equivalent of `numpy.finfo`.
+/// Floating-point type metadata â€” the Rust equivalent of `numpy.finfo`.
 ///
 /// Every field mirrors NumPy's `finfo` object exactly so Python code that
 /// inspects `np.finfo(np.float32)` can find the same values via
@@ -56,7 +56,7 @@ pub struct FloatInfo {
     /// Smallest positive *normalised* value (NumPy calls this `tiny`).
     pub tiny: f64,
 
-    /// Same as `tiny` — provided for NumPy API compat (`finfo.smallest_normal`).
+    /// Same as `tiny` â€” provided for NumPy API compat (`finfo.smallest_normal`).
     pub smallest_normal: f64,
 
     /// Smallest positive *subnormal* value.
@@ -88,7 +88,7 @@ impl FloatInfo {
         }
     }
 
-    // ─── F16 ──────────────────────────────────────────────────────────────────
+    // â”€â”€â”€ F16 â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     /// Returns `FloatInfo` for IEEE 754 binary16 (half-precision).
     pub fn f16() -> Self {
@@ -118,7 +118,7 @@ impl FloatInfo {
         }
     }
 
-    // ─── BF16 ─────────────────────────────────────────────────────────────────
+    // â”€â”€â”€ BF16 â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     /// Returns `FloatInfo` for Google Brain Float16 (bfloat16).
     pub fn bf16() -> Self {
@@ -127,7 +127,7 @@ impl FloatInfo {
         let max             = half::bf16::MAX.to_f64();
         let tiny            = half::bf16::MIN_POSITIVE.to_f64();
         let smallest_sub    = 9.183_549_615_799_121e-41_f64;
-        let precision       = (7_u32 as f64 * f64::log10(2.0)).floor() as u32; // 2
+        let precision       = (7_f64 * f64::log10(2.0)).floor() as u32; // 2
         Self {
             dtype:             DType::BF16,
             bits:              16,
@@ -147,7 +147,7 @@ impl FloatInfo {
         }
     }
 
-    // ─── F32 ──────────────────────────────────────────────────────────────────
+    // â”€â”€â”€ F32 â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     /// Returns `FloatInfo` for IEEE 754 binary32 (single-precision).
     pub fn f32() -> Self {
@@ -155,7 +155,7 @@ impl FloatInfo {
         let max             = f32::MAX as f64;
         let tiny            = f32::MIN_POSITIVE as f64;
         let smallest_sub    = 1.401_298_464_324_817e-45_f64;
-        let precision       = (23_u32 as f64 * f64::log10(2.0)).floor() as u32; // 6
+        let precision       = (23_f64 * f64::log10(2.0)).floor() as u32; // 6
         Self {
             dtype:             DType::F32,
             bits:              32,
@@ -175,7 +175,7 @@ impl FloatInfo {
         }
     }
 
-    // ─── F64 ──────────────────────────────────────────────────────────────────
+    // â”€â”€â”€ F64 â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     /// Returns `FloatInfo` for IEEE 754 binary64 (double-precision).
     pub fn f64() -> Self {
@@ -183,7 +183,7 @@ impl FloatInfo {
         let max             = f64::MAX;
         let tiny            = f64::MIN_POSITIVE;
         let smallest_sub    = 5.0e-324_f64;
-        let precision       = (52_u32 as f64 * f64::log10(2.0)).floor() as u32; // 15
+        let precision       = (52_f64 * f64::log10(2.0)).floor() as u32; // 15
         Self {
             dtype:             DType::F64,
             bits:              64,
@@ -203,7 +203,7 @@ impl FloatInfo {
         }
     }
 
-    // ─── convenience ──────────────────────────────────────────────────────────
+    // â”€â”€â”€ convenience â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     /// Returns `true` if `|a - b| <= atol + rtol * |b|` (NumPy `isclose`
     /// default tolerances based on this dtype's epsilon).
@@ -215,7 +215,7 @@ impl FloatInfo {
 
     /// Returns the ULP (unit in the last place) at value `x`.
     pub fn ulp_at(&self, x: f64) -> f64 {
-        // ULP(x) ≈ |x| * eps * 2  (for normalised x)
+        // ULP(x) â‰ˆ |x| * eps * 2  (for normalised x)
         x.abs() * self.eps * 2.0
     }
 
