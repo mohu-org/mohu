@@ -19,7 +19,7 @@ use std::{
 use mohu_dtype::{
     dlpack::{assert_cpu_device, DLDataType},
     dtype::DType,
-    promote::CastMode,
+    promote::{CastMode, common_type},
     scalar::Scalar,
 };
 use mohu_error::{MohuError, MohuResult};
@@ -1696,6 +1696,167 @@ impl Buffer {
         }
         let _ = writeln!(s, "}}");
         s
+    }
+
+    // ─── Combine ──────────────────────────────────────────────────────────────
+
+    /// Joins a sequence of buffers along an existing `axis`.
+    ///
+    /// All buffers must have the same number of dimensions and the same shape
+    /// on every axis except `axis`.  Dtypes are promoted to their common type.
+    ///
+    /// # Errors
+    ///
+    /// - `EmptyStackSequence` — `arrays` is empty.
+    /// - `AxisOutOfRange` — `axis >= ndim`.
+    /// - `DimensionMismatch` — arrays have different numbers of dimensions.
+    /// - `ConcatShapeMismatch` — a non-concat axis dimension differs.
+    pub fn concatenate(arrays: &[&Buffer], axis: usize) -> MohuResult<Self> {
+        if arrays.is_empty() {
+            return Err(MohuError::EmptyStackSequence);
+        }
+
+        let ndim = arrays[0].ndim();
+
+        if ndim == 0 {
+            return Err(MohuError::ScalarArray);
+        }
+
+        if axis >= ndim {
+            return Err(MohuError::AxisOutOfRange {
+                axis:  axis as i64,
+                ndim,
+                valid: format!("0..{ndim}"),
+            });
+        }
+
+        // Dtype promotion.
+        let out_dtype = common_type(
+            &arrays.iter().map(|a| a.dtype()).collect::<Vec<_>>(),
+        )?;
+
+        // Shape validation and total size on the concat axis.
+        let ref_shape = arrays[0].shape().to_vec();
+        let mut total_axis_dim: usize = 0;
+
+        for (i, arr) in arrays.iter().enumerate() {
+            if arr.ndim() != ndim {
+                return Err(MohuError::DimensionMismatch {
+                    expected: ndim,
+                    got:      arr.ndim(),
+                });
+            }
+            for (d, (&a_dim, &r_dim)) in
+                arr.shape().iter().zip(ref_shape.iter()).enumerate()
+            {
+                if d == axis { continue; }
+                if a_dim != r_dim {
+                    let mut expected = ref_shape.clone();
+                    expected[axis] = arr.shape()[axis];
+                    return Err(MohuError::ConcatShapeMismatch {
+                        index:    i,
+                        expected,
+                        got:      arr.shape().to_vec(),
+                    });
+                }
+            }
+            total_axis_dim = total_axis_dim
+                .checked_add(arr.shape()[axis])
+                .ok_or(MohuError::ShapeOverflow { max: usize::MAX })?;
+        }
+
+        // Allocate output.
+        let mut out_shape = ref_shape.clone();
+        out_shape[axis] = total_axis_dim;
+        let out = Self::zeros(out_dtype, &out_shape)?;
+        let out_ptr = unsafe { out.as_mut_ptr() };
+
+        // Number of outer blocks (product of dims before `axis`).
+        let outer_count: usize = out_shape[..axis].iter().product();
+        // Bytes per element-group along the inner axes.
+        let inner_bytes: usize = out_shape[axis + 1..].iter().product::<usize>()
+            * out_dtype.itemsize();
+        // Bytes per outer block in the output.
+        let out_row_bytes = total_axis_dim * inner_bytes;
+
+        let mut axis_off: usize = 0; // current concat-axis offset in output
+        for arr in arrays {
+            // Cast to out_dtype (also makes the result C-contiguous).
+            let src = arr.cast(out_dtype, CastMode::Unsafe)?;
+            let src_ptr = src.as_ptr();
+            let arr_axis_dim = arr.shape()[axis];
+            let arr_row_bytes = arr_axis_dim * inner_bytes;
+
+            for b in 0..outer_count {
+                let src_off = b * arr_row_bytes;
+                let dst_off = b * out_row_bytes + axis_off * inner_bytes;
+                // SAFETY: src and out are separate allocations; offsets are
+                // within bounds by construction above.
+                unsafe {
+                    std::ptr::copy_nonoverlapping(
+                        src_ptr.add(src_off),
+                        out_ptr.add(dst_off),
+                        arr_row_bytes,
+                    );
+                }
+            }
+            axis_off += arr_axis_dim;
+        }
+
+        Ok(out)
+    }
+
+    /// Joins a sequence of buffers along a **new** axis inserted at position
+    /// `axis`.
+    ///
+    /// All buffers must have identical shapes.  `axis` must satisfy
+    /// `0 <= axis <= ndim`.  Dtypes are promoted to their common type.
+    ///
+    /// # Errors
+    ///
+    /// - `EmptyStackSequence` — `arrays` is empty.
+    /// - `AxisOutOfRange` — `axis > ndim`.
+    /// - `ConcatShapeMismatch` — arrays have different shapes.
+    pub fn stack(arrays: &[&Buffer], axis: usize) -> MohuResult<Self> {
+        if arrays.is_empty() {
+            return Err(MohuError::EmptyStackSequence);
+        }
+
+        let ndim = arrays[0].ndim();
+
+        // axis == ndim is valid (append new axis at the end).
+        if axis > ndim {
+            return Err(MohuError::AxisOutOfRange {
+                axis:  axis as i64,
+                ndim,
+                valid: format!("0..={ndim}"),
+            });
+        }
+
+        // All arrays must have the same shape.
+        let ref_shape = arrays[0].shape().to_vec();
+        for (i, arr) in arrays.iter().enumerate() {
+            if arr.shape() != ref_shape.as_slice() {
+                return Err(MohuError::ConcatShapeMismatch {
+                    index:    i,
+                    expected: ref_shape.clone(),
+                    got:      arr.shape().to_vec(),
+                });
+            }
+        }
+
+        // Insert a size-1 axis at `axis` in each array, then concatenate.
+        let reshaped: Vec<Buffer> = arrays
+            .iter()
+            .map(|arr| {
+                let mut new_shape = arr.shape().to_vec();
+                new_shape.insert(axis, 1);
+                arr.reshape(&new_shape)
+            })
+            .collect::<MohuResult<_>>()?;
+
+        let refs: Vec<&Buffer> = reshaped.iter().collect();
+        Self::concatenate(&refs, axis)
     }
 }
 
