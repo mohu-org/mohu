@@ -275,3 +275,21 @@ Before requesting review, confirm:
 - [ ] New public APIs have doc comments with examples
 - [ ] `CHANGELOG.md` entry added for user-visible changes
 - [ ] No `TODO`, `unimplemented!()`, or stub functions left in completed code
+## Tips for New Contributors
+
+- Keep pull requests small and focused
+- Run formatting and tests before pushing
+- Read existing issues before opening duplicates
+- Write clear commit messages
+- Ask maintainers for clarification if stuck
+
+We welcome contributors of all experience levels.
+## Reporting Issues
+
+When opening an issue, please include:
+
+- Expected behavior
+- Actual behavior
+- Steps to reproduce
+- Environment details
+- Relevant logs or screenshots if applicable
