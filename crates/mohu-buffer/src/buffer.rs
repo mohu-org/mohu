@@ -777,6 +777,24 @@ impl Buffer {
         })
     }
 
+    /// Inserts a size-1 dimension at `axis`.
+    ///
+    /// This is the PyTorch-style name for [`expand_dims`](Self::expand_dims).
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use mohu_buffer::buffer::Buffer;
+    /// # use mohu_buffer::layout::Order;
+    /// # use mohu_dtype::dtype::DType;
+    /// let buf = Buffer::alloc(DType::F32, &[3, 4], Order::C).unwrap();
+    /// let expanded = buf.unsqueeze(1).unwrap();
+    /// assert_eq!(expanded.shape(), &[3, 1, 4]);
+    /// ```
+    pub fn unsqueeze(&self, axis: usize) -> MohuResult<Self> {
+        self.expand_dims(axis)
+    }
+
     /// Removes all axes of size 1.
     pub fn squeeze(&self) -> Self {
         Self {
@@ -785,6 +803,30 @@ impl Buffer {
             layout: self.layout.squeeze(),
             flags:  self.flags,
         }
+    }
+
+    /// Removes the size-1 axis at `axis`.
+    ///
+    /// Returns an error if `axis` is out of range or not a size-1 axis.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use mohu_buffer::buffer::Buffer;
+    /// # use mohu_buffer::layout::Order;
+    /// # use mohu_dtype::dtype::DType;
+    /// let buf = Buffer::alloc(DType::F32, &[1, 3, 4], Order::C).unwrap();
+    /// let squeezed = buf.squeeze_axis(0).unwrap();
+    /// assert_eq!(squeezed.shape(), &[3, 4]);
+    /// ```
+    pub fn squeeze_axis(&self, axis: usize) -> MohuResult<Self> {
+        let layout = self.layout.squeeze_axis(axis)?;
+        Ok(Self {
+            raw:    Arc::clone(&self.raw),
+            dtype:  self.dtype,
+            layout,
+            flags:  self.flags,
+        })
     }
 
     // ─── Type cast ────────────────────────────────────────────────────────────

@@ -328,6 +328,22 @@ impl Layout {
         })
     }
 
+    /// Inserts a size-1 dimension at `axis`. `axis` must be `<= self.ndim()`.
+    ///
+    /// This is the PyTorch-style name for [`expand_dims`](Self::expand_dims).
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use mohu_buffer::layout::Layout;
+    /// let layout = Layout::new_c(&[3, 4], 4).unwrap();
+    /// let expanded = layout.unsqueeze(1).unwrap();
+    /// assert_eq!(expanded.shape(), &[3, 1, 4]);
+    /// ```
+    pub fn unsqueeze(&self, axis: usize) -> MohuResult<Self> {
+        self.expand_dims(axis)
+    }
+
     /// Removes all axes of size 1.
     ///
     /// Equivalent to `np.squeeze(a)`.

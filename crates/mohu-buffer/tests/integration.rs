@@ -279,3 +279,46 @@ fn nd_index_iter_c_order() {
     assert_eq!(indices[3].as_slice(), &[1, 0]);
     assert_eq!(indices[5].as_slice(), &[1, 2]);
 }
+
+// ── Squeeze / Unsqueeze ─────────────────────────────────────────────────────
+
+#[test]
+fn squeeze_axis_removes_size_one_dim() {
+    let buf = Buffer::alloc(DType::F32, &[1, 3, 4], Order::C).unwrap();
+    let squeezed = buf.squeeze_axis(0).unwrap();
+    assert_eq!(squeezed.shape(), &[3, 4]);
+}
+
+#[test]
+fn squeeze_axis_non_unit_returns_error() {
+    let buf = Buffer::alloc(DType::F32, &[2, 3, 4], Order::C).unwrap();
+    assert!(buf.squeeze_axis(0).is_err());
+}
+
+#[test]
+fn unsqueeze_inserts_size_one_dim() {
+    let buf = Buffer::alloc(DType::F32, &[3, 4], Order::C).unwrap();
+    let expanded = buf.unsqueeze(1).unwrap();
+    assert_eq!(expanded.shape(), &[3, 1, 4]);
+}
+
+#[test]
+fn unsqueeze_then_squeeze_roundtrips() {
+    let buf = Buffer::alloc(DType::F32, &[3, 4], Order::C).unwrap();
+    let expanded = buf.unsqueeze(0).unwrap();
+    assert_eq!(expanded.shape(), &[1, 3, 4]);
+    let back = expanded.squeeze_axis(0).unwrap();
+    assert_eq!(back.shape(), &[3, 4]);
+}
+
+#[test]
+fn double_unsqueeze_then_squeeze_roundtrips() {
+    let buf = Buffer::alloc(DType::F32, &[3, 4], Order::C).unwrap();
+    let e1 = buf.unsqueeze(0).unwrap();
+    let e2 = e1.unsqueeze(2).unwrap();
+    assert_eq!(e2.shape(), &[1, 3, 1, 4]);
+    let s1 = e2.squeeze_axis(2).unwrap();
+    assert_eq!(s1.shape(), &[1, 3, 4]);
+    let s2 = s1.squeeze_axis(0).unwrap();
+    assert_eq!(s2.shape(), &[3, 4]);
+}
