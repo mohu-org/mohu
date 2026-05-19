@@ -21,4 +21,8 @@ unknown-git      = "deny"
 allow-registry   = ["https://github.com/rust-lang/crates.io-index"]
 
 [advisories]
-ignore = []
+ignore = [
+    # pyo3 is present for future Python bindings, but mohu-py is not active yet.
+    # Remove this once the workspace upgrades pyo3 while enabling Python bindings.
+    "RUSTSEC-2025-0020",
+]

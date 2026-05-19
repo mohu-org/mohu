@@ -20,6 +20,5 @@ runtime-dispatch = []
 
 [dependencies]
 mohu-error.workspace  = true
-cfg-if.workspace      = true
 
 [build-dependencies]
