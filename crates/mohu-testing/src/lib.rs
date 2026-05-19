@@ -7,7 +7,8 @@
 ///
 /// | Module        | Purpose                                               |
 /// |---------------|-------------------------------------------------------|
-/// | [`assert`]    | `assert_array_eq!`, `assert_allclose!`, numeric checks|
+/// | `assert`      | `assert_array_eq!`, `assert_allclose!`,numeric checks |
+/// | `strategies`  | `proptest` strategies: random arrays of any dtype     |
 /// | [`gen`]       | `proptest` strategies: random arrays of any dtype     |
 /// | [`fixtures`]  | pre-built arrays used across mohu's own test suites   |
 /// | [`approx`]    | element-wise approximate equality with ULP tolerance  |
