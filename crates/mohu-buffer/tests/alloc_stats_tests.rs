@@ -13,7 +13,7 @@ fn single_allocation_increments_count_and_bytes() {
 
     assert_eq!(alloc_delta, 1);
 
-    assert_ne!(after.live_bytes, before.live_bytes);
+    assert!(after.live_bytes > before.live_bytes);
 }
 
 #[test]
@@ -28,7 +28,7 @@ fn drop_decrements_live_bytes() {
 
     assert!(after.free_count >= before.free_count + 1);
 
-    assert!(after.live_bytes <= before.live_bytes + 200 * std::mem::size_of::<f64>() as i64);
+    assert!(after.live_bytes <= before.live_bytes);
 }
 
 #[test]
