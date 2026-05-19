@@ -328,3 +328,107 @@ fn broadcast_shapes_incompatible_different_ndim() {
     let err = broadcast_shapes(&[2, 3], &[4, 3]).unwrap_err();
     assert!(matches!(err, MohuError::BroadcastError { .. }));
 }
+
+// ── concatenate ───────────────────────────────────────────────────────────────
+
+#[test]
+fn concatenate_axis0_two_arrays() {
+    // [[1,2],[3,4]] concat [[5,6]] along axis 0 -> [[1,2],[3,4],[5,6]]
+    let a = Buffer::from_slice_2d(&[&[1.0_f64, 2.0], &[3.0, 4.0]]).unwrap();
+    let b = Buffer::from_slice_2d(&[&[5.0_f64, 6.0]]).unwrap();
+    let out = Buffer::concatenate(&[&a, &b], 0).unwrap();
+    assert_eq!(out.shape(), &[3, 2]);
+    assert_eq!(out.get::<f64>(&[0, 0]).unwrap(), 1.0);
+    assert_eq!(out.get::<f64>(&[2, 1]).unwrap(), 6.0);
+}
+
+#[test]
+fn concatenate_axis1_two_arrays() {
+    // [[1,2],[3,4]] concat [[5],[6]] along axis 1 -> [[1,2,5],[3,4,6]]
+    let a = Buffer::from_slice_2d(&[&[1.0_f64, 2.0], &[3.0, 4.0]]).unwrap();
+    let b = Buffer::from_slice_2d(&[&[5.0_f64], &[6.0]]).unwrap();
+    let out = Buffer::concatenate(&[&a, &b], 1).unwrap();
+    assert_eq!(out.shape(), &[2, 3]);
+    assert_eq!(out.get::<f64>(&[0, 2]).unwrap(), 5.0);
+    assert_eq!(out.get::<f64>(&[1, 2]).unwrap(), 6.0);
+}
+
+#[test]
+fn concatenate_dtype_promotion() {
+    // i32 and f64 arrays -> promotes to f64
+    let a = Buffer::from_slice(&[1_i32, 2, 3]).unwrap();
+    let b = Buffer::from_slice(&[4.0_f64, 5.0, 6.0]).unwrap();
+    let out = Buffer::concatenate(&[&a, &b], 0).unwrap();
+    assert_eq!(out.dtype(), DType::F64);
+    assert_eq!(out.shape(), &[6]);
+}
+
+#[test]
+fn concatenate_three_arrays() {
+    let a = Buffer::from_slice(&[1.0_f64, 2.0]).unwrap();
+    let b = Buffer::from_slice(&[3.0_f64]).unwrap();
+    let c = Buffer::from_slice(&[4.0_f64, 5.0, 6.0]).unwrap();
+    let out = Buffer::concatenate(&[&a, &b, &c], 0).unwrap();
+    assert_eq!(out.shape(), &[6]);
+    assert_eq!(out.as_slice::<f64>().unwrap(), &[1.0, 2.0, 3.0, 4.0, 5.0, 6.0]);
+}
+
+#[test]
+fn concatenate_empty_input_returns_error() {
+    let err = Buffer::concatenate(&[], 0).unwrap_err();
+    assert!(matches!(err, MohuError::EmptyStackSequence));
+}
+
+#[test]
+fn concatenate_axis_out_of_range_returns_error() {
+    let a = Buffer::from_slice(&[1.0_f64, 2.0]).unwrap();
+    let err = Buffer::concatenate(&[&a], 1).unwrap_err();
+    assert!(matches!(err, MohuError::AxisOutOfRange { .. }));
+}
+
+#[test]
+fn concatenate_shape_mismatch_returns_error() {
+    let a = Buffer::from_slice_2d(&[&[1.0_f64, 2.0]]).unwrap();
+    let b = Buffer::from_slice_2d(&[&[3.0_f64, 4.0, 5.0]]).unwrap(); // cols differ
+    let err = Buffer::concatenate(&[&a, &b], 0).unwrap_err();
+    assert!(matches!(err, MohuError::ConcatShapeMismatch { .. }));
+}
+
+// ── stack ─────────────────────────────────────────────────────────────────────
+
+#[test]
+fn stack_1d_arrays_axis0() {
+    // stack([1,2,3], [4,5,6], axis=0) -> [[1,2,3],[4,5,6]]
+    let a = Buffer::from_slice(&[1.0_f64, 2.0, 3.0]).unwrap();
+    let b = Buffer::from_slice(&[4.0_f64, 5.0, 6.0]).unwrap();
+    let out = Buffer::stack(&[&a, &b], 0).unwrap();
+    assert_eq!(out.shape(), &[2, 3]);
+    assert_eq!(out.get::<f64>(&[0, 0]).unwrap(), 1.0);
+    assert_eq!(out.get::<f64>(&[1, 2]).unwrap(), 6.0);
+}
+
+#[test]
+fn stack_1d_arrays_axis1() {
+    // stack([1,2,3], [4,5,6], axis=1) -> [[1,4],[2,5],[3,6]]
+    let a = Buffer::from_slice(&[1.0_f64, 2.0, 3.0]).unwrap();
+    let b = Buffer::from_slice(&[4.0_f64, 5.0, 6.0]).unwrap();
+    let out = Buffer::stack(&[&a, &b], 1).unwrap();
+    assert_eq!(out.shape(), &[3, 2]);
+    assert_eq!(out.get::<f64>(&[0, 0]).unwrap(), 1.0);
+    assert_eq!(out.get::<f64>(&[0, 1]).unwrap(), 4.0);
+    assert_eq!(out.get::<f64>(&[2, 1]).unwrap(), 6.0);
+}
+
+#[test]
+fn stack_empty_input_returns_error() {
+    let err = Buffer::stack(&[], 0).unwrap_err();
+    assert!(matches!(err, MohuError::EmptyStackSequence));
+}
+
+#[test]
+fn stack_shape_mismatch_returns_error() {
+    let a = Buffer::from_slice(&[1.0_f64, 2.0]).unwrap();
+    let b = Buffer::from_slice(&[3.0_f64, 4.0, 5.0]).unwrap();
+    let err = Buffer::stack(&[&a, &b], 0).unwrap_err();
+    assert!(matches!(err, MohuError::ConcatShapeMismatch { .. }));
+}
