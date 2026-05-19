@@ -1,9 +1,9 @@
 //! Integration tests for mohu-buffer — exercises every major subsystem.
 
 use mohu_buffer::{
-    Buffer, Order, SliceArg,
+    Buffer, MohuError, Order, SliceArg,
     ops, GLOBAL_POOL,
-    strides::{c_strides, f_strides, broadcast_strides, NdIndexIter},
+    strides::{broadcast_shapes, c_strides, f_strides, broadcast_strides, NdIndexIter},
 };
 use mohu_dtype::{DType, promote::CastMode};
 
@@ -278,4 +278,53 @@ fn nd_index_iter_c_order() {
     assert_eq!(indices[1].as_slice(), &[0, 1]);
     assert_eq!(indices[3].as_slice(), &[1, 0]);
     assert_eq!(indices[5].as_slice(), &[1, 2]);
+}
+
+// ── broadcast_shapes ──────────────────────────────────────────────────────────
+
+#[test]
+fn broadcast_shapes_same_shape() {
+    assert_eq!(broadcast_shapes(&[3, 4], &[3, 4]).unwrap(), vec![3, 4]);
+}
+
+#[test]
+fn broadcast_shapes_leading_ones() {
+    // [1, 4] and [3, 1] -> [3, 4]
+    assert_eq!(broadcast_shapes(&[1, 4], &[3, 1]).unwrap(), vec![3, 4]);
+}
+
+#[test]
+fn broadcast_shapes_different_ndim() {
+    // [5] broadcast with [2, 1, 5] -> [2, 1, 5]
+    assert_eq!(broadcast_shapes(&[5], &[2, 1, 5]).unwrap(), vec![2, 1, 5]);
+}
+
+#[test]
+fn broadcast_shapes_scalar_like() {
+    // [1] with [4, 3] -> [4, 3]
+    assert_eq!(broadcast_shapes(&[1], &[4, 3]).unwrap(), vec![4, 3]);
+}
+
+#[test]
+fn broadcast_shapes_empty_inputs() {
+    // Both empty -> empty output
+    assert_eq!(broadcast_shapes(&[], &[]).unwrap(), vec![]);
+}
+
+#[test]
+fn broadcast_shapes_one_empty() {
+    // [] (scalar) with [3, 4] -> [3, 4]
+    assert_eq!(broadcast_shapes(&[], &[3, 4]).unwrap(), vec![3, 4]);
+}
+
+#[test]
+fn broadcast_shapes_incompatible_returns_error() {
+    let err = broadcast_shapes(&[3, 2], &[3, 4]).unwrap_err();
+    assert!(matches!(err, MohuError::BroadcastError { .. }));
+}
+
+#[test]
+fn broadcast_shapes_incompatible_different_ndim() {
+    let err = broadcast_shapes(&[2, 3], &[4, 3]).unwrap_err();
+    assert!(matches!(err, MohuError::BroadcastError { .. }));
 }

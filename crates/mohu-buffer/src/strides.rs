@@ -146,6 +146,48 @@ pub fn broadcast_strides(
     Ok(out)
 }
 
+/// Computes the output shape produced by broadcasting `a` and `b` together.
+///
+/// Follows NumPy broadcast rules:
+/// 1. Right-align the two shapes, padding the shorter one with leading 1s.
+/// 2. For each aligned dimension pair, the output dim = `max(a_dim, b_dim)`.
+/// 3. If both dimensions are > 1 and unequal, returns `Err(BroadcastError)`.
+///
+/// # Examples
+///
+/// ```rust
+/// # use mohu_buffer::strides::broadcast_shapes;
+/// assert_eq!(broadcast_shapes(&[3, 1], &[1, 4]).unwrap(), vec![3, 4]);
+/// assert_eq!(broadcast_shapes(&[5], &[2, 1, 5]).unwrap(), vec![2, 1, 5]);
+/// ```
+pub fn broadcast_shapes(a: &[usize], b: &[usize]) -> MohuResult<Vec<usize>> {
+    let out_ndim = a.len().max(b.len());
+    let mut out = vec![0usize; out_ndim];
+
+    for i in 0..out_ndim {
+        // Index from the right end for each shape.
+        let a_dim = if i < a.len() { a[a.len() - 1 - i] } else { 1 };
+        let b_dim = if i < b.len() { b[b.len() - 1 - i] } else { 1 };
+
+        out[out_ndim - 1 - i] = if a_dim == b_dim {
+            a_dim
+        } else if a_dim == 1 {
+            b_dim
+        } else if b_dim == 1 {
+            a_dim
+        } else {
+            // Build the full padded shapes for the error message.
+            let mut la: Vec<usize> = vec![1; out_ndim - a.len()];
+            la.extend_from_slice(a);
+            let mut lb: Vec<usize> = vec![1; out_ndim - b.len()];
+            lb.extend_from_slice(b);
+            return Err(MohuError::BroadcastError { lhs: la, rhs: lb });
+        };
+    }
+
+    Ok(out)
+}
+
 // ─── Index conversion ─────────────────────────────────────────────────────────
 
 /// Converts a flat linear index into a multi-dimensional index for `shape`.
