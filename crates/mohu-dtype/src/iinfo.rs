@@ -112,11 +112,7 @@ impl IntInfo {
 
     /// Returns `true` if the unsigned value `v` fits in this dtype.
     pub fn can_hold_u128(self, v: u128) -> bool {
-        if self.is_signed {
-            v <= self.max
-        } else {
-            v <= self.max
-        }
+        v <= self.max
     }
 
     /// Returns the minimum scalar type (smallest integer dtype) that can
