@@ -966,7 +966,7 @@ impl Buffer {
     /// Equivalent to `np.diag(v, k)` when `v` is 1-D.
     pub fn diag(v: &Buffer, k: i64) -> MohuResult<Self> {
         if v.ndim() != 1 {
-            return Err(MohuError::bug("Buffer::diag: input must be 1-D"));
+            return Err(MohuError::DimensionMismatch { expected: 1, got: v.ndim() });
         }
         let n    = v.len();
         let size = if k >= 0 { n + k as usize } else { n + (-k) as usize };
@@ -992,13 +992,25 @@ impl Buffer {
         Ok(out)
     }
 
+    /// Convenience wrapper: creates a 2-D diagonal matrix from a 1-D slice of
+    /// `f64` values on the main diagonal (`k = 0`).
+    ///
+    /// Equivalent to `Buffer::diag(&Buffer::from_slice(data)?, 0)`.
+    pub fn diag_from_vec(data: &[f64]) -> MohuResult<Self> {
+        let v = Self::from_slice(data)?;
+        Self::diag(&v, 0)
+    }
+
     /// Returns a zero-copy view of the diagonal with offset `k` as a 1-D buffer.
     ///
     /// Stride of the result = `row_stride + col_stride` of the input.
     /// Works for any 2-D buffer (contiguous or not).
     pub fn diagonal(&self, k: i64) -> MohuResult<Self> {
         if self.ndim() < 2 {
-            return Err(MohuError::bug("diagonal: requires at least 2 dimensions"));
+            return Err(MohuError::DimensionMismatch {
+                expected: 2,
+                got: self.ndim(),
+            });
         }
         let nd  = self.ndim();
         let n   = self.shape()[nd - 2];
@@ -1096,7 +1108,7 @@ impl Buffer {
     /// `k = 0` keeps the main diagonal; `k < 0` zeros more; `k > 0` keeps more.
     pub fn tril(&self, k: i64) -> MohuResult<Self> {
         if self.ndim() != 2 {
-            return Err(MohuError::bug("tril: requires exactly 2 dimensions"));
+            return Err(MohuError::DimensionMismatch { expected: 2, got: self.ndim() });
         }
         let out = self.to_contiguous()?;
         let (rows, cols) = (out.shape()[0], out.shape()[1]);
@@ -1122,7 +1134,7 @@ impl Buffer {
     /// Elements below diagonal `k` are zeroed.
     pub fn triu(&self, k: i64) -> MohuResult<Self> {
         if self.ndim() != 2 {
-            return Err(MohuError::bug("triu: requires exactly 2 dimensions"));
+            return Err(MohuError::DimensionMismatch { expected: 2, got: self.ndim() });
         }
         let out = self.to_contiguous()?;
         let (rows, cols) = (out.shape()[0], out.shape()[1]);

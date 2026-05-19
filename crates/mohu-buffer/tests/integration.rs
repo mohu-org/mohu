@@ -1,7 +1,7 @@
 //! Integration tests for mohu-buffer — exercises every major subsystem.
 
 use mohu_buffer::{
-    Buffer, Order, SliceArg,
+    Buffer, MohuError, Order, SliceArg,
     ops, GLOBAL_POOL,
     strides::{c_strides, f_strides, broadcast_strides, NdIndexIter},
 };
@@ -278,4 +278,136 @@ fn nd_index_iter_c_order() {
     assert_eq!(indices[1].as_slice(), &[0, 1]);
     assert_eq!(indices[3].as_slice(), &[1, 0]);
     assert_eq!(indices[5].as_slice(), &[1, 2]);
+}
+
+// ── tril ──────────────────────────────────────────────────────────────────────
+
+#[test]
+fn tril_main_diagonal_zeros_upper() {
+    // [[1,2,3],[4,5,6],[7,8,9]] -> tril(0) zeros positions (0,1),(0,2),(1,2)
+    let buf = Buffer::from_slice_2d(&[
+        &[1.0_f64, 2.0, 3.0],
+        &[4.0,     5.0, 6.0],
+        &[7.0,     8.0, 9.0],
+    ]).unwrap();
+    let result = buf.tril(0).unwrap();
+    let s = result.as_slice::<f64>().unwrap();
+    assert_eq!(s, &[1.0, 0.0, 0.0, 4.0, 5.0, 0.0, 7.0, 8.0, 9.0]);
+}
+
+#[test]
+fn tril_positive_k_keeps_superdiagonal() {
+    let buf = Buffer::from_slice_2d(&[
+        &[1.0_f64, 2.0, 3.0],
+        &[4.0,     5.0, 6.0],
+        &[7.0,     8.0, 9.0],
+    ]).unwrap();
+    let result = buf.tril(1).unwrap();
+    let s = result.as_slice::<f64>().unwrap();
+    // k=1: keep main diagonal + one superdiagonal; zero positions (0,2)
+    assert_eq!(s, &[1.0, 2.0, 0.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
+}
+
+#[test]
+fn tril_negative_k_zeros_diagonal_too() {
+    let buf = Buffer::from_slice_2d(&[
+        &[1.0_f64, 2.0, 3.0],
+        &[4.0,     5.0, 6.0],
+        &[7.0,     8.0, 9.0],
+    ]).unwrap();
+    let result = buf.tril(-1).unwrap();
+    let s = result.as_slice::<f64>().unwrap();
+    // k=-1: only strict lower triangle survives
+    assert_eq!(s, &[0.0, 0.0, 0.0, 4.0, 0.0, 0.0, 7.0, 8.0, 0.0]);
+}
+
+#[test]
+fn tril_non_2d_returns_dimension_mismatch() {
+    let buf = Buffer::from_slice(&[1.0_f64, 2.0, 3.0]).unwrap();
+    let err = buf.tril(0).unwrap_err();
+    assert!(matches!(err, MohuError::DimensionMismatch { expected: 2, got: 1 }));
+}
+
+// ── triu ──────────────────────────────────────────────────────────────────────
+
+#[test]
+fn triu_main_diagonal_zeros_lower() {
+    let buf = Buffer::from_slice_2d(&[
+        &[1.0_f64, 2.0, 3.0],
+        &[4.0,     5.0, 6.0],
+        &[7.0,     8.0, 9.0],
+    ]).unwrap();
+    let result = buf.triu(0).unwrap();
+    let s = result.as_slice::<f64>().unwrap();
+    assert_eq!(s, &[1.0, 2.0, 3.0, 0.0, 5.0, 6.0, 0.0, 0.0, 9.0]);
+}
+
+#[test]
+fn triu_non_2d_returns_dimension_mismatch() {
+    let buf = Buffer::zeros(DType::F64, &[2, 3, 4]).unwrap();
+    let err = buf.triu(0).unwrap_err();
+    assert!(matches!(err, MohuError::DimensionMismatch { expected: 2, got: 3 }));
+}
+
+// ── diag / diagonal / diag_from_vec ───────────────────────────────────────────
+
+#[test]
+fn diag_1d_to_2d_main_diagonal() {
+    // [1,2,3] -> 3x3 identity-like diagonal matrix
+    let v = Buffer::from_slice(&[1.0_f64, 2.0, 3.0]).unwrap();
+    let mat = Buffer::diag(&v, 0).unwrap();
+    assert_eq!(mat.shape(), &[3, 3]);
+    assert_eq!(mat.get::<f64>(&[0, 0]).unwrap(), 1.0);
+    assert_eq!(mat.get::<f64>(&[1, 1]).unwrap(), 2.0);
+    assert_eq!(mat.get::<f64>(&[2, 2]).unwrap(), 3.0);
+    // Off-diagonal must be zero
+    assert_eq!(mat.get::<f64>(&[0, 1]).unwrap(), 0.0);
+}
+
+#[test]
+fn diag_positive_k_offset() {
+    let v = Buffer::from_slice(&[1.0_f64, 2.0]).unwrap();
+    let mat = Buffer::diag(&v, 1).unwrap();
+    // k=1 -> 3x3 matrix, values at (0,1) and (1,2)
+    assert_eq!(mat.shape(), &[3, 3]);
+    assert_eq!(mat.get::<f64>(&[0, 1]).unwrap(), 1.0);
+    assert_eq!(mat.get::<f64>(&[1, 2]).unwrap(), 2.0);
+    assert_eq!(mat.get::<f64>(&[0, 0]).unwrap(), 0.0);
+}
+
+#[test]
+fn diag_non_1d_returns_dimension_mismatch() {
+    let mat = Buffer::zeros(DType::F64, &[2, 2]).unwrap();
+    let err = Buffer::diag(&mat, 0).unwrap_err();
+    assert!(matches!(err, MohuError::DimensionMismatch { expected: 1, got: 2 }));
+}
+
+#[test]
+fn diag_from_vec_convenience_wrapper() {
+    let mat = Buffer::diag_from_vec(&[4.0, 5.0, 6.0]).unwrap();
+    assert_eq!(mat.shape(), &[3, 3]);
+    assert_eq!(mat.get::<f64>(&[0, 0]).unwrap(), 4.0);
+    assert_eq!(mat.get::<f64>(&[2, 2]).unwrap(), 6.0);
+    assert_eq!(mat.get::<f64>(&[0, 1]).unwrap(), 0.0);
+}
+
+#[test]
+fn diagonal_extracts_main_diagonal() {
+    let mat = Buffer::from_slice_2d(&[
+        &[1.0_f64, 2.0, 3.0],
+        &[4.0,     5.0, 6.0],
+        &[7.0,     8.0, 9.0],
+    ]).unwrap();
+    let diag = mat.diagonal(0).unwrap();
+    assert_eq!(diag.shape(), &[3]);
+    assert_eq!(diag.get::<f64>(&[0]).unwrap(), 1.0);
+    assert_eq!(diag.get::<f64>(&[1]).unwrap(), 5.0);
+    assert_eq!(diag.get::<f64>(&[2]).unwrap(), 9.0);
+}
+
+#[test]
+fn diagonal_1d_returns_dimension_mismatch() {
+    let v = Buffer::from_slice(&[1.0_f64, 2.0, 3.0]).unwrap();
+    let err = v.diagonal(0).unwrap_err();
+    assert!(matches!(err, MohuError::DimensionMismatch { expected: 2, got: 1 }));
 }
