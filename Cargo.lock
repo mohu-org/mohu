@@ -721,8 +721,6 @@ dependencies = [
 name = "mohu-simd"
 version = "0.1.0"
 dependencies = [
- "cfg-if",
- "mohu-dtype",
  "mohu-error",
 ]
 

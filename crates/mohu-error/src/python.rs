@@ -17,8 +17,8 @@
 /// | ReadOnly, NonContiguous                     | `BufferError`     |
 /// | everything else                             | `RuntimeError`    |
 use pyo3::exceptions::{
-    PyBufferError, PyIndexError, PyMemoryError, PyNotImplementedError, PyOSError,
-    PyRuntimeError, PyTypeError, PyValueError,
+    PyBufferError, PyIndexError, PyMemoryError, PyNotImplementedError, PyOSError, PyRuntimeError,
+    PyTypeError, PyValueError,
 };
 use pyo3::prelude::*;
 
@@ -74,8 +74,9 @@ impl From<MohuError> for PyErr {
             | MohuError::ArrowValidityError { .. } => PyValueError::new_err(msg),
 
             // ── TypeError ─────────────────────────────────────────────────
-            MohuError::PythonType { .. }
-            | MohuError::PythonUnsupportedBufferFormat { .. } => PyTypeError::new_err(msg),
+            MohuError::PythonType { .. } | MohuError::PythonUnsupportedBufferFormat { .. } => {
+                PyTypeError::new_err(msg)
+            },
 
             // ── MemoryError ───────────────────────────────────────────────
             MohuError::AllocationFailed { .. }
