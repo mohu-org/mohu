@@ -1846,13 +1846,11 @@ impl Buffer {
         }
 
         // Insert a size-1 axis at `axis` in each array, then concatenate.
+        // Use expand_dims instead of reshape so non-contiguous views (transposed,
+        // sliced) are handled correctly — reshape requires a C-contiguous layout.
         let reshaped: Vec<Buffer> = arrays
             .iter()
-            .map(|arr| {
-                let mut new_shape = arr.shape().to_vec();
-                new_shape.insert(axis, 1);
-                arr.reshape(&new_shape)
-            })
+            .map(|arr| arr.expand_dims(axis))
             .collect::<MohuResult<_>>()?;
 
         let refs: Vec<&Buffer> = reshaped.iter().collect();
