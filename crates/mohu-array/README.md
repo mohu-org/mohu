@@ -6,7 +6,7 @@
 
 ## Relationship to `mohu-buffer`
 
-```
+```text
 NdArray<T>  =  mohu-buffer::Buffer  +  type parameter T : Scalar (from mohu-dtype)
 ```
 
