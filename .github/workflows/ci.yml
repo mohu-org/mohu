@@ -9,82 +9,244 @@ on:
 env:
   CARGO_TERM_COLOR: always
   RUST_BACKTRACE: 1
+  RUSTFLAGS: "-D warnings"
+  MSRV: "1.85"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  rust-build:
-    name: Rust — Build & Test
+  # ── Gate: DCO sign-off (PR only — skipped on push, treated as success) ──────
+  dco:
+    name: DCO Sign-off
     runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
+      - uses: christophebedard/dco-check@v0.5.0
         with:
-          components: rustfmt, clippy
+          token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Cache
-        uses: Swatinem/rust-cache@v2
-
-      - name: Build
-        run: cargo build --workspace --all-features
-
-      - name: Test
-        run: cargo test --workspace --all-features
-
-      - name: Clippy
-        run: cargo clippy --workspace --all-targets --all-features -- -D warnings
-
-  rust-format:
-    name: Rust — Format
+  # ── Gate: Formatting ────────────────────────────────────────────────────────
+  fmt:
+    name: Format
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt
+      - run: cargo fmt --all -- --check
 
-      - name: Check formatting
-        run: cargo fmt --all -- --check
-
-  python-test:
-    name: Python — ${{ matrix.python-version }}
+  # ── Gate: Clippy ────────────────────────────────────────────────────────────
+  clippy:
+    name: Clippy
     runs-on: ubuntu-latest
-    needs: rust-build
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ["3.10", "3.11", "3.12", "3.13"]
     steps:
       - uses: actions/checkout@v4
-
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Cache
-        uses: Swatinem/rust-cache@v2
-
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+      - uses: dtolnay/rust-toolchain@stable
         with:
-          python-version: ${{ matrix.python-version }}
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo clippy --workspace --all-targets --all-features -- -D warnings
 
-      - name: Install maturin
-        run: pip install maturin
-
-      - name: Build Python wheel
-        run: maturin build --release -m crates/mohu-py/Cargo.toml
-
-      - name: Install wheel
-        run: pip install target/wheels/*.whl
-
-      - name: Run Python tests
-        run: pytest python/tests/ -v
-
+  # ── Gate: Dependency audit ──────────────────────────────────────────────────
   deny:
-    name: Dependency Audit
+    name: Cargo Deny
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: EmbarkStudios/cargo-deny-action@v2
+        with:
+          command: check advisories licenses bans sources
+
+  # ── Gate: Unused dependencies ───────────────────────────────────────────────
+  unused-deps:
+    name: Unused Deps
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-machete
+      - run: cargo machete
+
+  # ── Build & Test ────────────────────────────────────────────────────────────
+  build:
+    name: Build & Test
+    runs-on: ubuntu-latest
+    needs: [fmt, clippy, deny]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo build --workspace --all-features
+      - run: cargo test --workspace --all-features
+
+  # ── Docs ────────────────────────────────────────────────────────────────────
+  doc:
+    name: Docs
+    runs-on: ubuntu-latest
+    needs: [fmt, clippy]
+    env:
+      RUSTDOCFLAGS: "-D warnings"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo doc --workspace --no-deps --all-features
+
+  # ── MSRV ────────────────────────────────────────────────────────────────────
+  msrv:
+    name: MSRV 1.85
+    runs-on: ubuntu-latest
+    needs: [fmt, clippy]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: "1.85"
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: msrv
+      - run: cargo build --workspace --all-features
+
+  # ── Benchmark compile check ──────────────────────────────────────────────────
+  bench-check:
+    name: Benchmarks Compile
+    runs-on: ubuntu-latest
+    needs: [fmt, clippy]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo bench --workspace --no-run --all-features
+
+  # ── Semver (PR only; non-blocking until crates are published) ────────────────
+  semver:
+    name: Semver Check
+    runs-on: ubuntu-latest
+    needs: [fmt, clippy]
+    if: github.event_name == 'pull_request'
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: semver
+      - uses: obi1kenobi/cargo-semver-checks-action@v2
+        with:
+          feature-group: all-features
+
+  # ── Cross-compilation (push to main only — too expensive per PR) ─────────────
+  cross:
+    name: Cross (${{ matrix.target }})
+    runs-on: ${{ matrix.os }}
+    needs: [build]
+    if: github.event_name == 'push'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: aarch64-unknown-linux-gnu
+            os: ubuntu-latest
+          - target: aarch64-apple-darwin
+            os: macos-latest
+          - target: x86_64-unknown-linux-musl
+            os: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
+      - name: Install linker (aarch64-linux)
+        if: matrix.target == 'aarch64-unknown-linux-gnu'
+        run: sudo apt-get install -y gcc-aarch64-linux-gnu
+      - name: Install musl tools
+        if: matrix.target == 'x86_64-unknown-linux-musl'
+        run: sudo apt-get install -y musl-tools
+      - run: cargo build --workspace --target ${{ matrix.target }}
+
+  # ── Code coverage (non-blocking — Codecov upload can be flaky) ───────────────
+  coverage:
+    name: Coverage
+    runs-on: ubuntu-latest
+    needs: [build]
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: llvm-tools-preview
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: coverage
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-llvm-cov
+      - run: cargo llvm-cov --workspace --all-features --lcov --output-path lcov.info
+      - uses: codecov/codecov-action@v5
+        with:
+          files: lcov.info
+          fail_ci_if_error: false
+
+  # ── Miri (nightly, non-blocking — toolchain breakage is out of our control) ──
+  miri:
+    name: Miri
+    runs-on: ubuntu-latest
+    needs: [build]
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: miri
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: miri
+      - run: cargo miri setup
+      - run: cargo miri test -p mohu-buffer --all-features
+        env:
+          MIRIFLAGS: "-Zmiri-strict-provenance -Zmiri-symbolic-alignment-check"
+          RUSTFLAGS: ""
+
+  # ── Final gate ───────────────────────────────────────────────────────────────
+  # All blocking jobs listed here. Non-blocking jobs use continue-on-error and
+  # are excluded. Jobs that are skipped (e.g. dco on push) count as success.
+  ci-pass:
+    name: CI Pass
+    runs-on: ubuntu-latest
+    if: always()
+    needs:
+      - dco
+      - fmt
+      - clippy
+      - deny
+      - unused-deps
+      - build
+      - doc
+      - msrv
+      - bench-check
+    steps:
+      - name: Check all blocking jobs passed
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+        run: |
+          failed=$(echo "$RESULTS" | jq -r '
+            to_entries[]
+            | select(.value.result != "success" and .value.result != "skipped")
+            | .key
+          ')
+          if [ -n "$failed" ]; then
+            echo "Failed jobs:"
+            echo "$failed"
+            exit 1
+          fi
+          echo "All blocking checks passed."

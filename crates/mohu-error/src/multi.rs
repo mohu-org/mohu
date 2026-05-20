@@ -80,6 +80,11 @@ impl MultiError {
         self.errors.len()
     }
 
+    /// Returns `true` if no errors have been accumulated.
+    pub fn is_empty(&self) -> bool {
+        self.errors.is_empty()
+    }
+
     /// Iterates over the accumulated errors.
     pub fn iter(&self) -> std::slice::Iter<'_, MohuError> {
         self.errors.iter()

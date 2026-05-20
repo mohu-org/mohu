@@ -78,8 +78,10 @@ impl From<ErrorCode> for ErrorKind {
 
             // Buffer — mostly caller mistakes (bad strides, read-only),
             // but allocation failure is a system error.
-            4000 | 4001 | 4002 => ErrorKind::System, // Alloc, Align, BufSmall
-            4003..=4999 => ErrorKind::Usage,
+
+            4000..=4002 => ErrorKind::System,   // Alloc, Align, BufSmall
+            4003..=4999        => ErrorKind::Usage,
+
 
             // Compute — runtime mathematical failures
             5000..=5999 => ErrorKind::Runtime,

@@ -1,0 +1,81 @@
+name: PR Bot
+
+# pull_request_target runs with base-repo token (write access),
+# even for fork PRs. We never checkout untrusted fork code here.
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  # ── Auto Label ──────────────────────────────────────────────────────────────
+  label:
+    name: Auto Label
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/labeler@v5
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          configuration-path: .github/labeler.yml
+          sync-labels: true
+
+  # ── Auto Assign Reviewer ────────────────────────────────────────────────────
+  assign-reviewer:
+    name: Auto Assign Reviewer
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.draft == false
+    steps:
+      - uses: kentaro-m/auto-assign-action@v2.0.0
+        with:
+          configuration-path: .github/auto_assign.yml
+
+  # ── PR Summary Comment ──────────────────────────────────────────────────────
+  comment:
+    name: PR Summary Comment
+    runs-on: ubuntu-latest
+    if: github.event.action == 'opened'
+    steps:
+      # Safe: fetch-depth 0 on base ref only — no fork code executed
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.ref }}
+          fetch-depth: 0
+
+      - name: Get changed files via API
+        id: changed
+        uses: tj-actions/changed-files@v46
+        with:
+          base_sha: ${{ github.event.pull_request.base.sha }}
+          sha: ${{ github.event.pull_request.head.sha }}
+
+      - name: Detect changed crates
+        id: crates
+        run: |
+          crates=$(echo "${{ steps.changed.outputs.all_changed_files }}" \
+            | tr ' ' '\n' \
+            | grep -oP 'crates/[^/]+' \
+            | sort -u \
+            | tr '\n' ', ' \
+            | sed 's/,$//')
+          echo "list=${crates:-none}" >> "$GITHUB_OUTPUT"
+
+      - name: Post summary comment
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ## PR Check Summary
+
+            | Item | Value |
+            |------|-------|
+            | Branch | `${{ github.event.pull_request.head.ref }}` |
+            | Changed crates | `${{ steps.crates.outputs.list }}` |
+            | Files changed | ${{ steps.changed.outputs.all_changed_files_count }} |
+
+            CI will run: **build**, **test**, **clippy**, **fmt**, **cargo-deny**, **DCO**, **semver**.
+            Reviewer assigned from CODEOWNERS.

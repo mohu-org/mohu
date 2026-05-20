@@ -1,0 +1,93 @@
+# Auto-label configuration for actions/labeler@v5
+
+"crate:core":
+  - changed-files:
+      - any-glob-to-any-file: "crates/mohu-core/**"
+
+"crate:array":
+  - changed-files:
+      - any-glob-to-any-file: "crates/mohu-array/**"
+
+"crate:buffer":
+  - changed-files:
+      - any-glob-to-any-file: "crates/mohu-buffer/**"
+
+"crate:dtype":
+  - changed-files:
+      - any-glob-to-any-file: "crates/mohu-dtype/**"
+
+"crate:error":
+  - changed-files:
+      - any-glob-to-any-file: "crates/mohu-error/**"
+
+"crate:fft":
+  - changed-files:
+      - any-glob-to-any-file: "crates/mohu-fft/**"
+
+"crate:index":
+  - changed-files:
+      - any-glob-to-any-file: "crates/mohu-index/**"
+
+"crate:io":
+  - changed-files:
+      - any-glob-to-any-file: "crates/mohu-io/**"
+
+"crate:masked":
+  - changed-files:
+      - any-glob-to-any-file: "crates/mohu-masked/**"
+
+"crate:ops":
+  - changed-files:
+      - any-glob-to-any-file: "crates/mohu-ops/**"
+
+"crate:random":
+  - changed-files:
+      - any-glob-to-any-file: "crates/mohu-random/**"
+
+"crate:simd":
+  - changed-files:
+      - any-glob-to-any-file: "crates/mohu-simd/**"
+
+"crate:sparse":
+  - changed-files:
+      - any-glob-to-any-file: "crates/mohu-sparse/**"
+
+"crate:special":
+  - changed-files:
+      - any-glob-to-any-file: "crates/mohu-special/**"
+
+"crate:stats":
+  - changed-files:
+      - any-glob-to-any-file: "crates/mohu-stats/**"
+
+"crate:testing":
+  - changed-files:
+      - any-glob-to-any-file: "crates/mohu-testing/**"
+
+"crate:ufunc":
+  - changed-files:
+      - any-glob-to-any-file: "crates/mohu-ufunc/**"
+
+"area:ci":
+  - changed-files:
+      - any-glob-to-any-file: ".github/workflows/**"
+      - any-glob-to-any-file: ".github/**"
+
+"area:docs":
+  - changed-files:
+      - any-glob-to-any-file: "docs/**"
+      - any-glob-to-any-file: "**/*.md"
+
+"area:deps":
+  - changed-files:
+      - any-glob-to-any-file: "Cargo.toml"
+      - any-glob-to-any-file: "Cargo.lock"
+      - any-glob-to-any-file: "deny.toml"
+
+"area:benchmarks":
+  - changed-files:
+      - any-glob-to-any-file: "benches/**"
+
+"area:examples":
+  - changed-files:
+      - any-glob-to-any-file: "examples/**"
