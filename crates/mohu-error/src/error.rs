@@ -27,13 +27,15 @@ pub enum MohuError {
     // -------------------------------------------------------------------------
     // Shape & dimension errors  (1xxx)
     // -------------------------------------------------------------------------
-
     /// Two arrays have incompatible shapes for an element-wise operation.
     #[error(
         "shape mismatch: expected {expected:?}, got {got:?}\n\
          hint: shapes must be identical for this operation, or broadcastable"
     )]
-    ShapeMismatch { expected: Vec<usize>, got: Vec<usize> },
+    ShapeMismatch {
+        expected: Vec<usize>,
+        got: Vec<usize>,
+    },
 
     /// Two shapes cannot be broadcast together under NumPy-style rules.
     #[error(
@@ -54,7 +56,11 @@ pub enum MohuError {
         "axis {axis} is out of range for a {ndim}D array\n\
          hint: valid axes are {valid}"
     )]
-    AxisOutOfRange { axis: i64, ndim: usize, valid: String },
+    AxisOutOfRange {
+        axis: i64,
+        ndim: usize,
+        valid: String,
+    },
 
     /// An operation that requires at least one dimension was called on a scalar.
     #[error(
@@ -104,7 +110,6 @@ pub enum MohuError {
     // -------------------------------------------------------------------------
     // DType errors  (2xxx)
     // -------------------------------------------------------------------------
-
     /// An operation received arrays with incompatible data types.
     #[error(
         "dtype mismatch: expected {expected}, got {got}\n\
@@ -114,7 +119,11 @@ pub enum MohuError {
 
     /// A type cast between two dtypes is not valid or would lose data.
     #[error("cannot cast {from} to {to}: {reason}")]
-    InvalidCast { from: String, to: String, reason: String },
+    InvalidCast {
+        from: String,
+        to: String,
+        reason: String,
+    },
 
     /// A value exceeds the representable range of the target dtype.
     #[error(
@@ -151,13 +160,16 @@ pub enum MohuError {
     // -------------------------------------------------------------------------
     // Index & slice errors  (3xxx)
     // -------------------------------------------------------------------------
-
     /// An integer index is outside the valid range for its axis.
     #[error(
         "index {index} is out of bounds for axis {axis} with size {size}\n\
          hint: valid indices are -{size}..{size}"
     )]
-    IndexOutOfBounds { index: i64, axis: usize, size: usize },
+    IndexOutOfBounds {
+        index: i64,
+        axis: usize,
+        size: usize,
+    },
 
     /// More indices were provided than the array has dimensions.
     #[error(
@@ -172,7 +184,12 @@ pub enum MohuError {
 
     /// A slice range is out of bounds for the axis it indexes.
     #[error("slice [{start}:{stop}:{step}] is invalid for axis with size {size}")]
-    SliceOutOfBounds { start: i64, stop: i64, step: i64, size: usize },
+    SliceOutOfBounds {
+        start: i64,
+        stop: i64,
+        step: i64,
+        size: usize,
+    },
 
     /// A boolean mask has a different shape than the array it indexes.
     #[error(
@@ -189,12 +206,15 @@ pub enum MohuError {
         "fancy index on axis {axis} is out of bounds: \
          index value {index} exceeds axis size {size}"
     )]
-    FancyIndexOutOfBounds { index: i64, axis: usize, size: usize },
+    FancyIndexOutOfBounds {
+        index: i64,
+        axis: usize,
+        size: usize,
+    },
 
     // -------------------------------------------------------------------------
     // Buffer & memory errors  (4xxx)
     // -------------------------------------------------------------------------
-
     /// A memory allocation request failed (likely OOM).
     #[error(
         "memory allocation failed: requested {bytes} bytes ({human})\n\
@@ -221,7 +241,11 @@ pub enum MohuError {
         "invalid stride on axis {axis}: stride {stride} is not a multiple \
          of the element size {element_size}"
     )]
-    InvalidStride { axis: usize, stride: isize, element_size: usize },
+    InvalidStride {
+        axis: usize,
+        stride: isize,
+        element_size: usize,
+    },
 
     /// The combination of shape and strides would produce overlapping elements.
     #[error(
@@ -269,7 +293,6 @@ pub enum MohuError {
     // -------------------------------------------------------------------------
     // Compute / math errors  (5xxx)
     // -------------------------------------------------------------------------
-
     /// A matrix is singular (rank-deficient) and cannot be inverted or solved.
     #[error(
         "singular matrix: rank-deficient and cannot be inverted or solved\n\
@@ -328,9 +351,7 @@ pub enum MohuError {
     NotPositiveDefinite,
 
     /// QR decomposition found a rank-deficient matrix when full rank was expected.
-    #[error(
-        "QR decomposition failed: matrix has rank {actual}, expected full rank {expected}"
-    )]
+    #[error("QR decomposition failed: matrix has rank {actual}, expected full rank {expected}")]
     QRRankDeficient { expected: usize, actual: usize },
 
     /// SVD iteration did not converge.
@@ -347,7 +368,6 @@ pub enum MohuError {
     // -------------------------------------------------------------------------
     // I/O errors  (6xxx)
     // -------------------------------------------------------------------------
-
     #[error("I/O error: {0}")]
     Io(#[from] std::io::Error),
 
@@ -374,7 +394,10 @@ pub enum MohuError {
     },
 
     #[error("corrupt or malformed {format} data: {detail}")]
-    CorruptData { format: &'static str, detail: String },
+    CorruptData {
+        format: &'static str,
+        detail: String,
+    },
 
     #[error("unexpected end of file while reading {format} at byte offset {offset}")]
     UnexpectedEof { format: &'static str, offset: u64 },
@@ -396,12 +419,15 @@ pub enum MohuError {
     NpzEntryNotFound { name: String },
 
     #[error("CSV parse error at row {row}, column {col}: {detail}")]
-    CsvParseError { row: usize, col: usize, detail: String },
+    CsvParseError {
+        row: usize,
+        col: usize,
+        detail: String,
+    },
 
     // -------------------------------------------------------------------------
     // DLPack errors  (7xxx)
     // -------------------------------------------------------------------------
-
     #[error(
         "DLPack: unsupported device type {device_type}\n\
          hint: mohu supports CPU (device_type=1) only; \
@@ -434,7 +460,6 @@ pub enum MohuError {
     // -------------------------------------------------------------------------
     // Arrow errors  (8xxx)
     // -------------------------------------------------------------------------
-
     #[error("Arrow schema mismatch: {0}")]
     ArrowSchema(String),
 
@@ -447,15 +472,12 @@ pub enum MohuError {
     )]
     ArrowUnsupportedType { arrow_type: String },
 
-    #[error(
-        "Arrow validity bitmap is inconsistent with array length {length}: {detail}"
-    )]
+    #[error("Arrow validity bitmap is inconsistent with array length {length}: {detail}")]
     ArrowValidityError { length: usize, detail: String },
 
     // -------------------------------------------------------------------------
     // Python / PyO3 errors  (9xxx)
     // -------------------------------------------------------------------------
-
     #[error("Python type error: expected {expected}, got {got}")]
     PythonType { expected: &'static str, got: String },
 
@@ -480,7 +502,6 @@ pub enum MohuError {
     // -------------------------------------------------------------------------
     // Contextual / structural errors  (10xxx)
     // -------------------------------------------------------------------------
-
     /// Wraps a lower-level `MohuError` with a human-readable context string.
     /// Use the [`ResultExt`](crate::context::ResultExt) trait instead of
     /// constructing this variant directly.
@@ -520,84 +541,84 @@ impl MohuError {
     pub fn code(&self) -> crate::codes::ErrorCode {
         use crate::codes::ErrorCode;
         match self {
-            Self::ShapeMismatch { .. }             => ErrorCode::ShapeMismatch,
-            Self::BroadcastError { .. }            => ErrorCode::BroadcastError,
-            Self::DimensionMismatch { .. }         => ErrorCode::DimensionMismatch,
-            Self::AxisOutOfRange { .. }            => ErrorCode::AxisOutOfRange,
-            Self::ScalarArray                      => ErrorCode::ScalarArray,
-            Self::ZeroSizedDimension { .. }        => ErrorCode::ZeroSizedDimension,
-            Self::ShapeOverflow { .. }             => ErrorCode::ShapeOverflow,
-            Self::ReshapeIncompatible { .. }       => ErrorCode::ReshapeIncompatible,
-            Self::EmptyStackSequence               => ErrorCode::EmptyStackSequence,
-            Self::ConcatShapeMismatch { .. }       => ErrorCode::ConcatShapeMismatch,
+            Self::ShapeMismatch { .. } => ErrorCode::ShapeMismatch,
+            Self::BroadcastError { .. } => ErrorCode::BroadcastError,
+            Self::DimensionMismatch { .. } => ErrorCode::DimensionMismatch,
+            Self::AxisOutOfRange { .. } => ErrorCode::AxisOutOfRange,
+            Self::ScalarArray => ErrorCode::ScalarArray,
+            Self::ZeroSizedDimension { .. } => ErrorCode::ZeroSizedDimension,
+            Self::ShapeOverflow { .. } => ErrorCode::ShapeOverflow,
+            Self::ReshapeIncompatible { .. } => ErrorCode::ReshapeIncompatible,
+            Self::EmptyStackSequence => ErrorCode::EmptyStackSequence,
+            Self::ConcatShapeMismatch { .. } => ErrorCode::ConcatShapeMismatch,
 
-            Self::DTypeMismatch { .. }             => ErrorCode::DTypeMismatch,
-            Self::InvalidCast { .. }               => ErrorCode::InvalidCast,
-            Self::Overflow { .. }                  => ErrorCode::Overflow,
-            Self::Underflow { .. }                 => ErrorCode::Underflow,
-            Self::UnknownDType(_)                  => ErrorCode::UnknownDType,
-            Self::UnsupportedDType { .. }          => ErrorCode::UnsupportedDType,
-            Self::AmbiguousPromotion { .. }        => ErrorCode::AmbiguousPromotion,
+            Self::DTypeMismatch { .. } => ErrorCode::DTypeMismatch,
+            Self::InvalidCast { .. } => ErrorCode::InvalidCast,
+            Self::Overflow { .. } => ErrorCode::Overflow,
+            Self::Underflow { .. } => ErrorCode::Underflow,
+            Self::UnknownDType(_) => ErrorCode::UnknownDType,
+            Self::UnsupportedDType { .. } => ErrorCode::UnsupportedDType,
+            Self::AmbiguousPromotion { .. } => ErrorCode::AmbiguousPromotion,
 
-            Self::IndexOutOfBounds { .. }          => ErrorCode::IndexOutOfBounds,
-            Self::TooManyIndices { .. }            => ErrorCode::TooManyIndices,
-            Self::ZeroSliceStep                    => ErrorCode::ZeroSliceStep,
-            Self::SliceOutOfBounds { .. }          => ErrorCode::SliceOutOfBounds,
-            Self::BoolIndexShapeMismatch { .. }    => ErrorCode::BoolIndexShapeMismatch,
-            Self::FancyIndexOutOfBounds { .. }     => ErrorCode::FancyIndexOutOfBounds,
+            Self::IndexOutOfBounds { .. } => ErrorCode::IndexOutOfBounds,
+            Self::TooManyIndices { .. } => ErrorCode::TooManyIndices,
+            Self::ZeroSliceStep => ErrorCode::ZeroSliceStep,
+            Self::SliceOutOfBounds { .. } => ErrorCode::SliceOutOfBounds,
+            Self::BoolIndexShapeMismatch { .. } => ErrorCode::BoolIndexShapeMismatch,
+            Self::FancyIndexOutOfBounds { .. } => ErrorCode::FancyIndexOutOfBounds,
 
-            Self::AllocationFailed { .. }          => ErrorCode::AllocationFailed,
-            Self::AlignmentError { .. }            => ErrorCode::AlignmentError,
-            Self::BufferTooSmall { .. }            => ErrorCode::BufferTooSmall,
-            Self::InvalidStride { .. }             => ErrorCode::InvalidStride,
-            Self::OverlappingStrides { .. }        => ErrorCode::OverlappingStrides,
-            Self::NonContiguous                    => ErrorCode::NonContiguous,
-            Self::ReadOnly                         => ErrorCode::ReadOnly,
-            Self::CannotResizeShared               => ErrorCode::CannotResizeShared,
-            Self::OffsetOverflow { .. }            => ErrorCode::OffsetOverflow,
+            Self::AllocationFailed { .. } => ErrorCode::AllocationFailed,
+            Self::AlignmentError { .. } => ErrorCode::AlignmentError,
+            Self::BufferTooSmall { .. } => ErrorCode::BufferTooSmall,
+            Self::InvalidStride { .. } => ErrorCode::InvalidStride,
+            Self::OverlappingStrides { .. } => ErrorCode::OverlappingStrides,
+            Self::NonContiguous => ErrorCode::NonContiguous,
+            Self::ReadOnly => ErrorCode::ReadOnly,
+            Self::CannotResizeShared => ErrorCode::CannotResizeShared,
+            Self::OffsetOverflow { .. } => ErrorCode::OffsetOverflow,
 
-            Self::SingularMatrix                   => ErrorCode::SingularMatrix,
-            Self::NonConvergence { .. }            => ErrorCode::NonConvergence,
-            Self::DomainError { .. }               => ErrorCode::DomainError,
-            Self::DivisionByZero                   => ErrorCode::DivisionByZero,
-            Self::MatrixDimensionMismatch { .. }   => ErrorCode::MatrixDimensionMismatch,
-            Self::EigenDecompositionFailed { .. }  => ErrorCode::EigenDecompositionFailed,
-            Self::NotPositiveDefinite              => ErrorCode::NotPositiveDefinite,
-            Self::QRRankDeficient { .. }           => ErrorCode::QRRankDeficient,
-            Self::SVDNonConvergence { .. }         => ErrorCode::SVDNonConvergence,
-            Self::UnsupportedNormOrder { .. }      => ErrorCode::UnsupportedNormOrder,
+            Self::SingularMatrix => ErrorCode::SingularMatrix,
+            Self::NonConvergence { .. } => ErrorCode::NonConvergence,
+            Self::DomainError { .. } => ErrorCode::DomainError,
+            Self::DivisionByZero => ErrorCode::DivisionByZero,
+            Self::MatrixDimensionMismatch { .. } => ErrorCode::MatrixDimensionMismatch,
+            Self::EigenDecompositionFailed { .. } => ErrorCode::EigenDecompositionFailed,
+            Self::NotPositiveDefinite => ErrorCode::NotPositiveDefinite,
+            Self::QRRankDeficient { .. } => ErrorCode::QRRankDeficient,
+            Self::SVDNonConvergence { .. } => ErrorCode::SVDNonConvergence,
+            Self::UnsupportedNormOrder { .. } => ErrorCode::UnsupportedNormOrder,
 
-            Self::Io(_)                            => ErrorCode::Io,
-            Self::InvalidMagic { .. }              => ErrorCode::InvalidMagic,
-            Self::UnsupportedVersion { .. }        => ErrorCode::UnsupportedVersion,
-            Self::CorruptData { .. }               => ErrorCode::CorruptData,
-            Self::UnexpectedEof { .. }             => ErrorCode::UnexpectedEof,
-            Self::UnsupportedCodec { .. }          => ErrorCode::UnsupportedCodec,
-            Self::NpyHeaderError { .. }            => ErrorCode::NpyHeaderError,
-            Self::NpzEntryNotFound { .. }          => ErrorCode::NpzEntryNotFound,
-            Self::CsvParseError { .. }             => ErrorCode::CsvParseError,
+            Self::Io(_) => ErrorCode::Io,
+            Self::InvalidMagic { .. } => ErrorCode::InvalidMagic,
+            Self::UnsupportedVersion { .. } => ErrorCode::UnsupportedVersion,
+            Self::CorruptData { .. } => ErrorCode::CorruptData,
+            Self::UnexpectedEof { .. } => ErrorCode::UnexpectedEof,
+            Self::UnsupportedCodec { .. } => ErrorCode::UnsupportedCodec,
+            Self::NpyHeaderError { .. } => ErrorCode::NpyHeaderError,
+            Self::NpzEntryNotFound { .. } => ErrorCode::NpzEntryNotFound,
+            Self::CsvParseError { .. } => ErrorCode::CsvParseError,
 
-            Self::DLPackUnsupportedDevice { .. }   => ErrorCode::DLPackUnsupportedDevice,
-            Self::DLPackVersionMismatch { .. }     => ErrorCode::DLPackVersionMismatch,
-            Self::DLPackNullPointer                => ErrorCode::DLPackNullPointer,
-            Self::DLPackUnsupportedDType { .. }    => ErrorCode::DLPackUnsupportedDType,
-            Self::DLPackInvalid(_)                 => ErrorCode::DLPackInvalid,
+            Self::DLPackUnsupportedDevice { .. } => ErrorCode::DLPackUnsupportedDevice,
+            Self::DLPackVersionMismatch { .. } => ErrorCode::DLPackVersionMismatch,
+            Self::DLPackNullPointer => ErrorCode::DLPackNullPointer,
+            Self::DLPackUnsupportedDType { .. } => ErrorCode::DLPackUnsupportedDType,
+            Self::DLPackInvalid(_) => ErrorCode::DLPackInvalid,
 
-            Self::ArrowSchema(_)                   => ErrorCode::ArrowSchema,
-            Self::ArrowIpc(_)                      => ErrorCode::ArrowIpc,
-            Self::ArrowUnsupportedType { .. }      => ErrorCode::ArrowUnsupportedType,
-            Self::ArrowValidityError { .. }        => ErrorCode::ArrowValidityError,
+            Self::ArrowSchema(_) => ErrorCode::ArrowSchema,
+            Self::ArrowIpc(_) => ErrorCode::ArrowIpc,
+            Self::ArrowUnsupportedType { .. } => ErrorCode::ArrowUnsupportedType,
+            Self::ArrowValidityError { .. } => ErrorCode::ArrowValidityError,
 
-            Self::PythonType { .. }                => ErrorCode::PythonType,
-            Self::PythonValue(_)                   => ErrorCode::PythonValue,
-            Self::PythonBuffer(_)                  => ErrorCode::PythonBuffer,
-            Self::PythonNoBuffer                   => ErrorCode::PythonNoBuffer,
-            Self::PythonUnsupportedBufferFormat{..}=> ErrorCode::PythonUnsupportedBufferFormat,
+            Self::PythonType { .. } => ErrorCode::PythonType,
+            Self::PythonValue(_) => ErrorCode::PythonValue,
+            Self::PythonBuffer(_) => ErrorCode::PythonBuffer,
+            Self::PythonNoBuffer => ErrorCode::PythonNoBuffer,
+            Self::PythonUnsupportedBufferFormat { .. } => ErrorCode::PythonUnsupportedBufferFormat,
 
-            Self::Context { .. }                   => ErrorCode::Context,
-            Self::NotImplemented(_)                => ErrorCode::NotImplemented,
-            Self::Internal(_)                      => ErrorCode::Internal,
-            Self::Multiple(_)                      => ErrorCode::Internal,
+            Self::Context { .. } => ErrorCode::Context,
+            Self::NotImplemented(_) => ErrorCode::NotImplemented,
+            Self::Internal(_) => ErrorCode::Internal,
+            Self::Multiple(_) => ErrorCode::Internal,
         }
     }
 
@@ -610,7 +631,8 @@ impl MohuError {
             // Internal errors are always Fatal-kind.
             Self::Internal(_) => ErrorKind::Internal,
             // Multiple: take the worst kind across all inner errors.
-            Self::Multiple(m) => m.iter()
+            Self::Multiple(m) => m
+                .iter()
                 .map(|e| e.kind())
                 .max_by_key(|k| *k as u8)
                 .unwrap_or(ErrorKind::Internal),
@@ -654,7 +676,10 @@ impl MohuError {
     /// Builds an [`AllocationFailed`](Self::AllocationFailed) error with a
     /// human-readable size string computed automatically.
     pub fn alloc(bytes: usize) -> Self {
-        Self::AllocationFailed { bytes, human: fmt_bytes(bytes) }
+        Self::AllocationFailed {
+            bytes,
+            human: fmt_bytes(bytes),
+        }
     }
 
     /// Builds an [`Internal`](Self::Internal) error. Use for assertion-style
@@ -665,7 +690,10 @@ impl MohuError {
 
     /// Builds a [`DomainError`](Self::DomainError).
     pub fn domain(op: &'static str, reason: impl Into<String>) -> Self {
-        Self::DomainError { op, reason: reason.into() }
+        Self::DomainError {
+            op,
+            reason: reason.into(),
+        }
     }
 
     /// Builds a [`MatrixDimensionMismatch`](Self::MatrixDimensionMismatch).
