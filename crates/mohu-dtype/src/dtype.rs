@@ -512,38 +512,36 @@ impl DType {
     /// and common aliases. Case-insensitive except for uppercase char codes
     /// (B, H, I, L, F, D).
     pub fn from_str(s: &str) -> MohuResult<Self> {
-        let lower = s.trim().to_ascii_lowercase();
-        match lower.as_str() {
-            "bool" | "bool_" | "?" | "b1" => Ok(Self::Bool),
-            "int8" | "i1" | "b" | "byte" => Ok(Self::I8),
-            "int16" | "i2" | "h" | "short" => Ok(Self::I16),
-            "int32" | "i4" | "i" | "int" | "int_" => Ok(Self::I32),
-            "int64" | "i8" | "l" | "long" | "longlong" => Ok(Self::I64),
-            "uint8" | "u1" | "ubyte" => Ok(Self::U8),
-            "uint16" | "u2" | "ushort" => Ok(Self::U16),
-            "uint32" | "u4" | "uint" => Ok(Self::U32),
-            "uint64" | "u8" | "ulong" => Ok(Self::U64),
-            "float16" | "f2" | "half" | "f16" => Ok(Self::F16),
-            "bfloat16" | "bf16" => Ok(Self::BF16),
-            "float32" | "f4" | "float" | "single" | "f32" => Ok(Self::F32),
-            "float64" | "f8" | "double" | "f64" => Ok(Self::F64),
-            "complex64" | "c8" | "csingle" | "c64" => Ok(Self::C64),
-            "complex128" | "c16" | "cdouble" | "c128" => Ok(Self::C128),
-            _ => {
-                // Uppercase single-char codes survive the lowercase pass
-                // only if the original string was uppercase.
-                match s.trim() {
-                    "B" => Ok(Self::U8),
-                    "H" => Ok(Self::U16),
-                    "I" => Ok(Self::U32),
-                    "L" => Ok(Self::U64),
-                    "F" => Ok(Self::C64),
-                    "D" => Ok(Self::C128),
-                    other => Err(MohuError::UnknownDType(other.to_string())),
-                }
-            },
-        }
+    let raw = s.trim();
+    match raw {
+        "B" => return Ok(Self::U8),
+        "H" => return Ok(Self::U16),
+        "I" => return Ok(Self::U32),
+        "L" => return Ok(Self::U64),
+        "F" => return Ok(Self::C64),
+        "D" => return Ok(Self::C128),
+        _ => {}
     }
+    let lower = raw.to_ascii_lowercase();
+    match lower.as_str() {
+        "bool" | "bool_" | "?" | "b1" => Ok(Self::Bool),
+        "int8" | "i1" | "b" | "byte" => Ok(Self::I8),
+        "int16" | "i2" | "h" | "short" => Ok(Self::I16),
+        "int32" | "i4" | "i" | "int" | "int_" => Ok(Self::I32),
+        "int64" | "i8" | "l" | "long" | "longlong" => Ok(Self::I64),
+        "uint8" | "u1" | "ubyte" => Ok(Self::U8),
+        "uint16" | "u2" | "ushort" => Ok(Self::U16),
+        "uint32" | "u4" | "uint" => Ok(Self::U32),
+        "uint64" | "u8" | "ulong" => Ok(Self::U64),
+        "float16" | "f2" | "half" | "f16" => Ok(Self::F16),
+        "bfloat16" | "bf16" => Ok(Self::BF16),
+        "float32" | "f4" | "float" | "single" | "f32" => Ok(Self::F32),
+        "float64" | "f8" | "double" | "f64" => Ok(Self::F64),
+        "complex64" | "c8" | "csingle" | "c64" => Ok(Self::C64),
+        "complex128" | "c16" | "cdouble" | "c128" => Ok(Self::C128),
+        _ => Err(MohuError::UnknownDType(raw.to_string())),
+    }
+}
 
     /// Returns an iterator over all variants in definition order.
     pub fn all() -> impl Iterator<Item = DType> {
