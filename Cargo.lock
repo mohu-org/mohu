@@ -696,7 +696,9 @@ dependencies = [
 name = "mohu-ops"
 version = "0.1.0"
 dependencies = [
+ "half",
  "mohu-core",
+ "num-complex",
  "num-traits",
  "rayon",
  "thiserror",
