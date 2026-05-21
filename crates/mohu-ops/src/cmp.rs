@@ -1,7 +1,7 @@
 use mohu_core::mohu_buffer::ops::parallel_zip;
 use mohu_core::mohu_buffer::Buffer;
 use mohu_core::mohu_dtype::{dispatch_dtype, dispatch_real, DType};
-use mohu_core::mohu_error::{MohuError, MohuResult};
+use mohu_core::mohu_error::{bail, ensure, MohuError, MohuResult, ResultExt};
 
 use crate::broadcast::broadcast_binary_inputs;
 
@@ -33,21 +33,24 @@ impl CmpKind {
 }
 
 fn compare_binary(lhs: &Buffer, rhs: &Buffer, kind: CmpKind) -> MohuResult<Buffer> {
-    if lhs.dtype() != rhs.dtype() {
-        return Err(MohuError::DTypeMismatch {
+    ensure!(
+        lhs.dtype() == rhs.dtype(),
+        MohuError::DTypeMismatch {
             expected: lhs.dtype().to_string(),
             got:      rhs.dtype().to_string(),
-        });
-    }
+        }
+    );
     if kind.is_ordered() && lhs.dtype().is_complex() {
-        return Err(MohuError::domain(
+        bail!(MohuError::domain(
             kind.name(),
             "ordered comparisons are undefined for complex dtypes",
         ));
     }
 
-    let (lhs_buf, rhs_buf, out_shape) = broadcast_binary_inputs(lhs, rhs)?;
-    let mut out = Buffer::zeros(DType::Bool, &out_shape)?;
+    let (lhs_buf, rhs_buf, out_shape) = broadcast_binary_inputs(lhs, rhs)
+        .with_context(|| format!("cmp::{} broadcast inputs", kind.name()))?;
+    let mut out = Buffer::zeros(DType::Bool, &out_shape)
+        .with_context(|| format!("cmp::{} allocate bool output", kind.name()))?;
 
     match kind {
         CmpKind::Eq => {
@@ -56,7 +59,13 @@ fn compare_binary(lhs: &Buffer, rhs: &Buffer, kind: CmpKind) -> MohuResult<Buffe
                     parallel_zip::<$T, bool, _>(&lhs_buf, &rhs_buf, &mut out, |a, b| a == b)
                 };
             }
-            dispatch_dtype!(lhs.dtype(), do_cmp)?;
+            dispatch_dtype!(lhs.dtype(), do_cmp).with_context(|| {
+                format!(
+                    "cmp::{} execute dtype dispatch for {}",
+                    kind.name(),
+                    lhs.dtype()
+                )
+            })?;
         }
         CmpKind::Ne => {
             macro_rules! do_cmp {
@@ -64,54 +73,96 @@ fn compare_binary(lhs: &Buffer, rhs: &Buffer, kind: CmpKind) -> MohuResult<Buffe
                     parallel_zip::<$T, bool, _>(&lhs_buf, &rhs_buf, &mut out, |a, b| a != b)
                 };
             }
-            dispatch_dtype!(lhs.dtype(), do_cmp)?;
+            dispatch_dtype!(lhs.dtype(), do_cmp).with_context(|| {
+                format!(
+                    "cmp::{} execute dtype dispatch for {}",
+                    kind.name(),
+                    lhs.dtype()
+                )
+            })?;
         }
         CmpKind::Lt => {
             if lhs.dtype() == DType::Bool {
-                parallel_zip::<bool, bool, _>(&lhs_buf, &rhs_buf, &mut out, |a, b| a < b)?;
+                parallel_zip::<bool, bool, _>(&lhs_buf, &rhs_buf, &mut out, |a, b| a < b)
+                    .with_context(|| format!("cmp::{} execute bool kernel", kind.name()))?;
             } else {
                 macro_rules! do_cmp {
                     ($T:ty) => {
                         parallel_zip::<$T, bool, _>(&lhs_buf, &rhs_buf, &mut out, |a, b| a < b)
                     };
                 }
-                dispatch_real!(lhs.dtype(), do_cmp)??;
+                dispatch_real!(lhs.dtype(), do_cmp)
+                    .with_context(|| {
+                        format!(
+                            "cmp::{} select real dispatch for {}",
+                            kind.name(),
+                            lhs.dtype()
+                        )
+                    })?
+                    .with_context(|| format!("cmp::{} execute real kernel", kind.name()))?;
             }
         }
         CmpKind::Le => {
             if lhs.dtype() == DType::Bool {
-                parallel_zip::<bool, bool, _>(&lhs_buf, &rhs_buf, &mut out, |a, b| a <= b)?;
+                parallel_zip::<bool, bool, _>(&lhs_buf, &rhs_buf, &mut out, |a, b| a <= b)
+                    .with_context(|| format!("cmp::{} execute bool kernel", kind.name()))?;
             } else {
                 macro_rules! do_cmp {
                     ($T:ty) => {
                         parallel_zip::<$T, bool, _>(&lhs_buf, &rhs_buf, &mut out, |a, b| a <= b)
                     };
                 }
-                dispatch_real!(lhs.dtype(), do_cmp)??;
+                dispatch_real!(lhs.dtype(), do_cmp)
+                    .with_context(|| {
+                        format!(
+                            "cmp::{} select real dispatch for {}",
+                            kind.name(),
+                            lhs.dtype()
+                        )
+                    })?
+                    .with_context(|| format!("cmp::{} execute real kernel", kind.name()))?;
             }
         }
         CmpKind::Gt => {
             if lhs.dtype() == DType::Bool {
-                parallel_zip::<bool, bool, _>(&lhs_buf, &rhs_buf, &mut out, |a, b| a > b)?;
+                parallel_zip::<bool, bool, _>(&lhs_buf, &rhs_buf, &mut out, |a, b| a > b)
+                    .with_context(|| format!("cmp::{} execute bool kernel", kind.name()))?;
             } else {
                 macro_rules! do_cmp {
                     ($T:ty) => {
                         parallel_zip::<$T, bool, _>(&lhs_buf, &rhs_buf, &mut out, |a, b| a > b)
                     };
                 }
-                dispatch_real!(lhs.dtype(), do_cmp)??;
+                dispatch_real!(lhs.dtype(), do_cmp)
+                    .with_context(|| {
+                        format!(
+                            "cmp::{} select real dispatch for {}",
+                            kind.name(),
+                            lhs.dtype()
+                        )
+                    })?
+                    .with_context(|| format!("cmp::{} execute real kernel", kind.name()))?;
             }
         }
         CmpKind::Ge => {
             if lhs.dtype() == DType::Bool {
-                parallel_zip::<bool, bool, _>(&lhs_buf, &rhs_buf, &mut out, |a, b| a >= b)?;
+                parallel_zip::<bool, bool, _>(&lhs_buf, &rhs_buf, &mut out, |a, b| a >= b)
+                    .with_context(|| format!("cmp::{} execute bool kernel", kind.name()))?;
             } else {
                 macro_rules! do_cmp {
                     ($T:ty) => {
                         parallel_zip::<$T, bool, _>(&lhs_buf, &rhs_buf, &mut out, |a, b| a >= b)
                     };
                 }
-                dispatch_real!(lhs.dtype(), do_cmp)??;
+                dispatch_real!(lhs.dtype(), do_cmp)
+                    .with_context(|| {
+                        format!(
+                            "cmp::{} select real dispatch for {}",
+                            kind.name(),
+                            lhs.dtype()
+                        )
+                    })?
+                    .with_context(|| format!("cmp::{} execute real kernel", kind.name()))?;
             }
         }
     }
@@ -321,6 +372,11 @@ mod tests {
         let rhs = Buffer::from_slice(&[1_i32, 2, 3]).unwrap().reshape(&[3]).unwrap();
 
         let err = eq(&lhs, &rhs).unwrap_err();
-        assert!(matches!(err, MohuError::ShapeMismatch { .. }));
+        match err {
+            MohuError::Context { source, .. } => {
+                assert!(matches!(*source, MohuError::ShapeMismatch { .. }));
+            }
+            other => panic!("expected context-wrapped ShapeMismatch, got {other:?}"),
+        }
     }
 }
