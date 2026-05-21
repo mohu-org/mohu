@@ -303,6 +303,18 @@ fn unsqueeze_inserts_size_one_dim() {
 }
 
 #[test]
+fn squeeze_axis_out_of_range_returns_error() {
+    let buf = Buffer::alloc(DType::F32, &[1, 3, 4], Order::C).unwrap();
+    assert!(buf.squeeze_axis(3).is_err());
+}
+
+#[test]
+fn unsqueeze_out_of_range_returns_error() {
+    let buf = Buffer::alloc(DType::F32, &[3, 4], Order::C).unwrap();
+    assert!(buf.unsqueeze(3).is_err());
+}
+
+#[test]
 fn unsqueeze_then_squeeze_roundtrips() {
     let buf = Buffer::alloc(DType::F32, &[3, 4], Order::C).unwrap();
     let expanded = buf.unsqueeze(0).unwrap();
