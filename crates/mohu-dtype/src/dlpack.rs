@@ -33,10 +33,10 @@ use crate::dtype::DType;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[repr(u8)]
 pub enum DLDataTypeCode {
-    Int     = 0,
-    UInt    = 1,
-    Float   = 2,
-    BFloat  = 4,
+    Int = 0,
+    UInt = 1,
+    Float = 2,
+    BFloat = 4,
     Complex = 5,
 }
 
@@ -62,9 +62,9 @@ impl DLDataTypeCode {
 /// A parsed representation of a DLPack `DLDataType` struct.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct DLDataType {
-    pub code:  DLDataTypeCode,
+    pub code: DLDataTypeCode,
     /// Bits per scalar element (per lane).
-    pub bits:  u8,
+    pub bits: u8,
     /// Number of SIMD lanes.  Must be 1 for mohu arrays.
     pub lanes: u16,
 }
@@ -72,7 +72,11 @@ pub struct DLDataType {
 impl DLDataType {
     /// Constructs a `DLDataType` with `lanes = 1`.
     pub const fn scalar(code: DLDataTypeCode, bits: u8) -> Self {
-        Self { code, bits, lanes: 1 }
+        Self {
+            code,
+            bits,
+            lanes: 1,
+        }
     }
 
     /// Parses from raw `(code, bits, lanes)` triple.
@@ -104,21 +108,21 @@ impl DType {
     pub const fn to_dlpack(self) -> DLDataType {
         use DLDataTypeCode::*;
         match self {
-            Self::Bool => DLDataType::scalar(UInt,    8),
-            Self::I8   => DLDataType::scalar(Int,     8),
-            Self::I16  => DLDataType::scalar(Int,    16),
-            Self::I32  => DLDataType::scalar(Int,    32),
-            Self::I64  => DLDataType::scalar(Int,    64),
-            Self::U8   => DLDataType::scalar(UInt,    8),
-            Self::U16  => DLDataType::scalar(UInt,   16),
-            Self::U32  => DLDataType::scalar(UInt,   32),
-            Self::U64  => DLDataType::scalar(UInt,   64),
-            Self::F16  => DLDataType::scalar(Float,  16),
+            Self::Bool => DLDataType::scalar(UInt, 8),
+            Self::I8 => DLDataType::scalar(Int, 8),
+            Self::I16 => DLDataType::scalar(Int, 16),
+            Self::I32 => DLDataType::scalar(Int, 32),
+            Self::I64 => DLDataType::scalar(Int, 64),
+            Self::U8 => DLDataType::scalar(UInt, 8),
+            Self::U16 => DLDataType::scalar(UInt, 16),
+            Self::U32 => DLDataType::scalar(UInt, 32),
+            Self::U64 => DLDataType::scalar(UInt, 64),
+            Self::F16 => DLDataType::scalar(Float, 16),
             Self::BF16 => DLDataType::scalar(BFloat, 16),
-            Self::F32  => DLDataType::scalar(Float,  32),
-            Self::F64  => DLDataType::scalar(Float,  64),
-            Self::C64  => DLDataType::scalar(Complex, 64),
-            Self::C128 => DLDataType::scalar(Complex,128),
+            Self::F32 => DLDataType::scalar(Float, 32),
+            Self::F64 => DLDataType::scalar(Float, 64),
+            Self::C64 => DLDataType::scalar(Complex, 64),
+            Self::C128 => DLDataType::scalar(Complex, 128),
         }
     }
 
@@ -141,20 +145,20 @@ impl DType {
         }
         let kind = DLDataTypeCode::from_u8(code)?;
         match (kind, bits) {
-            (DLDataTypeCode::Int,     8)  => Ok(Self::I8),
-            (DLDataTypeCode::Int,    16)  => Ok(Self::I16),
-            (DLDataTypeCode::Int,    32)  => Ok(Self::I32),
-            (DLDataTypeCode::Int,    64)  => Ok(Self::I64),
-            (DLDataTypeCode::UInt,   8)   => Ok(Self::U8),   // Bool also maps here
-            (DLDataTypeCode::UInt,  16)   => Ok(Self::U16),
-            (DLDataTypeCode::UInt,  32)   => Ok(Self::U32),
-            (DLDataTypeCode::UInt,  64)   => Ok(Self::U64),
-            (DLDataTypeCode::Float, 16)   => Ok(Self::F16),
-            (DLDataTypeCode::Float, 32)   => Ok(Self::F32),
-            (DLDataTypeCode::Float, 64)   => Ok(Self::F64),
-            (DLDataTypeCode::BFloat, 16)  => Ok(Self::BF16),
+            (DLDataTypeCode::Int, 8) => Ok(Self::I8),
+            (DLDataTypeCode::Int, 16) => Ok(Self::I16),
+            (DLDataTypeCode::Int, 32) => Ok(Self::I32),
+            (DLDataTypeCode::Int, 64) => Ok(Self::I64),
+            (DLDataTypeCode::UInt, 8) => Ok(Self::U8), // Bool also maps here
+            (DLDataTypeCode::UInt, 16) => Ok(Self::U16),
+            (DLDataTypeCode::UInt, 32) => Ok(Self::U32),
+            (DLDataTypeCode::UInt, 64) => Ok(Self::U64),
+            (DLDataTypeCode::Float, 16) => Ok(Self::F16),
+            (DLDataTypeCode::Float, 32) => Ok(Self::F32),
+            (DLDataTypeCode::Float, 64) => Ok(Self::F64),
+            (DLDataTypeCode::BFloat, 16) => Ok(Self::BF16),
             (DLDataTypeCode::Complex, 64) => Ok(Self::C64),
-            (DLDataTypeCode::Complex,128) => Ok(Self::C128),
+            (DLDataTypeCode::Complex, 128) => Ok(Self::C128),
             (_, b) => Err(MohuError::DLPackUnsupportedDType {
                 code,
                 bits: b,
@@ -173,39 +177,39 @@ impl DType {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[repr(i32)]
 pub enum DLDeviceType {
-    Cpu        = 1,
-    Cuda       = 2,
-    CpuPinned  = 3,
-    OpenCL     = 4,
-    Vulkan     = 7,
-    Metal      = 8,
-    Vpi        = 9,
-    Rocm       = 10,
-    ExtDev     = 12,
-    CudaManaged= 13,
-    OneApi     = 14,
-    WebGpu     = 15,
-    Hexagon    = 16,
+    Cpu = 1,
+    Cuda = 2,
+    CpuPinned = 3,
+    OpenCL = 4,
+    Vulkan = 7,
+    Metal = 8,
+    Vpi = 9,
+    Rocm = 10,
+    ExtDev = 12,
+    CudaManaged = 13,
+    OneApi = 14,
+    WebGpu = 15,
+    Hexagon = 16,
 }
 
 impl DLDeviceType {
     /// Parses a device type from its raw `i32` code.
     pub fn from_i32(code: i32) -> Option<Self> {
         match code {
-            1  => Some(Self::Cpu),
-            2  => Some(Self::Cuda),
-            3  => Some(Self::CpuPinned),
-            4  => Some(Self::OpenCL),
-            7  => Some(Self::Vulkan),
-            8  => Some(Self::Metal),
-            9  => Some(Self::Vpi),
+            1 => Some(Self::Cpu),
+            2 => Some(Self::Cuda),
+            3 => Some(Self::CpuPinned),
+            4 => Some(Self::OpenCL),
+            7 => Some(Self::Vulkan),
+            8 => Some(Self::Metal),
+            9 => Some(Self::Vpi),
             10 => Some(Self::Rocm),
             12 => Some(Self::ExtDev),
             13 => Some(Self::CudaManaged),
             14 => Some(Self::OneApi),
             15 => Some(Self::WebGpu),
             16 => Some(Self::Hexagon),
-            _  => None,
+            _ => None,
         }
     }
 
@@ -219,19 +223,19 @@ impl DLDeviceType {
     /// Human-readable device name.
     pub fn name(self) -> &'static str {
         match self {
-            Self::Cpu         => "CPU",
-            Self::Cuda        => "CUDA",
-            Self::CpuPinned   => "CPU (pinned)",
-            Self::OpenCL      => "OpenCL",
-            Self::Vulkan      => "Vulkan",
-            Self::Metal       => "Metal",
-            Self::Vpi         => "VPI",
-            Self::Rocm        => "ROCm",
-            Self::ExtDev      => "ExtDev",
+            Self::Cpu => "CPU",
+            Self::Cuda => "CUDA",
+            Self::CpuPinned => "CPU (pinned)",
+            Self::OpenCL => "OpenCL",
+            Self::Vulkan => "Vulkan",
+            Self::Metal => "Metal",
+            Self::Vpi => "VPI",
+            Self::Rocm => "ROCm",
+            Self::ExtDev => "ExtDev",
             Self::CudaManaged => "CUDA (managed)",
-            Self::OneApi      => "OneAPI",
-            Self::WebGpu      => "WebGPU",
-            Self::Hexagon     => "Hexagon",
+            Self::OneApi => "OneAPI",
+            Self::WebGpu => "WebGPU",
+            Self::Hexagon => "Hexagon",
         }
     }
 }

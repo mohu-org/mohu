@@ -16,10 +16,7 @@ use std::marker::PhantomData;
 use mohu_dtype::{dtype::DType, scalar::Scalar};
 use mohu_error::{MohuError, MohuResult};
 
-use crate::{
-    buffer::Buffer,
-    strides::StridedByteIter,
-};
+use crate::{buffer::Buffer, strides::StridedByteIter};
 
 // ─── BufferView<'buf, T> ──────────────────────────────────────────────────────
 
@@ -30,7 +27,7 @@ use crate::{
 /// The view borrows `'buf` from the `Buffer`.  The `Buffer` (and its backing
 /// `Arc<RawBuffer>`) must outlive this view.
 pub struct BufferView<'buf, T: Scalar> {
-    buf:     &'buf Buffer,
+    buf: &'buf Buffer,
     _marker: PhantomData<&'buf T>,
 }
 
@@ -42,28 +39,52 @@ impl<'buf, T: Scalar> BufferView<'buf, T> {
         if T::DTYPE != buf.dtype() {
             return Err(MohuError::DTypeMismatch {
                 expected: T::DTYPE.to_string(),
-                got:      buf.dtype().to_string(),
+                got: buf.dtype().to_string(),
             });
         }
-        Ok(Self { buf, _marker: PhantomData })
+        Ok(Self {
+            buf,
+            _marker: PhantomData,
+        })
     }
 
     // ─── Properties ───────────────────────────────────────────────────────────
 
     /// Returns the element data type.
-    #[inline] pub fn dtype(&self)    -> DType  { self.buf.dtype() }
+    #[inline]
+    pub fn dtype(&self) -> DType {
+        self.buf.dtype()
+    }
     /// Returns the number of dimensions.
-    #[inline] pub fn ndim(&self)     -> usize  { self.buf.ndim() }
+    #[inline]
+    pub fn ndim(&self) -> usize {
+        self.buf.ndim()
+    }
     /// Returns the shape as a slice of dimension sizes.
-    #[inline] pub fn shape(&self)    -> &[usize] { self.buf.shape() }
+    #[inline]
+    pub fn shape(&self) -> &[usize] {
+        self.buf.shape()
+    }
     /// Returns the byte strides.
-    #[inline] pub fn strides(&self)  -> &[isize] { self.buf.strides() }
+    #[inline]
+    pub fn strides(&self) -> &[isize] {
+        self.buf.strides()
+    }
     /// Returns the total number of elements.
-    #[inline] pub fn len(&self)      -> usize  { self.buf.len() }
+    #[inline]
+    pub fn len(&self) -> usize {
+        self.buf.len()
+    }
     /// Returns `true` if the buffer has zero elements.
-    #[inline] pub fn is_empty(&self) -> bool   { self.buf.is_empty() }
+    #[inline]
+    pub fn is_empty(&self) -> bool {
+        self.buf.is_empty()
+    }
     /// Returns `true` if the buffer is C-contiguous.
-    #[inline] pub fn is_c_contiguous(&self) -> bool { self.buf.is_c_contiguous() }
+    #[inline]
+    pub fn is_c_contiguous(&self) -> bool {
+        self.buf.is_c_contiguous()
+    }
 
     // ─── Slice access (contiguous only) ───────────────────────────────────────
 
@@ -106,12 +127,8 @@ impl<'buf, T: Scalar> BufferView<'buf, T> {
     /// For non-contiguous arrays it uses stride-based byte-offset iteration.
     pub fn iter(&self) -> impl Iterator<Item = &T> + '_ {
         ViewIter {
-            raw_ptr:  self.buf.as_ptr(),
-            iter:     StridedByteIter::new(
-                self.buf.shape(),
-                self.buf.strides(),
-                self.buf.offset(),
-            ),
+            raw_ptr: self.buf.as_ptr(),
+            iter: StridedByteIter::new(self.buf.shape(), self.buf.strides(), self.buf.offset()),
             _phantom: PhantomData,
         }
     }
@@ -125,7 +142,7 @@ impl<'buf, T: Scalar> BufferView<'buf, T> {
 /// [`Buffer::make_unique`] — if the backing bytes are shared, they are
 /// copied first.
 pub struct BufferViewMut<'buf, T: Scalar> {
-    buf:     &'buf mut Buffer,
+    buf: &'buf mut Buffer,
     _marker: PhantomData<&'buf mut T>,
 }
 
@@ -138,28 +155,46 @@ impl<'buf, T: Scalar> BufferViewMut<'buf, T> {
         if T::DTYPE != buf.dtype() {
             return Err(MohuError::DTypeMismatch {
                 expected: T::DTYPE.to_string(),
-                got:      buf.dtype().to_string(),
+                got: buf.dtype().to_string(),
             });
         }
         if !buf.is_writeable() {
             return Err(MohuError::ReadOnly);
         }
         buf.make_unique()?;
-        Ok(Self { buf, _marker: PhantomData })
+        Ok(Self {
+            buf,
+            _marker: PhantomData,
+        })
     }
 
     // ─── Properties ───────────────────────────────────────────────────────────
 
     /// Returns the element data type.
-    #[inline] pub fn dtype(&self)    -> DType  { self.buf.dtype() }
+    #[inline]
+    pub fn dtype(&self) -> DType {
+        self.buf.dtype()
+    }
     /// Returns the number of dimensions.
-    #[inline] pub fn ndim(&self)     -> usize  { self.buf.ndim() }
+    #[inline]
+    pub fn ndim(&self) -> usize {
+        self.buf.ndim()
+    }
     /// Returns the shape as a slice of dimension sizes.
-    #[inline] pub fn shape(&self)    -> &[usize] { self.buf.shape() }
+    #[inline]
+    pub fn shape(&self) -> &[usize] {
+        self.buf.shape()
+    }
     /// Returns the total number of elements.
-    #[inline] pub fn len(&self)      -> usize  { self.buf.len() }
+    #[inline]
+    pub fn len(&self) -> usize {
+        self.buf.len()
+    }
     /// Returns `true` if the buffer has zero elements.
-    #[inline] pub fn is_empty(&self) -> bool   { self.buf.is_empty() }
+    #[inline]
+    pub fn is_empty(&self) -> bool {
+        self.buf.is_empty()
+    }
 
     // ─── Slice access ─────────────────────────────────────────────────────────
 
@@ -200,9 +235,9 @@ impl<'buf, T: Scalar> BufferViewMut<'buf, T> {
     /// Returns an iterator over mutable references to all elements in C order.
     pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut T> + '_ {
         let raw_ptr = unsafe { self.buf.as_mut_ptr() };
-        let shape   = self.buf.shape().to_vec();
+        let shape = self.buf.shape().to_vec();
         let strides = self.buf.strides().to_vec();
-        let offset  = self.buf.offset();
+        let offset = self.buf.offset();
         ViewIterMut {
             raw_ptr,
             iter: StridedByteIter::new(&shape, &strides, offset),
@@ -214,8 +249,8 @@ impl<'buf, T: Scalar> BufferViewMut<'buf, T> {
 // ─── ViewIter ────────────────────────────────────────────────────────────────
 
 struct ViewIter<'a, T> {
-    raw_ptr:  *const u8,
-    iter:     StridedByteIter,
+    raw_ptr: *const u8,
+    iter: StridedByteIter,
     _phantom: PhantomData<&'a T>,
 }
 
@@ -236,8 +271,8 @@ impl<'a, T: Scalar> Iterator for ViewIter<'a, T> {
 // ─── ViewIterMut ─────────────────────────────────────────────────────────────
 
 struct ViewIterMut<'a, T> {
-    raw_ptr:  *mut u8,
-    iter:     StridedByteIter,
+    raw_ptr: *mut u8,
+    iter: StridedByteIter,
     _phantom: PhantomData<&'a mut T>,
 }
 

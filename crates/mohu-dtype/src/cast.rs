@@ -18,10 +18,7 @@
 ///   output slice.
 use mohu_error::{MohuError, MohuResult};
 
-use crate::{
-    promote::CastMode,
-    scalar::Scalar,
-};
+use crate::{promote::CastMode, scalar::Scalar};
 
 // ─── cast_scalar ─────────────────────────────────────────────────────────────
 
@@ -40,8 +37,8 @@ use crate::{
 pub fn cast_scalar<S: Scalar, D: Scalar>(value: S, mode: CastMode) -> MohuResult<D> {
     if !crate::promote::can_cast(S::DTYPE, D::DTYPE, mode) {
         return Err(MohuError::InvalidCast {
-            from:   S::DTYPE.to_string(),
-            to:     D::DTYPE.to_string(),
+            from: S::DTYPE.to_string(),
+            to: D::DTYPE.to_string(),
             reason: format!("{mode:?} cast is not allowed"),
         });
     }
@@ -82,14 +79,14 @@ pub fn cast_slice<S: Scalar, D: Scalar>(
     if src.len() != dst.len() {
         return Err(MohuError::ShapeMismatch {
             expected: vec![src.len()],
-            got:      vec![dst.len()],
+            got: vec![dst.len()],
         });
     }
     // Check mode once before the loop.
     if !crate::promote::can_cast(S::DTYPE, D::DTYPE, mode) {
         return Err(MohuError::InvalidCast {
-            from:   S::DTYPE.to_string(),
-            to:     D::DTYPE.to_string(),
+            from: S::DTYPE.to_string(),
+            to: D::DTYPE.to_string(),
             reason: format!("{mode:?} cast is not allowed"),
         });
     }
@@ -111,10 +108,7 @@ fn byte_copy_cast<S: Scalar, D: Scalar>(value: S) -> D {
     // `D::ITEMSIZE == S::ITEMSIZE` (asserted in debug builds above), so the
     // ptr::read_unaligned reads exactly the right number of bytes.
     unsafe {
-        let bytes = std::slice::from_raw_parts(
-            &value as *const S as *const u8,
-            S::ITEMSIZE,
-        );
+        let bytes = std::slice::from_raw_parts(&value as *const S as *const u8, S::ITEMSIZE);
         buf[..S::ITEMSIZE].copy_from_slice(bytes);
         std::ptr::read_unaligned(buf.as_ptr() as *const D)
     }
@@ -151,8 +145,12 @@ where
     }
     let min_f = D::min_value().to_f64_lossy();
     let max_f = D::max_value().to_f64_lossy();
-    if v <= min_f { return D::min_value(); }
-    if v >= max_f { return D::max_value(); }
+    if v <= min_f {
+        return D::min_value();
+    }
+    if v >= max_f {
+        return D::max_value();
+    }
     D::from_f64_lossy(v)
 }
 
@@ -161,9 +159,9 @@ where
 impl std::fmt::Display for CastMode {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Safe     => write!(f, "safe"),
+            Self::Safe => write!(f, "safe"),
             Self::SameKind => write!(f, "same_kind"),
-            Self::Unsafe   => write!(f, "unsafe"),
+            Self::Unsafe => write!(f, "unsafe"),
         }
     }
 }
