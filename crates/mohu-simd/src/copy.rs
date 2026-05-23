@@ -1,13 +1,12 @@
 // SAFETY: The safety invariants are enforced by the caller.
 
 macro_rules! impl_copy {
-    ($fn_name:ident, $fn_avx2:ident, $fn_scalar:ident, $ty:ty, $chunk_size:expr, $avx2_load:ident, $avx2_store:ident, $vec_ty:ident) => {
+    ($fn_name:ident, $fn_avx2:ident, $fn_scalar:ident, $ty:ty, $chunk_size:expr, $avx2_load:ident, $avx2_store:ident) => {
         /// Copies a buffer.
         ///
         /// # Safety
         /// * `dst` must be valid for writes of `len` elements.
         /// * `src` must be valid for reads of `len` elements.
-        /// * `dst` and `src` must be properly aligned.
         /// * `dst` and `src` must not overlap.
         pub unsafe fn $fn_name(dst: *mut $ty, src: *const $ty, len: usize) {
             #[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), feature = "avx2"))]
@@ -25,13 +24,11 @@ macro_rules! impl_copy {
             }
         }
 
-        // SAFETY: Caller must ensure `dst` and `src` are valid for `len` elements and properly aligned.
+        // SAFETY: Caller must ensure `dst` and `src` are valid for `len` elements.
         #[inline(always)]
         unsafe fn $fn_scalar(dst: *mut $ty, src: *const $ty, len: usize) {
-            // SAFETY: Caller guarantees valid, aligned, non-overlapping pointers.
-            unsafe {
-                core::ptr::copy_nonoverlapping(src, dst, len);
-            }
+            // SAFETY: Caller guarantees valid, non-overlapping pointers.
+            core::ptr::copy_nonoverlapping(src, dst, len);
         }
 
         #[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), feature = "avx2"))]
@@ -45,26 +42,22 @@ macro_rules! impl_copy {
             
             while len >= $chunk_size {
                 // SAFETY: The caller ensures pointers are valid.
-                unsafe {
-                    let vec_val = $avx2_load(src as *const _);
-                    $avx2_store(dst as *mut _, vec_val);
-                    dst = dst.add($chunk_size);
-                    src = src.add($chunk_size);
-                }
+                let vec_val = $avx2_load(src as *const _);
+                $avx2_store(dst as *mut _, vec_val);
+                dst = dst.add($chunk_size);
+                src = src.add($chunk_size);
                 len -= $chunk_size;
             }
             
             // Handle remaining elements with scalar fallback
             // SAFETY: Remaining bounds are valid.
-            unsafe {
-                $fn_scalar(dst, src, len);
-            }
+            $fn_scalar(dst, src, len);
         }
     };
 }
 
-impl_copy!(copy_f32, copy_f32_avx2, copy_f32_scalar, f32, 8, _mm256_loadu_ps, _mm256_storeu_ps, __m256);
-impl_copy!(copy_f64, copy_f64_avx2, copy_f64_scalar, f64, 4, _mm256_loadu_pd, _mm256_storeu_pd, __m256d);
+impl_copy!(copy_f32, copy_f32_avx2, copy_f32_scalar, f32, 8, _mm256_loadu_ps, _mm256_storeu_ps);
+impl_copy!(copy_f64, copy_f64_avx2, copy_f64_scalar, f64, 4, _mm256_loadu_pd, _mm256_storeu_pd);
 
 #[cfg(test)]
 mod tests {

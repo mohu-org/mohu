@@ -1,6 +1,6 @@
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
-use mohu_simd::copy::{copy_f32, copy_f64};
-use mohu_simd::fill::{fill_f32, fill_f64, fill_i32, fill_i64};
+use mohu_simd::copy::copy_f32;
+use mohu_simd::fill::{fill_f32, fill_f64};
 
 fn bench_fill(c: &mut Criterion) {
     let mut group = c.benchmark_group("fill");
