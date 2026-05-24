@@ -1,0 +1,41 @@
+name: Slash Assign
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  issues: write
+  pull-requests: write
+
+jobs:
+  assign:
+    name: /assign
+    runs-on: ubuntu-latest
+    if: |
+      startsWith(github.event.comment.body, '/assign') &&
+      github.event.comment.user.type != 'Bot'
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const body = context.payload.comment.body.trim();
+            const issueNumber = context.payload.issue.number;
+            const commenter = context.payload.comment.user.login;
+
+            const mentions = [...body.matchAll(/@([\w-]+)/g)].map(m => m[1]);
+            const assignees = mentions.length > 0 ? mentions : [commenter];
+
+            await github.rest.issues.addAssignees({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issueNumber,
+              assignees,
+            });
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issueNumber,
+              body: `Assigned to ${assignees.map(a => `@${a}`).join(', ')} ✓`,
+            });

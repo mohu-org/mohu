@@ -1,0 +1,14 @@
+# auto-assign-action config
+# Picks reviewers from this list, skipping the PR author
+
+addReviewers: true
+addAssignees: false
+
+reviewers:
+  - mugiwaraluffy56
+  - Bbn08
+
+numberOfReviewers: 1
+
+# Skip draft PRs (also enforced in workflow `if:` condition)
+skipDraft: true
