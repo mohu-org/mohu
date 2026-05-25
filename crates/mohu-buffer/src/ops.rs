@@ -162,8 +162,9 @@ pub fn copy_to_contiguous(src: &Buffer, dst: &mut Buffer) -> MohuResult<()> {
     }
     if src.len() != dst.len() {
         return Err(MohuError::ShapeMismatch {
-            expected: src.shape().to_vec(),
-            got:      dst.shape().to_vec(),
+            op: "copy_to_contiguous".to_string(),
+            lhs: src.shape().to_vec(),
+            rhs: dst.shape().to_vec(),
         });
     }
     if !dst.is_writeable() {
@@ -216,8 +217,9 @@ pub fn copy_to_contiguous(src: &Buffer, dst: &mut Buffer) -> MohuResult<()> {
 pub fn cast_copy(src: &Buffer, dst: &mut Buffer, mode: CastMode) -> MohuResult<()> {
     if src.len() != dst.len() {
         return Err(MohuError::ShapeMismatch {
-            expected: src.shape().to_vec(),
-            got:      dst.shape().to_vec(),
+            op: "cast_copy".to_string(),
+            lhs: src.shape().to_vec(),
+            rhs: dst.shape().to_vec(),
         });
     }
     if src.dtype() == dst.dtype() {
@@ -307,8 +309,9 @@ where
     }
     if src.len() != dst.len() {
         return Err(MohuError::ShapeMismatch {
-            expected: src.shape().to_vec(),
-            got:      dst.shape().to_vec(),
+            op: "parallel_map".to_string(),
+            lhs: src.shape().to_vec(),
+            rhs: dst.shape().to_vec(),
         });
     }
     if !dst.is_writeable() {
@@ -468,8 +471,9 @@ where
     }
     if src.len() != dst.len() {
         return Err(MohuError::ShapeMismatch {
-            expected: src.shape().to_vec(),
-            got:      dst.shape().to_vec(),
+            op: "parallel_scan".to_string(),
+            lhs: src.shape().to_vec(),
+            rhs: dst.shape().to_vec(),
         });
     }
     if !src.is_c_contiguous() || !dst.is_c_contiguous() {
@@ -556,8 +560,9 @@ pub fn where_select<T: Scalar + Copy + Send + Sync>(
         }
         if buf.shape() != mask.shape() {
             return Err(MohuError::ShapeMismatch {
-                expected: mask.shape().to_vec(),
-                got:      buf.shape().to_vec(),
+                op: "where_select".to_string(),
+                lhs: mask.shape().to_vec(),
+                rhs: buf.shape().to_vec(),
             });
         }
         if !buf.is_c_contiguous() {
@@ -568,8 +573,9 @@ pub fn where_select<T: Scalar + Copy + Send + Sync>(
     if !dst.is_writeable() { return Err(MohuError::ReadOnly); }
     if dst.shape() != mask.shape() {
         return Err(MohuError::ShapeMismatch {
-            expected: mask.shape().to_vec(),
-            got:      dst.shape().to_vec(),
+            op: "where_select".to_string(),
+            lhs: mask.shape().to_vec(),
+            rhs: dst.shape().to_vec(),
         });
     }
     dst.make_unique()?;
@@ -613,8 +619,9 @@ where
     }
     if src.len() != dst.len() {
         return Err(MohuError::ShapeMismatch {
-            expected: src.shape().to_vec(),
-            got:      dst.shape().to_vec(),
+            op: "clip".to_string(),
+            lhs: src.shape().to_vec(),
+            rhs: dst.shape().to_vec(),
         });
     }
     if !src.is_c_contiguous() || !dst.is_c_contiguous() {
@@ -662,8 +669,9 @@ pub fn gather(src: &Buffer, indices: &Buffer, dst: &mut Buffer) -> MohuResult<()
     }
     if indices.len() != dst.len() {
         return Err(MohuError::ShapeMismatch {
-            expected: indices.shape().to_vec(),
-            got:      dst.shape().to_vec(),
+            op: "gather".to_string(),
+            lhs: indices.shape().to_vec(),
+            rhs: dst.shape().to_vec(),
         });
     }
     if !dst.is_writeable() { return Err(MohuError::ReadOnly); }
@@ -729,8 +737,9 @@ pub fn scatter(dst: &mut Buffer, indices: &Buffer, src: &Buffer) -> MohuResult<(
     }
     if indices.len() != src.len() {
         return Err(MohuError::ShapeMismatch {
-            expected: indices.shape().to_vec(),
-            got:      src.shape().to_vec(),
+            op: "scatter".to_string(),
+            lhs: indices.shape().to_vec(),
+            rhs: src.shape().to_vec(),
         });
     }
     if !dst.is_writeable() { return Err(MohuError::ReadOnly); }
@@ -949,8 +958,9 @@ pub fn flip_axis_copy(src: &Buffer, dst: &mut Buffer, axis: usize) -> MohuResult
     }
     if src.shape() != dst.shape() {
         return Err(MohuError::ShapeMismatch {
-            expected: src.shape().to_vec(),
-            got:      dst.shape().to_vec(),
+            op: "flip_axis_copy".to_string(),
+            lhs: src.shape().to_vec(),
+            rhs: dst.shape().to_vec(),
         });
     }
     if axis >= src.ndim() {
@@ -1375,8 +1385,9 @@ where
     }
     if a.len() != b.len() || a.len() != dst.len() {
         return Err(MohuError::ShapeMismatch {
-            expected: a.shape().to_vec(),
-            got:      b.shape().to_vec(),
+            op: "parallel_zip".to_string(),
+            lhs: a.shape().to_vec(),
+            rhs: b.shape().to_vec(),
         });
     }
     if !a.is_c_contiguous() || !b.is_c_contiguous() || !dst.is_c_contiguous() {

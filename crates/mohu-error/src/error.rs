@@ -30,10 +30,10 @@ pub enum MohuError {
 
     /// Two arrays have incompatible shapes for an element-wise operation.
     #[error(
-        "shape mismatch: expected {expected:?}, got {got:?}\n\
+        "ShapeMismatch: cannot perform {op} on shapes {lhs:?} and {rhs:?}\n\
          hint: shapes must be identical for this operation, or broadcastable"
     )]
-    ShapeMismatch { expected: Vec<usize>, got: Vec<usize> },
+    ShapeMismatch { op: String, lhs: Vec<usize>, rhs: Vec<usize> },
 
     /// Two shapes cannot be broadcast together under NumPy-style rules.
     #[error(

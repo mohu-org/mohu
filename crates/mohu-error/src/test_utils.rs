@@ -94,18 +94,19 @@ pub fn assert_err_kind<T: std::fmt::Debug>(
 /// Asserts that the error is a `ShapeMismatch` with the given shapes.
 pub fn assert_shape_err<T: std::fmt::Debug>(
     result: MohuResult<T>,
-    expected_shape: &[usize],
-    got_shape: &[usize],
+    expected_op: &str,
+    expected_lhs: &[usize],
+    expected_rhs: &[usize],
 ) {
     let err = assert_err(result, "expected ShapeMismatch");
     let root = err.root_cause();
     match root {
-        MohuError::ShapeMismatch { expected, got } => {
-            if expected.as_slice() != expected_shape || got.as_slice() != got_shape {
+        MohuError::ShapeMismatch { op, lhs, rhs } => {
+            if op != expected_op || lhs.as_slice() != expected_lhs || rhs.as_slice() != expected_rhs {
                 panic!(
                     "assert_shape_err: shapes don't match.\n\
-                     expected ShapeMismatch {{ expected: {expected_shape:?}, got: {got_shape:?} }}\n\
-                     got      ShapeMismatch {{ expected: {expected:?}, got: {got:?} }}"
+                     expected ShapeMismatch {{ op: {expected_op:?}, lhs: {expected_lhs:?}, rhs: {expected_rhs:?} }}\n\
+                     got      ShapeMismatch {{ op: {op:?}, lhs: {lhs:?}, rhs: {rhs:?} }}"
                 );
             }
         }

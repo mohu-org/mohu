@@ -54,10 +54,14 @@ macro_rules! ensure {
 #[macro_export]
 macro_rules! assert_shape_eq {
     ($lhs:expr, $rhs:expr) => {
+        $crate::assert_shape_eq!($lhs, $rhs, "operation")
+    };
+    ($lhs:expr, $rhs:expr, $op:expr) => {
         if $lhs != $rhs {
             return ::std::result::Result::Err($crate::MohuError::ShapeMismatch {
-                expected: $lhs.to_vec(),
-                got: $rhs.to_vec(),
+                op: $op.to_string(),
+                lhs: $lhs.to_vec(),
+                rhs: $rhs.to_vec(),
             });
         }
     };

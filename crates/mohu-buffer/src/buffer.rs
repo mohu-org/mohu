@@ -339,8 +339,9 @@ impl Buffer {
         for (_row_idx, row) in data.iter().enumerate() {
             if row.len() != cols {
                 return Err(MohuError::ShapeMismatch {
-                    expected: vec![cols],
-                    got:      vec![row.len()],
+                    op: "from_slice_2d".to_string(),
+                    lhs: vec![cols],
+                    rhs: vec![row.len()],
                 });
             }
         }
