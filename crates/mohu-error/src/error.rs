@@ -30,10 +30,17 @@ pub enum MohuError {
 
     /// Two arrays have incompatible shapes for an element-wise operation.
     #[error(
-        "ShapeMismatch: cannot perform {op} on shapes {lhs:?} and {rhs:?}\n\
-         hint: shapes must be identical for this operation, or broadcastable"
+        "shape mismatch: expected {expected:?}, got {got:?}\n\
+         hint: shapes must be compatible for this operation"
     )]
-    ShapeMismatch { op: String, lhs: Vec<usize>, rhs: Vec<usize> },
+    ShapeMismatch { expected: Vec<usize>, got: Vec<usize> },
+
+    /// Two arrays have incompatible shapes for a specific operation.
+    #[error(
+        "OpShapeMismatch: cannot perform {op} on shapes {lhs:?} and {rhs:?}\n\
+         hint: shapes must be compatible for this operation"
+    )]
+    OpShapeMismatch { op: String, lhs: Vec<usize>, rhs: Vec<usize> },
 
     /// Two shapes cannot be broadcast together under NumPy-style rules.
     #[error(
@@ -521,6 +528,7 @@ impl MohuError {
         use crate::codes::ErrorCode;
         match self {
             Self::ShapeMismatch { .. }             => ErrorCode::ShapeMismatch,
+            Self::OpShapeMismatch { .. }           => ErrorCode::ShapeMismatch,
             Self::BroadcastError { .. }            => ErrorCode::BroadcastError,
             Self::DimensionMismatch { .. }         => ErrorCode::DimensionMismatch,
             Self::AxisOutOfRange { .. }            => ErrorCode::AxisOutOfRange,

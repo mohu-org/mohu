@@ -338,7 +338,7 @@ impl Buffer {
         let cols = data[0].len();
         for (_row_idx, row) in data.iter().enumerate() {
             if row.len() != cols {
-                return Err(MohuError::ShapeMismatch {
+                return Err(MohuError::OpShapeMismatch {
                     op: "from_slice_2d".to_string(),
                     lhs: vec![cols],
                     rhs: vec![row.len()],

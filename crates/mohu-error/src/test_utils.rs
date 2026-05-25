@@ -101,18 +101,19 @@ pub fn assert_shape_err<T: std::fmt::Debug>(
     let err = assert_err(result, "expected ShapeMismatch");
     let root = err.root_cause();
     match root {
-        MohuError::ShapeMismatch { op, lhs, rhs } => {
-            if op != expected_op || lhs.as_slice() != expected_lhs || rhs.as_slice() != expected_rhs {
+        MohuError::OpShapeMismatch { op, lhs, rhs } => {
+            if op != expected_op
+                || lhs.as_slice() != expected_lhs
+                || rhs.as_slice() != expected_rhs
+            {
                 panic!(
                     "assert_shape_err: shapes don't match.\n\
-                     expected ShapeMismatch {{ op: {expected_op:?}, lhs: {expected_lhs:?}, rhs: {expected_rhs:?} }}\n\
-                     got      ShapeMismatch {{ op: {op:?}, lhs: {lhs:?}, rhs: {rhs:?} }}"
+                     expected OpShapeMismatch {{ op: {expected_op:?}, lhs: {expected_lhs:?}, rhs: {expected_rhs:?} }}\n\
+                     got      OpShapeMismatch {{ op: {op:?}, lhs: {lhs:?}, rhs: {rhs:?} }}"
                 );
             }
         }
-        other => panic!(
-            "assert_shape_err: expected ShapeMismatch, got {other:?}"
-        ),
+        other => panic!("assert_shape_err: expected ShapeMismatch, got {other:?}"),
     }
 }
 

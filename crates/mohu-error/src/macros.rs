@@ -56,15 +56,19 @@ macro_rules! assert_shape_eq {
     ($lhs:expr, $rhs:expr) => {
         $crate::assert_shape_eq!($lhs, $rhs, "operation")
     };
-    ($lhs:expr, $rhs:expr, $op:expr) => {
-        if $lhs != $rhs {
-            return ::std::result::Result::Err($crate::MohuError::ShapeMismatch {
-                op: $op.to_string(),
-                lhs: $lhs.to_vec(),
-                rhs: $rhs.to_vec(),
-            });
+    ($lhs:expr, $rhs:expr, $op:expr) => {{
+        let lhs_val = $lhs;
+        let rhs_val = $rhs;
+        if lhs_val != rhs_val {
+            return ::std::result::Result::Err(
+                $crate::MohuError::OpShapeMismatch {
+                    op: $op.to_string(),
+                    lhs: lhs_val.to_vec(),
+                    rhs: rhs_val.to_vec(),
+                },
+            );
         }
-    };
+    }};
 }
 
 /// Assert that an axis index is in range for an array with `ndim` dimensions.

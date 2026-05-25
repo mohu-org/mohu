@@ -80,7 +80,7 @@ pub fn cast_slice<S: Scalar, D: Scalar>(
     mode: CastMode,
 ) -> MohuResult<()> {
     if src.len() != dst.len() {
-        return Err(MohuError::ShapeMismatch {
+        return Err(MohuError::OpShapeMismatch {
             op: "cast".to_string(),
             lhs: vec![src.len()],
             rhs: vec![dst.len()],

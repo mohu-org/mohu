@@ -161,7 +161,7 @@ pub fn copy_to_contiguous(src: &Buffer, dst: &mut Buffer) -> MohuResult<()> {
         });
     }
     if src.len() != dst.len() {
-        return Err(MohuError::ShapeMismatch {
+        return Err(MohuError::OpShapeMismatch {
             op: "copy_to_contiguous".to_string(),
             lhs: src.shape().to_vec(),
             rhs: dst.shape().to_vec(),
@@ -216,7 +216,7 @@ pub fn copy_to_contiguous(src: &Buffer, dst: &mut Buffer) -> MohuResult<()> {
 /// delegates to `copy_to_contiguous`.
 pub fn cast_copy(src: &Buffer, dst: &mut Buffer, mode: CastMode) -> MohuResult<()> {
     if src.len() != dst.len() {
-        return Err(MohuError::ShapeMismatch {
+        return Err(MohuError::OpShapeMismatch {
             op: "cast_copy".to_string(),
             lhs: src.shape().to_vec(),
             rhs: dst.shape().to_vec(),
@@ -308,7 +308,7 @@ where
         return Err(MohuError::NonContiguous);
     }
     if src.len() != dst.len() {
-        return Err(MohuError::ShapeMismatch {
+        return Err(MohuError::OpShapeMismatch {
             op: "parallel_map".to_string(),
             lhs: src.shape().to_vec(),
             rhs: dst.shape().to_vec(),
@@ -470,7 +470,7 @@ where
         });
     }
     if src.len() != dst.len() {
-        return Err(MohuError::ShapeMismatch {
+        return Err(MohuError::OpShapeMismatch {
             op: "parallel_scan".to_string(),
             lhs: src.shape().to_vec(),
             rhs: dst.shape().to_vec(),
@@ -559,7 +559,7 @@ pub fn where_select<T: Scalar + Copy + Send + Sync>(
             });
         }
         if buf.shape() != mask.shape() {
-            return Err(MohuError::ShapeMismatch {
+            return Err(MohuError::OpShapeMismatch {
                 op: "where_select".to_string(),
                 lhs: mask.shape().to_vec(),
                 rhs: buf.shape().to_vec(),
@@ -572,7 +572,7 @@ pub fn where_select<T: Scalar + Copy + Send + Sync>(
     }
     if !dst.is_writeable() { return Err(MohuError::ReadOnly); }
     if dst.shape() != mask.shape() {
-        return Err(MohuError::ShapeMismatch {
+        return Err(MohuError::OpShapeMismatch {
             op: "where_select".to_string(),
             lhs: mask.shape().to_vec(),
             rhs: dst.shape().to_vec(),
@@ -618,7 +618,7 @@ where
         });
     }
     if src.len() != dst.len() {
-        return Err(MohuError::ShapeMismatch {
+        return Err(MohuError::OpShapeMismatch {
             op: "clip".to_string(),
             lhs: src.shape().to_vec(),
             rhs: dst.shape().to_vec(),
@@ -668,7 +668,7 @@ pub fn gather(src: &Buffer, indices: &Buffer, dst: &mut Buffer) -> MohuResult<()
         return Err(MohuError::NonContiguous);
     }
     if indices.len() != dst.len() {
-        return Err(MohuError::ShapeMismatch {
+        return Err(MohuError::OpShapeMismatch {
             op: "gather".to_string(),
             lhs: indices.shape().to_vec(),
             rhs: dst.shape().to_vec(),
@@ -736,7 +736,7 @@ pub fn scatter(dst: &mut Buffer, indices: &Buffer, src: &Buffer) -> MohuResult<(
         return Err(MohuError::NonContiguous);
     }
     if indices.len() != src.len() {
-        return Err(MohuError::ShapeMismatch {
+        return Err(MohuError::OpShapeMismatch {
             op: "scatter".to_string(),
             lhs: indices.shape().to_vec(),
             rhs: src.shape().to_vec(),
@@ -957,7 +957,7 @@ pub fn flip_axis_copy(src: &Buffer, dst: &mut Buffer, axis: usize) -> MohuResult
         });
     }
     if src.shape() != dst.shape() {
-        return Err(MohuError::ShapeMismatch {
+        return Err(MohuError::OpShapeMismatch {
             op: "flip_axis_copy".to_string(),
             lhs: src.shape().to_vec(),
             rhs: dst.shape().to_vec(),
@@ -1383,11 +1383,18 @@ where
             got:      a.dtype().to_string(),
         });
     }
-    if a.len() != b.len() || a.len() != dst.len() {
-        return Err(MohuError::ShapeMismatch {
+    if a.len() != b.len() {
+        return Err(MohuError::OpShapeMismatch {
             op: "parallel_zip".to_string(),
             lhs: a.shape().to_vec(),
             rhs: b.shape().to_vec(),
+        });
+    }
+    if a.len() != dst.len() {
+        return Err(MohuError::OpShapeMismatch {
+            op: "parallel_zip".to_string(),
+            lhs: a.shape().to_vec(),
+            rhs: dst.shape().to_vec(),
         });
     }
     if !a.is_c_contiguous() || !b.is_c_contiguous() || !dst.is_c_contiguous() {
