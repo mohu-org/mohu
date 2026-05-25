@@ -32,7 +32,6 @@
 ///
 /// Implement [`Ufunc`] and register it in the dispatch table.  The macro
 /// [`define_ufunc!`] generates the boilerplate for common binary/unary cases.
-
 pub mod broadcast;
 pub mod dispatch;
 pub mod loop_impl;

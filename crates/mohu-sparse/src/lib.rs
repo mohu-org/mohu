@@ -33,13 +33,12 @@
 /// coo.push(5, 7, 2.71);
 /// let csr = CsrMatrix::from(coo);
 /// ```
-
 pub mod arith;
 pub mod bsr;
+pub mod convert;
 pub mod coo;
 pub mod csc;
 pub mod csr;
-pub mod convert;
 pub mod dia;
 pub mod linalg;
 pub mod slice;
