@@ -3,3 +3,5 @@ pub mod iter;
 pub mod shape;
 pub mod slice;
 pub mod view;
+
+pub use array::{MohuElement, NdArray};
