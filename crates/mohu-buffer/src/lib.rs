@@ -1,18 +1,19 @@
-/// mohu-buffer — raw buffer allocation, memory layout, and stride arithmetic.
-///
-/// This crate is the memory foundation of mohu.  Every ndarray in `mohu-array`
-/// ultimately holds a `Buffer` from this crate.  The public API is structured
-/// in layers:
-///
-/// | Module      | Responsibility                                          |
-/// |-------------|----------------------------------------------------------|
-/// | [`alloc`]   | Aligned heap / mmap allocation, global live-byte stats   |
-/// | [`strides`] | Stride computation, N-dim index iteration, broadcast     |
-/// | [`layout`]  | Shape + stride + offset descriptor, all view operations  |
-/// | [`buffer`]  | Reference-counted typed buffer; DLPack import/export     |
-/// | [`view`]    | Typed lifetime-bound views (`BufferView<T>`)              |
-/// | [`ops`]     | Parallel fill, copy, cast using Rayon                    |
-/// | [`pool`]    | Allocation reuse pool; `GLOBAL_POOL` singleton           |
+//! mohu-buffer — raw buffer allocation, memory layout, and stride arithmetic.
+//!
+//! This crate is the memory foundation of mohu. Every ndarray in `mohu-array`
+//! ultimately holds a `Buffer` from this crate. The public API is structured
+//! in layers:
+//!
+//! | Module      | Responsibility                                          |
+//! |-------------|----------------------------------------------------------|
+//! | [`alloc`]   | Aligned heap / mmap allocation, global live-byte stats   |
+//! | [`strides`] | Stride computation, N-dim index iteration, broadcast     |
+//! | [`layout`]  | Shape + stride + offset descriptor, all view operations  |
+//! | [`buffer`]  | Reference-counted typed buffer; DLPack import/export     |
+//! | [`view`]    | Typed lifetime-bound views (`BufferView<T>`)             |
+//! | [`ops`]     | Parallel fill, copy, cast using Rayon                    |
+//! | [`pool`]    | Allocation reuse pool; `GLOBAL_POOL` singleton           |
+
 pub mod alloc;
 pub mod buffer;
 pub mod layout;
