@@ -56,9 +56,9 @@ pub fn f_strides(shape: &[usize], itemsize: usize) -> StrideVec {
     let ndim = shape.len();
     let mut strides = StrideVec::with_capacity(ndim);
     let mut acc: isize = itemsize as isize;
-    for i in 0..ndim {
+    for &dim in shape {
         strides.push(acc);
-        acc = acc.saturating_mul(shape[i] as isize);
+        acc = acc.saturating_mul(dim as isize);
     }
     strides
 }
@@ -398,7 +398,7 @@ fn check_no_overlap(shape: &[usize], strides: &[isize], itemsize: usize) -> Mohu
         .map(|(&s, &d)| (s, d))
         .filter(|&(s, d)| s != 0 && d > 1)
         .collect();
-    axes.sort_by(|a, b| b.0.unsigned_abs().cmp(&a.0.unsigned_abs()));
+    axes.sort_by_key(|b| std::cmp::Reverse(b.0.unsigned_abs()));
 
     for i in 1..axes.len() {
         let (prev_stride, prev_dim) = axes[i - 1];

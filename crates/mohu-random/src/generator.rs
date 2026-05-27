@@ -1,6 +1,6 @@
-/// PRNG generator trait and concrete engine types.
-
-/// Trait implemented by all mohu PRNG engines.
+//! PRNG generator trait and concrete engine types.
+//!
+//! Trait implemented by all mohu PRNG engines.
 pub trait Generator: Send + Sync {
     /// Seed the generator from a u64.
     fn seed(seed: u64) -> Self

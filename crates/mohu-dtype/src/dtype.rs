@@ -491,7 +491,7 @@ impl DType {
     /// Accepts canonical names, single-char codes, shorthand with byte counts,
     /// and common aliases. Case-insensitive except for uppercase char codes
     /// (B, H, I, L, F, D).
-    pub fn from_str(s: &str) -> MohuResult<Self> {
+    pub fn parse_str(s: &str) -> MohuResult<Self> {
         let lower = s.trim().to_ascii_lowercase();
         match lower.as_str() {
             "bool" | "bool_" | "?" | "b1" => Ok(Self::Bool),
@@ -544,14 +544,14 @@ impl fmt::Display for DType {
 impl TryFrom<&str> for DType {
     type Error = MohuError;
     fn try_from(s: &str) -> MohuResult<Self> {
-        DType::from_str(s)
+        DType::parse_str(s)
     }
 }
 
 impl TryFrom<String> for DType {
     type Error = MohuError;
     fn try_from(s: String) -> MohuResult<Self> {
-        DType::from_str(&s)
+        DType::parse_str(s.as_str())
     }
 }
 
@@ -568,7 +568,7 @@ impl serde::Serialize for DType {
 impl<'de> serde::Deserialize<'de> for DType {
     fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
         let s = String::deserialize(d)?;
-        DType::from_str(&s).map_err(serde::de::Error::custom)
+        DType::parse_str(s.as_str()).map_err(serde::de::Error::custom)
     }
 }
 

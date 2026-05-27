@@ -22,9 +22,9 @@ fn main() {
 
     // ── Parsing from NumPy-compatible strings ──────────────────────────────
     // NumPy: np.dtype('int64'), np.dtype('f4'), np.dtype('complex128')
-    let dt1 = DType::from_str("int64").unwrap();
-    let dt2 = DType::from_str("f4").unwrap(); // shorthand for float32
-    let dt3 = DType::from_str("complex128").unwrap();
+    let dt1 = DType::parse_str("int64").unwrap();
+    let dt2 = DType::parse_str("f4").unwrap(); // shorthand for float32
+    let dt3 = DType::parse_str("complex128").unwrap();
     println!("\nParsed dtypes: {dt1}, {dt2}, {dt3}");
 
     // ── Classification predicates ──────────────────────────────────────────

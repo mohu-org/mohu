@@ -1999,32 +1999,48 @@ fn dtype_one_bytes(dtype: DType) -> Vec<u8> {
     use mohu_dtype::dispatch_dtype;
     dispatch_dtype!(dtype, one_bytes)
 }
-
 /// Reads a single element at `ptr` (of the given dtype) and casts to f64.
 fn read_as_f64(ptr: *const u8, dtype: DType, _itemsize: usize) -> f64 {
     use mohu_dtype::DType::*;
+    use num_complex::Complex;
+
     match dtype {
-        Bool => unsafe { *(ptr as *const u8) as f64 },
-        I8 => unsafe { *(ptr as *const i8) as f64 },
-        U8 => unsafe { *(ptr as *const u8) as f64 },
-        I16 => unsafe { *(ptr as *const i16) as f64 },
-        U16 => unsafe { *(ptr as *const u16) as f64 },
-        I32 => unsafe { *(ptr as *const i32) as f64 },
-        U32 => unsafe { *(ptr as *const u32) as f64 },
-        I64 => unsafe { *(ptr as *const i64) as f64 },
-        U64 => unsafe { *(ptr as *const u64) as f64 },
-        F32 => unsafe { *(ptr as *const f32) as f64 },
-        F64 => unsafe { *(ptr as *const f64) },
+        Bool => unsafe { *ptr as f64 },
+
+        I8 => unsafe { (ptr as *const i8).read_unaligned() as f64 },
+        U8 => unsafe { *ptr as f64 },
+
+        I16 => unsafe { (ptr as *const i16).read_unaligned() as f64 },
+        U16 => unsafe { (ptr as *const u16).read_unaligned() as f64 },
+
+        I32 => unsafe { (ptr as *const i32).read_unaligned() as f64 },
+        U32 => unsafe { (ptr as *const u32).read_unaligned() as f64 },
+
+        I64 => unsafe { (ptr as *const i64).read_unaligned() as f64 },
+        U64 => unsafe { (ptr as *const u64).read_unaligned() as f64 },
+
+        F32 => unsafe { (ptr as *const f32).read_unaligned() as f64 },
+        F64 => unsafe { (ptr as *const f64).read_unaligned() },
+
         F16 => {
             let bits = unsafe { (ptr as *const u16).read_unaligned() };
             half::f16::from_bits(bits).to_f64()
-        },
+        }
+
         BF16 => {
             let bits = unsafe { (ptr as *const u16).read_unaligned() };
             half::bf16::from_bits(bits).to_f64()
-        },
-        C64 => unsafe { *(ptr as *const f32) as f64 }, // real part
-        C128 => unsafe { *(ptr as *const f64) },       // real part
+        }
+
+        C64 => unsafe {
+            let c = (ptr as *const Complex<f32>).read_unaligned();
+            c.re as f64
+        }
+
+        C128 => unsafe {
+            let c = (ptr as *const Complex<f64>).read_unaligned();
+            c.re
+        }
     }
 }
 
