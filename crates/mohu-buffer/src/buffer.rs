@@ -2025,22 +2025,22 @@ fn read_as_f64(ptr: *const u8, dtype: DType, _itemsize: usize) -> f64 {
         F16 => {
             let bits = unsafe { (ptr as *const u16).read_unaligned() };
             half::f16::from_bits(bits).to_f64()
-        },
+        }
 
         BF16 => {
             let bits = unsafe { (ptr as *const u16).read_unaligned() };
             half::bf16::from_bits(bits).to_f64()
-        },
+        }
 
         C64 => unsafe {
             let c = (ptr as *const Complex<f32>).read_unaligned();
             c.re as f64
-        },
+        }
 
         C128 => unsafe {
             let c = (ptr as *const Complex<f64>).read_unaligned();
             c.re
-        },
+        }
     }
 }
 
