@@ -22,7 +22,6 @@
 ///
 /// Boolean indexing also returns a copy because the output length is not
 /// known until the mask is scanned.
-
 pub mod boolean;
 pub mod fancy;
 pub mod gather;

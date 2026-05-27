@@ -142,4 +142,3 @@ impl<T> ResultExt<T> for Option<T> {
         self.ok_or(err)
     }
 }
-
