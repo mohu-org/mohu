@@ -1,9 +1,10 @@
 //! Integration tests for mohu-buffer — exercises every major subsystem.
 
 use mohu_buffer::{
-    Buffer, GLOBAL_POOL, Order, SliceArg, ops,
+    Buffer, GLOBAL_POOL, SliceArg, Order, ops,
     strides::{NdIndexIter, broadcast_strides, c_strides, f_strides},
 };
+
 use mohu_dtype::{DType, promote::CastMode};
 
 // ── 1. Allocation ─────────────────────────────────────────────────────────────
@@ -22,19 +23,21 @@ fn ones_values() {
     assert!(buf.as_slice::<f32>().unwrap().iter().all(|&x| x == 1.0_f32));
 }
 
+use std::f32::consts::PI;
+
 #[test]
 fn full_fills_bytes() {
-    // full() takes raw bytes — pass f32 3.14 as bytes
-    let fill: f32 = 3.14;
+    // full() takes raw bytes — pass f32 PI as bytes
+    let fill: f32 = PI;
     let buf = Buffer::full(DType::F32, &[5, 5], &fill.to_le_bytes()).unwrap();
+
     assert!(
         buf.as_slice::<f32>()
             .unwrap()
             .iter()
-            .all(|&x| (x - 3.14_f32).abs() < 1e-6)
+            .all(|&x| (x - PI).abs() < 1e-6)
     );
 }
-
 // ── 2. from_slice + reshape + get/set ────────────────────────────────────────
 
 #[test]
