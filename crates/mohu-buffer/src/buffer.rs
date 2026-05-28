@@ -1,4 +1,20 @@
 /// The core buffer type: reference-counted, typed, strided byte storage.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ///
 /// `Buffer` = `Arc<RawBuffer>` + `DType` + `Layout` + `BufferFlags`.
 ///
@@ -962,7 +978,70 @@ impl Buffer {
     }
 
     /// Constructs a 2-D diagonal matrix from a 1-D buffer `v`, with offset `k`.
-    ///
+    ////// Create N×N diagonal matrix from 1D buffer of length N.
+    /// Equivalent to `np.diag(vec)` when vec is 1-D.
+    pub fn diag_from_vec(vec: &Buffer) -> MohuResult<Self> {
+        if vec.ndim() != 1 {
+            return Err(MohuError::ShapeMismatch {
+                expected: vec![1],
+                got:      vec![vec.ndim()],
+            });
+        }
+        let n = vec.len();
+        let out = Self::zeros(vec.dtype(), &[n, n])?;
+        let itemsize = vec.dtype().itemsize();
+        let src_raw  = vec.as_ptr();
+        let dst_raw  = unsafe { out.as_mut_ptr() };
+        for i in 0..n {
+            let src_off = i * itemsize;
+            let dst_off = out.layout.byte_offset(&[i, i])?;
+            unsafe {
+                std::ptr::copy_nonoverlapping(
+                    src_raw.add(src_off),
+                    dst_raw.add(dst_off),
+                    itemsize,
+                );
+            }
+        }
+        Ok(out)
+    }
+
+    /// Extract diagonal of a 2D buffer as a 1D buffer.
+    /// Equivalent to `np.diag(mat)` when mat is 2-D.
+    pub fn diag_of(mat: &Buffer) -> MohuResult<Self> {
+        if mat.ndim() != 2 {
+            return Err(MohuError::ShapeMismatch {
+                expected: vec![2],
+                got:      vec![mat.ndim()],
+            });
+        }
+        let rows = mat.shape()[0];
+        let cols = mat.shape()[1];
+        let diag_len = rows.min(cols);
+
+        // Use stride trick for zero-copy view.
+        let rs = mat.strides()[0];
+        let cs = mat.strides()[1];
+        let diag_stride = rs + cs;
+        let start_off = mat.layout.byte_offset(&[0, 0])?;
+
+        let layout = Layout::new_custom(
+            &[diag_len],
+            &[diag_stride],
+            start_off,
+            mat.layout.itemsize(),
+        )?;
+
+        Ok(Self {
+            raw:    Arc::clone(&mat.raw),
+            dtype:  mat.dtype,
+            layout,
+            flags:  mat.flags
+                .remove(BufferFlags::WRITEABLE)
+                .remove(BufferFlags::C_CONTIGUOUS)
+                .remove(BufferFlags::F_CONTIGUOUS),
+        })
+    }
     /// Equivalent to `np.diag(v, k)` when `v` is 1-D.
     pub fn diag(v: &Buffer, k: i64) -> MohuResult<Self> {
         if v.ndim() != 1 {
@@ -1854,3 +1933,49 @@ fn flat_to_indices(mut flat: usize, shape: &[usize]) -> Vec<usize> {
 use num_traits;
 #[cfg(unix)]
 use libc;
+#[cfg(test)]
+mod diag_tests {
+    use super::*;
+   
+
+    #[test]
+    fn test_diag_from_vec_basic() {
+        let v = Buffer::from_vec(vec![1i32, 2, 3]).unwrap();
+        let mat = Buffer::diag_from_vec(&v).unwrap();
+        assert_eq!(mat.shape(), &[3, 3]);
+        assert_eq!(mat.get::<i32>(&[0, 0]).unwrap(), 1);
+        assert_eq!(mat.get::<i32>(&[1, 1]).unwrap(), 2);
+        assert_eq!(mat.get::<i32>(&[2, 2]).unwrap(), 3);
+        assert_eq!(mat.get::<i32>(&[0, 1]).unwrap(), 0);
+    }
+
+    #[test]
+    fn test_diag_of_square() {
+        let mat = Buffer::from_slice_2d(&[&[1i32, 2], &[3i32, 4]]).unwrap();
+        let d = Buffer::diag_of(&mat).unwrap();
+        assert_eq!(d.shape(), &[2]);
+        assert_eq!(d.get::<i32>(&[0]).unwrap(), 1);
+        assert_eq!(d.get::<i32>(&[1]).unwrap(), 4);
+    }
+
+    #[test]
+    fn test_diag_of_non_square() {
+        let mat = Buffer::from_slice_2d(&[&[1i32, 2, 3], &[4i32, 5, 6]]).unwrap();
+        let d = Buffer::diag_of(&mat).unwrap();
+        assert_eq!(d.shape(), &[2]);
+        assert_eq!(d.get::<i32>(&[0]).unwrap(), 1);
+        assert_eq!(d.get::<i32>(&[1]).unwrap(), 5);
+    }
+
+    #[test]
+    fn test_diag_from_vec_wrong_ndim() {
+        let mat = Buffer::from_slice_2d(&[&[1i32, 2], &[3i32, 4]]).unwrap();
+        assert!(Buffer::diag_from_vec(&mat).is_err());
+    }
+
+    #[test]
+    fn test_diag_of_wrong_ndim() {
+        let v = Buffer::from_vec(vec![1i32, 2, 3]).unwrap();
+        assert!(Buffer::diag_of(&v).is_err());
+    }
+}
