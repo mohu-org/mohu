@@ -792,6 +792,10 @@ pub fn div_scalar_inplace<T>(buf: &mut Buffer, scalar: T) -> MohuResult<()>
 where
     T: Scalar + Copy + Send + Sync + std::ops::Div<Output = T>,
 {
+    if T::DTYPE.is_integer() && scalar == T::ZERO {
+        return Err(MohuError::DivisionByZero);
+    }
+
     parallel_inplace::<T, _>(buf, |x| x / scalar)
 }
 

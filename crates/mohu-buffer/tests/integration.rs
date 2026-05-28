@@ -5,6 +5,7 @@ use mohu_buffer::{
     strides::{NdIndexIter, broadcast_strides, c_strides, f_strides},
 };
 use mohu_dtype::{DType, promote::CastMode};
+use mohu_error::MohuError;
 
 // ── 1. Allocation ─────────────────────────────────────────────────────────────
 
@@ -227,6 +228,14 @@ fn fill_zero_clears_values() {
     let mut buf = Buffer::ones(DType::F64, &[100]).unwrap();
     ops::fill_zero(&mut buf).unwrap();
     assert!(buf.as_slice::<f64>().unwrap().iter().all(|&x| x == 0.0));
+}
+
+#[test]
+fn div_scalar_inplace_integer_zero_returns_error() {
+    let mut buf = Buffer::from_slice(&[2_i32, 4, 6]).unwrap();
+    let err = ops::div_scalar_inplace(&mut buf, 0_i32).unwrap_err();
+    assert!(matches!(err, MohuError::DivisionByZero));
+    assert_eq!(buf.as_slice::<i32>().unwrap(), &[2, 4, 6]);
 }
 
 #[test]
