@@ -291,7 +291,6 @@ pub enum Severity {
 }
 
 impl Severity {
-    /// Returns a human-readable lowercase label for this severity level.
     pub fn label(self) -> &'static str {
         match self {
             Self::Warning => "warning",
