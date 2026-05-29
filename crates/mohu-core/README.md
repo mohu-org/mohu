@@ -9,7 +9,7 @@ It re-exports the four foundation crates (`mohu-error`, `mohu-dtype`, `mohu-buff
 
 - Use `mohu-core` when you want to use a single dependency instead of importing many crates individually.
 - It contains the four foundation crates (`mohu-error`, `mohu-dtype`, `mohu-buffer`, `mohu-array`).
-- It is useful for the projects that requires different multiple capabilities such as error handling, data types, buffer and arrays.
+- It is useful for the projects that requires multiple capabilities such as error handling, data types, buffer and arrays.
 - Use individual crates when the project requires a single component instead of many.
 - Use individual crates when the project requires minimal dependencies.
 
