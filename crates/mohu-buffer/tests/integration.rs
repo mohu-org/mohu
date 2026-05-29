@@ -5,7 +5,13 @@ use mohu_buffer::{
     strides::{NdIndexIter, broadcast_strides, c_strides, f_strides},
 };
 use mohu_dtype::{DType, promote::CastMode};
-use mohu_testing::approx::assert_allclose;
+let expected = std::f32::consts::PI;
+    assert!(
+        buf.as_slice::<f32>()
+            .unwrap()
+            .iter()
+            .all(|&x| (x - expected).abs() < 1e-6)
+    );
 
 // ── 1. Allocation ─────────────────────────────────────────────────────────────
 
