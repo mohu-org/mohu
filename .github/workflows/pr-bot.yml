@@ -39,18 +39,18 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event.action == 'opened'
     steps:
-      # Safe: fetch-depth 0 on base ref only — no fork code executed
+      # Safe: fetch both base and head to compute diff
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.base.ref }}
           fetch-depth: 0
 
-      - name: Get changed files via API
+      - name: Get changed files via git diff
         id: changed
-        uses: tj-actions/changed-files@v46
-        with:
-          base_sha: ${{ github.event.pull_request.base.sha }}
-          sha: ${{ github.event.pull_request.head.sha }}
+        run: |
+          changed_files=$(git diff --name-only origin/${{ github.event.pull_request.base.ref }}...HEAD | tr '\n' ' ')
+          echo "all_changed_files=$changed_files" >> "$GITHUB_OUTPUT"
+          count=$(echo "$changed_files" | tr ' ' '\n' | grep -c . || true)
+          echo "all_changed_files_count=$count" >> "$GITHUB_OUTPUT"
 
       - name: Detect changed crates
         id: crates
