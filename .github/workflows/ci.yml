@@ -24,8 +24,6 @@ jobs:
     if: github.event_name == 'pull_request'
     steps:
       - uses: christophebedard/dco-check@0.5.1
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
 
   # ── Gate: Formatting ────────────────────────────────────────────────────────
   fmt:
@@ -211,8 +209,9 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           key: miri
+      - run: rustup override set nightly
       - run: cargo miri setup
-      - run: cargo miri test -p mohu-buffer --all-features
+      - run: cargo +nightly miri test -p mohu-buffer --all-features
         env:
           MIRIFLAGS: "-Zmiri-strict-provenance -Zmiri-symbolic-alignment-check"
           RUSTFLAGS: ""
