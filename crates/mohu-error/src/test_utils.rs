@@ -102,9 +102,7 @@ pub fn assert_shape_err<T: std::fmt::Debug>(
                 );
             }
         }
-        other => panic!(
-            "assert_shape_err: expected ShapeMismatch, got {other:?}"
-        ),
+        other => panic!("assert_shape_err: expected ShapeMismatch, got {other:?}"),
     }
 }
 
