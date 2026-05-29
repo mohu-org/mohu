@@ -165,9 +165,12 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           key: semver
+      - name: Fetch origin main
+        run: git fetch origin main
       - uses: obi1kenobi/cargo-semver-checks-action@v2
         with:
           feature-group: all-features
+          baseline-rev: origin/main
 
   # ── Cross-compilation (push to main only — too expensive per PR) ─────────────
   cross:
@@ -230,6 +233,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: [build]
     continue-on-error: true
+    env:
+      RUSTFLAGS: ""
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@nightly
@@ -242,7 +247,6 @@ jobs:
       - run: cargo miri test -p mohu-buffer --all-features
         env:
           MIRIFLAGS: "-Zmiri-strict-provenance -Zmiri-symbolic-alignment-check"
-          RUSTFLAGS: ""
 
   # ── Final gate ───────────────────────────────────────────────────────────────
   # All blocking jobs listed here. Non-blocking jobs use continue-on-error and
