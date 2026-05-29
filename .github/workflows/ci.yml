@@ -82,9 +82,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: EmbarkStudios/cargo-deny-action@v2
+      - uses: taiki-e/install-action@v2
         with:
-          command: check --severity error advisories licenses bans sources
+          tool: cargo-deny
+      - run: cargo deny check advisories licenses bans sources
 
   # ── Gate: Unused dependencies ───────────────────────────────────────────────
   unused-deps:
