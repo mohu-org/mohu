@@ -23,7 +23,7 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
     steps:
-      - uses: christophebedard/dco-check@0.5.1
+      - uses: christophebedard/dco-check@v0.5.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -141,6 +141,7 @@ jobs:
       - uses: obi1kenobi/cargo-semver-checks-action@v2
         with:
           feature-group: all-features
+          baseline-rev: ${{ github.event.pull_request.base.sha }}
 
   # ── Cross-compilation (push to main only — too expensive per PR) ─────────────
   cross:
@@ -212,8 +213,11 @@ jobs:
         with:
           key: miri
       - run: cargo miri setup
+        env:
+          RUSTUP_TOOLCHAIN: nightly
       - run: cargo miri test -p mohu-buffer --all-features
         env:
+          RUSTUP_TOOLCHAIN: nightly
           MIRIFLAGS: "-Zmiri-strict-provenance -Zmiri-symbolic-alignment-check"
           RUSTFLAGS: ""
 

@@ -10,15 +10,15 @@
 //!
 //! | Macro | Purpose |
 //! |-------|---------|
-//! | [`dtype_of!`] | `DType` constant for a Rust type literal |
-//! | [`dispatch_dtype!`] | runtime DType → monomorphised call |
-//! | [`dispatch_numeric!`] | same, excluding `Bool` |
-//! | [`dispatch_integer!`] | integers only |
-//! | [`dispatch_float!`] | floats only (F16/BF16/F32/F64) |
-//! | [`dispatch_real!`] | integers + real floats (no complex, no bool) |
-//! | [`dispatch_signed!`] | signed integers + floats |
-//! | [`for_each_dtype!`] | invoke a macro for every dtype (codegen helper) |
-//! | [`assert_dtype!`] | assert a DType at runtime or return an error |
+//! | [`crate::dtype_of!`] | `DType` constant for a Rust type literal |
+//! | [`crate::dispatch_dtype!`] | runtime DType → monomorphised call |
+//! | [`crate::dispatch_numeric!`] | same, excluding `Bool` |
+//! | [`crate::dispatch_integer!`] | integers only |
+//! | [`crate::dispatch_float!`] | floats only (F16/BF16/F32/F64) |
+//! | [`crate::dispatch_real!`] | integers + real floats (no complex, no bool) |
+//! | [`crate::dispatch_signed!`] | signed integers + floats |
+//! | [`crate::for_each_dtype!`] | invoke a macro for every dtype (codegen helper) |
+//! | [`crate::assert_dtype!`] | assert a DType at runtime or return an error |
 
 /// Returns the `DType` constant for a Rust primitive type literal.
 ///
