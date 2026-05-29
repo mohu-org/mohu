@@ -8,11 +8,13 @@ pub fn fftfreq(n: usize, d: f64) -> Vec<f64> {
 	}
 	let val = 1.0 / (n as f64 * d);
 	let mut freqs = Vec::with_capacity(n);
-	let n_half = n / 2;
-	for i in 0..=n_half {
+	// For even `n` the Nyquist frequency (n/2) should be negative (-0.5/d).
+	// Use `pos_len = (n + 1) / 2` as the number of non-negative frequency bins.
+	let pos_len = (n + 1) / 2;
+	for i in 0..pos_len {
 		freqs.push(i as f64 * val);
 	}
-	for i in (n_half + 1)..n {
+	for i in pos_len..n {
 		freqs.push(-((n - i) as f64) * val);
 	}
 	freqs
