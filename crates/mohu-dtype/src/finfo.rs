@@ -77,10 +77,10 @@ impl FloatInfo {
     /// not a floating-point type.
     pub fn of(dtype: DType) -> MohuResult<Self> {
         match dtype {
-            DType::F16  => Ok(Self::f16()),
+            DType::F16 => Ok(Self::f16()),
             DType::BF16 => Ok(Self::bf16()),
-            DType::F32  => Ok(Self::f32()),
-            DType::F64  => Ok(Self::f64()),
+            DType::F32 => Ok(Self::f32()),
+            DType::F64 => Ok(Self::f64()),
             other => Err(MohuError::UnsupportedDType {
                 op: "finfo",
                 dtype: other.to_string(),
@@ -93,28 +93,28 @@ impl FloatInfo {
     /// Returns `FloatInfo` for IEEE 754 binary16 (half-precision).
     pub fn f16() -> Self {
         // IEEE 754 binary16: sign=1, exp=5, mantissa=10
-        let eps             = half::f16::EPSILON.to_f64();
-        let max             = half::f16::MAX.to_f64();
-        let tiny            = half::f16::MIN_POSITIVE.to_f64();
+        let eps = half::f16::EPSILON.to_f64();
+        let max = half::f16::MAX.to_f64();
+        let tiny = half::f16::MIN_POSITIVE.to_f64();
         // Smallest subnormal: 2^{-24}
-        let smallest_sub    = 5.960_464_477_539_063e-8_f64;
-        let precision       = (10_u32 as f64 * f64::log10(2.0)).floor() as u32; // 3
+        let smallest_sub = 5.960_464_477_539_063e-8_f64;
+        let precision = (10_f64 * f64::log10(2.0)).floor() as u32; // 3
         Self {
-            dtype:             DType::F16,
-            bits:              16,
-            nmant:             10,
-            nexp:              5,
-            maxexp:            16,
-            minexp:            -13,
+            dtype: DType::F16,
+            bits: 16,
+            nmant: 10,
+            nexp: 5,
+            maxexp: 16,
+            minexp: -13,
             eps,
             max,
-            min:               -max,
+            min: -max,
             tiny,
-            smallest_normal:   tiny,
+            smallest_normal: tiny,
             smallest_subnormal: smallest_sub,
             precision,
-            resolution:        10f64.powi(-(precision as i32)),
-            epsneg:            eps,
+            resolution: 10f64.powi(-(precision as i32)),
+            epsneg: eps,
         }
     }
 
@@ -123,27 +123,27 @@ impl FloatInfo {
     /// Returns `FloatInfo` for Google Brain Float16 (bfloat16).
     pub fn bf16() -> Self {
         // Google Brain Float16: sign=1, exp=8, mantissa=7
-        let eps             = half::bf16::EPSILON.to_f64();
-        let max             = half::bf16::MAX.to_f64();
-        let tiny            = half::bf16::MIN_POSITIVE.to_f64();
-        let smallest_sub    = 9.183_549_615_799_121e-41_f64;
-        let precision       = (7_u32 as f64 * f64::log10(2.0)).floor() as u32; // 2
+        let eps = half::bf16::EPSILON.to_f64();
+        let max = half::bf16::MAX.to_f64();
+        let tiny = half::bf16::MIN_POSITIVE.to_f64();
+        let smallest_sub = 9.183_549_615_799_121e-41_f64;
+        let precision = (7_f64 * f64::log10(2.0)).floor() as u32; // 2
         Self {
-            dtype:             DType::BF16,
-            bits:              16,
-            nmant:             7,
-            nexp:              8,
-            maxexp:            128,
-            minexp:            -125,
+            dtype: DType::BF16,
+            bits: 16,
+            nmant: 7,
+            nexp: 8,
+            maxexp: 128,
+            minexp: -125,
             eps,
             max,
-            min:               -max,
+            min: -max,
             tiny,
-            smallest_normal:   tiny,
+            smallest_normal: tiny,
             smallest_subnormal: smallest_sub,
             precision,
-            resolution:        10f64.powi(-(precision as i32)),
-            epsneg:            eps,
+            resolution: 10f64.powi(-(precision as i32)),
+            epsneg: eps,
         }
     }
 
@@ -151,27 +151,27 @@ impl FloatInfo {
 
     /// Returns `FloatInfo` for IEEE 754 binary32 (single-precision).
     pub fn f32() -> Self {
-        let eps             = f32::EPSILON as f64;
-        let max             = f32::MAX as f64;
-        let tiny            = f32::MIN_POSITIVE as f64;
-        let smallest_sub    = 1.401_298_464_324_817e-45_f64;
-        let precision       = (23_u32 as f64 * f64::log10(2.0)).floor() as u32; // 6
+        let eps = f32::EPSILON as f64;
+        let max = f32::MAX as f64;
+        let tiny = f32::MIN_POSITIVE as f64;
+        let smallest_sub = 1.401_298_464_324_817e-45_f64;
+        let precision = (23_f64 * f64::log10(2.0)).floor() as u32; // 6
         Self {
-            dtype:             DType::F32,
-            bits:              32,
-            nmant:             23,
-            nexp:              8,
-            maxexp:            128,
-            minexp:            -125,
+            dtype: DType::F32,
+            bits: 32,
+            nmant: 23,
+            nexp: 8,
+            maxexp: 128,
+            minexp: -125,
             eps,
             max,
-            min:               -max,
+            min: -max,
             tiny,
-            smallest_normal:   tiny,
+            smallest_normal: tiny,
             smallest_subnormal: smallest_sub,
             precision,
-            resolution:        10f64.powi(-(precision as i32)),
-            epsneg:            eps,
+            resolution: 10f64.powi(-(precision as i32)),
+            epsneg: eps,
         }
     }
 
@@ -179,27 +179,27 @@ impl FloatInfo {
 
     /// Returns `FloatInfo` for IEEE 754 binary64 (double-precision).
     pub fn f64() -> Self {
-        let eps             = f64::EPSILON;
-        let max             = f64::MAX;
-        let tiny            = f64::MIN_POSITIVE;
-        let smallest_sub    = 5.0e-324_f64;
-        let precision       = (52_u32 as f64 * f64::log10(2.0)).floor() as u32; // 15
+        let eps = f64::EPSILON;
+        let max = f64::MAX;
+        let tiny = f64::MIN_POSITIVE;
+        let smallest_sub = 5.0e-324_f64;
+        let precision = (52_f64 * f64::log10(2.0)).floor() as u32; // 15
         Self {
-            dtype:             DType::F64,
-            bits:              64,
-            nmant:             52,
-            nexp:              11,
-            maxexp:            1024,
-            minexp:            -1021,
+            dtype: DType::F64,
+            bits: 64,
+            nmant: 52,
+            nexp: 11,
+            maxexp: 1024,
+            minexp: -1021,
             eps,
             max,
-            min:               -max,
+            min: -max,
             tiny,
-            smallest_normal:   tiny,
+            smallest_normal: tiny,
             smallest_subnormal: smallest_sub,
             precision,
-            resolution:        10f64.powi(-(precision as i32)),
-            epsneg:            eps,
+            resolution: 10f64.powi(-(precision as i32)),
+            epsneg: eps,
         }
     }
 
@@ -222,7 +222,9 @@ impl FloatInfo {
     /// Returns `true` if `|a - b| <= n_ulps * ULP(max(|a|, |b|))`.
     pub fn within_ulps(&self, a: f64, b: f64, n_ulps: u64) -> bool {
         let scale = a.abs().max(b.abs());
-        if scale == 0.0 { return a == b; }
+        if scale == 0.0 {
+            return a == b;
+        }
         let ulp = self.ulp_at(scale);
         (a - b).abs() <= n_ulps as f64 * ulp
     }
@@ -234,12 +236,12 @@ impl std::fmt::Display for FloatInfo {
             f,
             "FloatInfo({dtype}: bits={bits}, nmant={nmant}, nexp={nexp}, eps={eps:.3e}, max={max:.3e}, tiny={tiny:.3e})",
             dtype = self.dtype,
-            bits  = self.bits,
+            bits = self.bits,
             nmant = self.nmant,
-            nexp  = self.nexp,
-            eps   = self.eps,
-            max   = self.max,
-            tiny  = self.tiny,
+            nexp = self.nexp,
+            eps = self.eps,
+            max = self.max,
+            tiny = self.tiny,
         )
     }
 }

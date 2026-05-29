@@ -26,7 +26,6 @@
 /// | `Backward` | 1              | 1/n (default)    |
 /// | `Ortho`    | 1/sqrt(n)      | 1/sqrt(n)        |
 /// | `Forward`  | 1/n            | 1                |
-
 pub mod freq;
 pub mod helpers;
 pub mod nd;
