@@ -5,13 +5,6 @@ use mohu_buffer::{
     strides::{NdIndexIter, broadcast_strides, c_strides, f_strides},
 };
 use mohu_dtype::{DType, promote::CastMode};
-let expected = std::f32::consts::PI;
-    assert!(
-        buf.as_slice::<f32>()
-            .unwrap()
-            .iter()
-            .all(|&x| (x - expected).abs() < 1e-6)
-    );
 
 // ── 1. Allocation ─────────────────────────────────────────────────────────────
 
@@ -34,9 +27,12 @@ fn full_fills_bytes() {
     // full() takes raw bytes — pass PI as bytes
     let fill: f32 = std::f32::consts::PI;
     let buf = Buffer::full(DType::F32, &[5, 5], &fill.to_le_bytes()).unwrap();
-
-    let expected = vec![std::f32::consts::PI; 25]; // 5×5 = 25 elements
-    assert_allclose(buf.as_slice::<f32>().unwrap(), &expected, 1e-6);
+    assert!(
+        buf.as_slice::<f32>()
+            .unwrap()
+            .iter()
+            .all(|&x| (x - std::f32::consts::PI).abs() < 1e-6)
+    );
 }
 
 // ── 2. from_slice + reshape + get/set ────────────────────────────────────────
@@ -312,6 +308,7 @@ fn nd_index_iter_c_order() {
     assert_eq!(indices[3].as_slice(), &[1, 0]);
     assert_eq!(indices[5].as_slice(), &[1, 2]);
 }
+
 // ── 11. Shape predicates ──────────────────────────────────────────────────────
 
 #[test]
