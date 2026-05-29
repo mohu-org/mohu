@@ -562,6 +562,26 @@ impl Buffer {
     /// Returns `true` if the backing memory is shared with other `Buffer` instances.
     pub fn is_shared(&self)        -> bool { Arc::strong_count(&self.raw) > 1 }
 
+    /// Returns `true` if the buffer is 1D (a vector).
+    pub fn is_vector(&self) -> bool {
+        self.ndim() == 1
+    }
+
+    /// Returns `true` if the buffer is 2D (a matrix).
+    pub fn is_matrix(&self) -> bool {
+        self.ndim() == 2
+    }
+
+    /// Returns `true` if the buffer is 2D and both dimensions are equal.
+    pub fn is_square(&self) -> bool {
+        self.ndim() == 2 && self.shape()[0] == self.shape()[1]
+    }
+
+    /// Returns `true` if the buffer is 0D (a scalar -- shape == []).
+    pub fn is_scalar_shape(&self) -> bool {
+        self.ndim() == 0
+    }
+
     /// Returns a raw const pointer to element `[0, 0, …, 0]`.
     #[inline]
     pub fn as_ptr(&self) -> *const u8 {
@@ -1636,9 +1656,6 @@ impl Buffer {
     /// Delegates to [`AllocHandle::advise`].
     /// No-op for shared buffers (Arc count > 1) or non-Unix platforms.
     pub fn advise(&self, advice: crate::alloc::MmapAdvice) {
-        // SAFETY: we don't modify any bytes, just issue a kernel hint.
-        // Call madvise directly on the buffer's pointer since AllocHandle is
-        // behind an Arc and the inner source field is private.
         #[cfg(unix)]
         unsafe {
             let _ = libc::madvise(
@@ -1685,7 +1702,6 @@ impl Buffer {
             let _ = write!(s, "  data[:{}]: [", cap);
             for i in 0..cap {
                 if i > 0 { let _ = write!(s, ", "); }
-                // Convert flat index to multi-dim and read as f64 for display
                 let idx = flat_to_indices(i, self.shape());
                 if let Ok(off) = self.layout.byte_offset(&idx) {
                     let v = read_as_f64(unsafe { self.raw.as_ptr().add(off) }, self.dtype, self.dtype.itemsize());
@@ -1718,7 +1734,6 @@ fn fmt_buffer_data(
     _indent: usize,
 ) -> std::fmt::Result {
     if shape.is_empty() {
-        // Scalar
         let off = buf.layout.byte_offset(idx).map_err(|_| std::fmt::Error)?;
         let v = read_as_f64(unsafe { buf.raw.as_ptr().add(off) }, buf.dtype, buf.dtype.itemsize());
         return write!(f, "{v}");
@@ -1730,7 +1745,6 @@ fn fmt_buffer_data(
     }
 
     let n = shape[dim];
-    // Truncate long axes
     const MAX_DISPLAY: usize = 6;
     write!(f, "[")?;
     let show = n.min(MAX_DISPLAY);
@@ -1747,11 +1761,6 @@ fn fmt_buffer_data(
 
 // ─── PartialEq ───────────────────────────────────────────────────────────────
 
-/// Byte-level equality.  Two buffers are equal if they have the same dtype,
-/// shape, and identical element bytes (in C order).
-///
-/// For float types, NaN == NaN (bit-pattern equality).
-/// Use [`Buffer::allclose`] for IEEE-754-aware approximate comparison.
 impl PartialEq for Buffer {
     fn eq(&self, other: &Self) -> bool {
         if self.dtype() != other.dtype() || self.shape() != other.shape() {
@@ -1761,7 +1770,7 @@ impl PartialEq for Buffer {
             && self.layout.offset() == other.layout.offset()
             && self.strides() == other.strides()
         {
-            return true; // literally the same view
+            return true;
         }
         let a = match self.to_contiguous()  { Ok(b) => b, Err(_) => return false };
         let b = match other.to_contiguous() { Ok(b) => b, Err(_) => return false };
@@ -1791,7 +1800,6 @@ impl From<Vec<u8>> for Buffer {
 
 // ─── Internal helpers ─────────────────────────────────────────────────────────
 
-/// Returns the byte representation of the value "one" for a dtype.
 fn dtype_one_bytes(dtype: DType) -> Vec<u8> {
     macro_rules! one_bytes {
         ($T:ty) => {{
@@ -1812,7 +1820,6 @@ fn dtype_one_bytes(dtype: DType) -> Vec<u8> {
     dispatch_dtype!(dtype, one_bytes)
 }
 
-/// Reads a single element at `ptr` (of the given dtype) and casts to f64.
 fn read_as_f64(ptr: *const u8, dtype: DType, _itemsize: usize) -> f64 {
     use mohu_dtype::DType::*;
     match dtype {
@@ -1835,12 +1842,11 @@ fn read_as_f64(ptr: *const u8, dtype: DType, _itemsize: usize) -> f64 {
             let bits = unsafe { (ptr as *const u16).read_unaligned() };
             half::bf16::from_bits(bits).to_f64()
         }
-        C64  => unsafe { *(ptr as *const f32) as f64 }, // real part
-        C128 => unsafe { *(ptr as *const f64) },         // real part
+        C64  => unsafe { *(ptr as *const f32) as f64 },
+        C128 => unsafe { *(ptr as *const f64) },
     }
 }
 
-/// Converts a flat C-order index to a multi-dimensional index for `shape`.
 fn flat_to_indices(mut flat: usize, shape: &[usize]) -> Vec<usize> {
     let nd = shape.len();
     let mut idx = vec![0usize; nd];

@@ -279,3 +279,64 @@ fn nd_index_iter_c_order() {
     assert_eq!(indices[3].as_slice(), &[1, 0]);
     assert_eq!(indices[5].as_slice(), &[1, 2]);
 }
+// ── 11. Shape predicates ──────────────────────────────────────────────────────
+
+#[test]
+fn is_scalar_shape_true_for_0d() {
+    let buf = Buffer::zeros(DType::F64, &[]).unwrap();
+    assert!(buf.is_scalar_shape());
+    assert!(!buf.is_vector());
+    assert!(!buf.is_matrix());
+    assert!(!buf.is_square());
+}
+
+#[test]
+fn is_vector_true_for_1d() {
+    let buf = Buffer::zeros(DType::F32, &[5]).unwrap();
+    assert!(buf.is_vector());
+    assert!(!buf.is_scalar_shape());
+    assert!(!buf.is_matrix());
+    assert!(!buf.is_square());
+}
+
+#[test]
+fn is_matrix_true_for_2d() {
+    let buf = Buffer::zeros(DType::F64, &[3, 4]).unwrap();
+    assert!(buf.is_matrix());
+    assert!(!buf.is_vector());
+    assert!(!buf.is_scalar_shape());
+}
+
+#[test]
+fn is_square_true_for_equal_dims() {
+    let buf = Buffer::zeros(DType::F64, &[3, 3]).unwrap();
+    assert!(buf.is_square());
+    assert!(buf.is_matrix());
+}
+
+#[test]
+fn is_square_true_for_1x1() {
+    let buf = Buffer::zeros(DType::F64, &[1, 1]).unwrap();
+    assert!(buf.is_square());
+}
+
+#[test]
+fn is_square_false_for_rectangular() {
+    let buf = Buffer::zeros(DType::F64, &[2, 3]).unwrap();
+    assert!(!buf.is_square());
+    assert!(buf.is_matrix());
+}
+
+#[test]
+fn is_square_false_for_non_2d() {
+    let buf = Buffer::zeros(DType::F64, &[3, 3, 3]).unwrap();
+    assert!(!buf.is_square());
+    assert!(!buf.is_matrix());
+}
+
+#[test]
+fn is_square_false_for_1d() {
+    let buf = Buffer::zeros(DType::F64, &[4]).unwrap();
+    assert!(!buf.is_square());
+    assert!(buf.is_vector());
+}
