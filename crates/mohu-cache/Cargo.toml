@@ -1,0 +1,16 @@
+[package]
+name = "mohu-cache"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+mohu-error  = { workspace = true }
+tracing     = { workspace = true }   # for logging hits/misses
+serde       = { workspace = true }   # for cache key serialization
+
+# For hashing the cache key
+twox-hash   = "2"                    # fast, deterministic hashing
+
+[dev-dependencies]
+mohu-testing = { workspace = true }
