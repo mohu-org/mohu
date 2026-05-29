@@ -20,7 +20,12 @@ pub fn fftfreq(n: usize, d: f64) -> Vec<f64> {
 
 /// Alias for `fftfreq` for real-input transforms; behavior is identical.
 pub fn rfftfreq(n: usize, d: f64) -> Vec<f64> {
-	fftfreq(n, d)
+	if n == 0 {
+		return Vec::new();
+	}
+	let val = 1.0 / (n as f64 * d);
+	let count = n / 2 + 1;
+	(0..count).map(|i| i as f64 * val).collect()
 }
 
 /// Shift the zero-frequency component to the center of the spectrum.

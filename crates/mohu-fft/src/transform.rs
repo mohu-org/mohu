@@ -8,6 +8,9 @@ use crate::Norm;
 /// it is truncated.
 pub fn fft(input: &[Complex<f64>], n: Option<usize>, norm: Norm) -> Vec<Complex<f64>> {
 	let len = n.unwrap_or(input.len());
+	if len == 0 {
+		return Vec::new();
+	}
 	let mut buf: Vec<RComplex<f64>> = vec![RComplex::new(0.0, 0.0); len];
 	for (i, v) in input.iter().take(len).enumerate() {
 		buf[i] = RComplex::new(v.re, v.im);
@@ -30,6 +33,9 @@ pub fn fft(input: &[Complex<f64>], n: Option<usize>, norm: Norm) -> Vec<Complex<
 /// Compute the 1-D inverse FFT (IFFT) of `input` with optional length `n` and `norm` mode.
 pub fn ifft(input: &[Complex<f64>], n: Option<usize>, norm: Norm) -> Vec<Complex<f64>> {
 	let len = n.unwrap_or(input.len());
+	if len == 0 {
+		return Vec::new();
+	}
 	let mut buf: Vec<RComplex<f64>> = vec![RComplex::new(0.0, 0.0); len];
 	for (i, v) in input.iter().take(len).enumerate() {
 		buf[i] = RComplex::new(v.re, v.im);
