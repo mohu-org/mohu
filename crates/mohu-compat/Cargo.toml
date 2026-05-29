@@ -1,0 +1,8 @@
+[package]
+name = "mohu-compat"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "NumPy API compatibility tracker for mohu"
+
+[dependencies]

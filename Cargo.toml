@@ -15,6 +15,7 @@ members = [
     # ── Compute layer ─────────────────────────────────────────────────────────
     "crates/mohu-ops",        # element-wise ops, matmul, reductions
     "crates/mohu-cache",
+    "crates/mohu-compat",
     "crates/mohu-fft",        # FFT / IFFT / RFFT / 2-D FFT
     "crates/mohu-random",     # PRNG (PCG64, Philox) + statistical distributions
     "crates/mohu-special",    # special math: erf, gamma, beta, Bessel, …

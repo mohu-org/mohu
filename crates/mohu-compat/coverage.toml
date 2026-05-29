@@ -1,0 +1,66 @@
+# NumPy API Coverage Map for mohu
+# Status values:
+#   "done"       — implemented and tested
+#   "partial"    — exists but missing edge cases
+#   "planned"    — on the roadmap
+#   "not-planned"— out of scope
+
+[array_creation]
+"np.array"          = { mohu = "mohu.array",       status = "planned" }
+"np.zeros"          = { mohu = "mohu.zeros",        status = "planned" }
+"np.ones"           = { mohu = "mohu.ones",         status = "planned" }
+"np.empty"          = { mohu = "mohu.empty",        status = "planned" }
+"np.arange"         = { mohu = "mohu.arange",       status = "planned" }
+"np.linspace"       = { mohu = "mohu.linspace",     status = "planned" }
+"np.eye"            = { mohu = "mohu.eye",          status = "planned" }
+"np.full"           = { mohu = "mohu.full",         status = "planned" }
+
+[array_manipulation]
+"np.reshape"        = { mohu = "mohu.reshape",      status = "planned" }
+"np.transpose"      = { mohu = "mohu.transpose",    status = "planned" }
+"np.concatenate"    = { mohu = "mohu.concatenate",  status = "planned" }
+"np.stack"          = { mohu = "mohu.stack",        status = "planned" }
+"np.flatten"        = { mohu = "mohu.flatten",      status = "planned" }
+"np.squeeze"        = { mohu = "mohu.squeeze",      status = "planned" }
+"np.expand_dims"    = { mohu = "mohu.expand_dims",  status = "planned" }
+
+[math_ops]
+"np.add"            = { mohu = "mohu.add",          status = "planned" }
+"np.subtract"       = { mohu = "mohu.subtract",     status = "planned" }
+"np.multiply"       = { mohu = "mohu.multiply",     status = "planned" }
+"np.divide"         = { mohu = "mohu.divide",       status = "planned" }
+"np.power"          = { mohu = "mohu.power",        status = "planned" }
+"np.sqrt"           = { mohu = "mohu.sqrt",         status = "planned" }
+"np.abs"            = { mohu = "mohu.abs",          status = "done"    }
+"np.clip"           = { mohu = "mohu.clip",         status = "done"    }
+
+[reductions]
+"np.sum"            = { mohu = "mohu.sum",          status = "planned" }
+"np.prod"           = { mohu = "mohu.prod",         status = "planned" }
+"np.min"            = { mohu = "mohu.min",          status = "planned" }
+"np.max"            = { mohu = "mohu.max",          status = "planned" }
+"np.mean"           = { mohu = "mohu.mean",         status = "planned" }
+"np.std"            = { mohu = "mohu.std",          status = "planned" }
+"np.var"            = { mohu = "mohu.var",          status = "planned" }
+"np.cumsum"         = { mohu = "mohu.cumsum",       status = "planned" }
+
+[indexing]
+"np.take"           = { mohu = "mohu.take",         status = "done"    }
+"np.where"          = { mohu = "mohu.where",        status = "done"    }
+"np.gather"         = { mohu = "mohu.gather",       status = "done"    }
+
+[linear_algebra]
+"np.dot"            = { mohu = "mohu.dot",          status = "planned" }
+"np.matmul"         = { mohu = "mohu.matmul",       status = "planned" }
+"np.linalg.inv"     = { mohu = "mohu.linalg.inv",   status = "not-planned" }
+"np.linalg.svd"     = { mohu = "mohu.linalg.svd",   status = "not-planned" }
+
+[fft]
+"np.fft.fft"        = { mohu = "mohu.fft.fft",      status = "planned" }
+"np.fft.ifft"       = { mohu = "mohu.fft.ifft",     status = "planned" }
+"np.fft.rfft"       = { mohu = "mohu.fft.rfft",     status = "planned" }
+
+[random]
+"np.random.rand"    = { mohu = "mohu.random.rand",  status = "planned" }
+"np.random.randn"   = { mohu = "mohu.random.randn", status = "planned" }
+"np.random.seed"    = { mohu = "mohu.random.seed",  status = "planned" }
