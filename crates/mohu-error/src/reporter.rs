@@ -149,8 +149,8 @@ impl<'a> ErrorReporter<'a> {
     }
 
     fn fmt_full(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let root  = ErrorChain::root(self.error);
-        let code  = root.code();
+        let root = ErrorChain::root(self.error);
+        let code = root.code();
         let depth = ErrorChain::depth(self.error);
 
         // ── header line ───────────────────────────────────────────────────
@@ -203,10 +203,10 @@ impl<'a> ErrorReporter<'a> {
         writeln!(
             f,
             "  {dim}[{code}] {domain} error{reset}",
-            dim    = self.c(ansi::DIM),
-            code   = code,
+            dim = self.c(ansi::DIM),
+            code = code,
             domain = code.domain(),
-            reset  = self.reset(),
+            reset = self.reset(),
         )?;
 
         Ok(())

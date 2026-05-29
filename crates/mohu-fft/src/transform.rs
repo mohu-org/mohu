@@ -27,7 +27,9 @@ pub fn fft(input: &[Complex<f64>], n: Option<usize>, norm: Norm) -> Vec<Complex<
 		Norm::Forward => 1.0 / (len as f64),
 	};
 
-	buf.into_iter().map(|c| Complex::new(c.re * scale, c.im * scale)).collect()
+	buf.into_iter()
+		.map(|c| Complex::new(c.re * scale, c.im * scale))
+		.collect()
 }
 
 /// Compute the 1-D inverse FFT (IFFT) of `input` with optional length `n` and `norm` mode.
@@ -52,7 +54,9 @@ pub fn ifft(input: &[Complex<f64>], n: Option<usize>, norm: Norm) -> Vec<Complex
 		Norm::Forward => 1.0,
 	};
 
-	buf.into_iter().map(|c| Complex::new(c.re * scale, c.im * scale)).collect()
+	buf.into_iter()
+		.map(|c| Complex::new(c.re * scale, c.im * scale))
+		.collect()
 }
 
 #[cfg(test)]
