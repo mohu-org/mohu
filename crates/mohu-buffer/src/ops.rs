@@ -19,7 +19,10 @@ use mohu_dtype::{
 };
 use mohu_error::{MohuError, MohuResult};
 
-use crate::{buffer::Buffer, strides::StridedByteIter};
+use crate::{
+    buffer::Buffer,
+    strides::{NdIndexIter, StridedByteIter},
+};
 
 // ─── fill_raw ────────────────────────────────────────────────────────────────
 
@@ -175,21 +178,37 @@ pub fn copy_to_contiguous(src: &Buffer, dst: &mut Buffer) -> MohuResult<()> {
                 .for_each(|(sc, dc)| dc.copy_from_slice(sc));
         }
     } else {
-        // General strided → contiguous copy.
+        // General strided copy. Pointers are already positioned at each
+        // buffer's logical element zero, so offsets here are relative.
         let src_raw = src.as_ptr();
         let dst_raw = unsafe { dst.as_mut_ptr() };
-        let dst_itemsize = dst.itemsize();
 
-        for (elem_idx, src_off) in
-            StridedByteIter::new(src.shape(), src.strides(), src.offset()).enumerate()
-        {
-            let dst_off = elem_idx * dst_itemsize;
+        let src_offsets = NdIndexIter::new(src.shape())
+            .map(|idx| relative_byte_offset(&idx, src.strides()));
+        let dst_offsets = NdIndexIter::new(dst.shape())
+            .map(|idx| relative_byte_offset(&idx, dst.strides()));
+
+        for (src_off, dst_off) in src_offsets.zip(dst_offsets) {
+            // SAFETY: matching lengths were checked above, and both relative
+            // offsets are generated from each buffer's validated layout.
             unsafe {
-                std::ptr::copy_nonoverlapping(src_raw.add(src_off), dst_raw.add(dst_off), itemsize);
+                std::ptr::copy_nonoverlapping(
+                    src_raw.offset(src_off),
+                    dst_raw.offset(dst_off),
+                    itemsize,
+                );
             }
         }
     }
     Ok(())
+}
+
+fn relative_byte_offset(indices: &[usize], strides: &[isize]) -> isize {
+    indices
+        .iter()
+        .zip(strides.iter())
+        .map(|(&idx, &stride)| idx as isize * stride)
+        .sum()
 }
 
 // ─── cast_copy ───────────────────────────────────────────────────────────────

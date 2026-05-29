@@ -247,6 +247,41 @@ fn copy_to_contiguous_from_transposed() {
     assert_eq!(dst.get::<f64>(&[1, 0]).unwrap(), 1.0_f64);
 }
 
+#[test]
+fn copy_to_contiguous_respects_fortran_destination_strides() {
+    let data: Vec<i32> = (1..=6).collect();
+    let src = Buffer::from_slice(&data).unwrap().reshape(&[2, 3]).unwrap();
+    let mut dst = Buffer::alloc(DType::I32, &[2, 3], Order::F).unwrap();
+
+    assert!(!dst.is_c_contiguous());
+    assert!(dst.is_f_contiguous());
+
+    ops::copy_to_contiguous(&src, &mut dst).unwrap();
+
+    assert_eq!(dst.get::<i32>(&[0, 0]).unwrap(), 1);
+    assert_eq!(dst.get::<i32>(&[0, 1]).unwrap(), 2);
+    assert_eq!(dst.get::<i32>(&[0, 2]).unwrap(), 3);
+    assert_eq!(dst.get::<i32>(&[1, 0]).unwrap(), 4);
+    assert_eq!(dst.get::<i32>(&[1, 1]).unwrap(), 5);
+    assert_eq!(dst.get::<i32>(&[1, 2]).unwrap(), 6);
+}
+
+#[test]
+fn copy_from_respects_fortran_destination_strides() {
+    let data: Vec<i32> = (10..=15).collect();
+    let src = Buffer::from_slice(&data).unwrap().reshape(&[2, 3]).unwrap();
+    let mut dst = Buffer::alloc(DType::I32, &[2, 3], Order::F).unwrap();
+
+    dst.copy_from(&src).unwrap();
+
+    assert_eq!(dst.get::<i32>(&[0, 0]).unwrap(), 10);
+    assert_eq!(dst.get::<i32>(&[0, 1]).unwrap(), 11);
+    assert_eq!(dst.get::<i32>(&[0, 2]).unwrap(), 12);
+    assert_eq!(dst.get::<i32>(&[1, 0]).unwrap(), 13);
+    assert_eq!(dst.get::<i32>(&[1, 1]).unwrap(), 14);
+    assert_eq!(dst.get::<i32>(&[1, 2]).unwrap(), 15);
+}
+
 // ── 9. Buffer pool ────────────────────────────────────────────────────────────
 
 #[test]
