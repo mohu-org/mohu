@@ -236,6 +236,16 @@ fn div_scalar_inplace_integer_zero_returns_error() {
     let err = ops::div_scalar_inplace(&mut buf, 0_i32).unwrap_err();
     assert!(matches!(err, MohuError::DivisionByZero));
     assert_eq!(buf.as_slice::<i32>().unwrap(), &[2, 4, 6]);
+
+    let mut buf = Buffer::from_slice(&[8_i64, 16, 24]).unwrap();
+    let err = ops::div_scalar_inplace(&mut buf, 0_i64).unwrap_err();
+    assert!(matches!(err, MohuError::DivisionByZero));
+    assert_eq!(buf.as_slice::<i64>().unwrap(), &[8, 16, 24]);
+
+    let mut buf = Buffer::from_slice(&[10_u32, 20, 30]).unwrap();
+    let err = ops::div_scalar_inplace(&mut buf, 0_u32).unwrap_err();
+    assert!(matches!(err, MohuError::DivisionByZero));
+    assert_eq!(buf.as_slice::<u32>().unwrap(), &[10, 20, 30]);
 }
 
 #[test]
