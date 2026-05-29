@@ -11,7 +11,7 @@
 /// - [`assert_err_kind!`] — assert the broad error kind
 /// - [`assert_shape_err!`] — assert a specific shape mismatch
 /// - [`assert_err_chain!`] — assert the depth of the context chain
-use crate::{codes::ErrorCode, kind::ErrorKind, MohuError, MohuResult};
+use crate::{MohuError, MohuResult, codes::ErrorCode, kind::ErrorKind};
 
 // ─── assertion helpers (non-macro) ───────────────────────────────────────────
 
@@ -27,15 +27,10 @@ use crate::{codes::ErrorCode, kind::ErrorKind, MohuError, MohuResult};
 /// let err = assert_err(r, "should fail on zero divisor");
 /// assert!(matches!(err, MohuError::DivisionByZero));
 /// ```
-pub fn assert_err<T: std::fmt::Debug>(
-    result: MohuResult<T>,
-    context: &str,
-) -> MohuError {
+pub fn assert_err<T: std::fmt::Debug>(result: MohuResult<T>, context: &str) -> MohuError {
     match result {
         Err(e) => e,
-        Ok(v) => panic!(
-            "assert_err failed ({context}): expected Err(_), got Ok({v:?})"
-        ),
+        Ok(v) => panic!("assert_err failed ({context}): expected Err(_), got Ok({v:?})"),
     }
 }
 
@@ -45,9 +40,7 @@ pub fn assert_err<T: std::fmt::Debug>(
 pub fn assert_ok<T>(result: MohuResult<T>, context: &str) -> T {
     match result {
         Ok(v) => v,
-        Err(e) => panic!(
-            "assert_ok failed ({context}): expected Ok(_), got Err({e})"
-        ),
+        Err(e) => panic!("assert_ok failed ({context}): expected Ok(_), got Err({e})"),
     }
 }
 
@@ -108,10 +101,8 @@ pub fn assert_shape_err<T: std::fmt::Debug>(
                      got      ShapeMismatch {{ expected: {expected:?}, got: {got:?} }}"
                 );
             }
-        }
-        other => panic!(
-            "assert_shape_err: expected ShapeMismatch, got {other:?}"
-        ),
+        },
+        other => panic!("assert_shape_err: expected ShapeMismatch, got {other:?}"),
     }
 }
 

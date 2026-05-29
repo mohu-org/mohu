@@ -1,3 +1,4 @@
+#![allow(rustdoc::broken_intra_doc_links)]
 /// Testing utilities for mohu — fixtures, assertions, and property tests.
 ///
 /// This crate is intended as a `[dev-dependency]` for every other mohu crate
@@ -32,13 +33,12 @@
 ///     }
 /// }
 /// ```
-
 pub mod approx;
 pub mod assert;
 pub mod dtype;
 pub mod fixtures;
-pub mod strategies;
 pub mod perf;
+pub mod strategies;
 
 pub use mohu_error::{MohuError, MohuResult};
 

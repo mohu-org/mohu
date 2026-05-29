@@ -1,3 +1,4 @@
+#![allow(rustdoc::broken_intra_doc_links)]
 /// Masked arrays for mohu — null / invalid value propagation.
 ///
 /// A `MaskedArray` is a pair of `(data: Buffer, mask: Buffer<bool>)` where
@@ -23,7 +24,6 @@
 /// | [`fill`]     | `filled` — replace masked with fill_value              |
 /// | [`mask_ops`] | `masked_where`, `masked_equal`, `getmask`, `getdata`   |
 /// | [`io`]       | serialise/deserialise masked arrays (NPY extension)    |
-
 pub mod arith;
 pub mod array;
 pub mod compress;

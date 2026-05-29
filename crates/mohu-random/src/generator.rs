@@ -1,9 +1,11 @@
-/// PRNG generator trait and concrete engine types.
+//! PRNG generator trait and concrete engine types.
 
 /// Trait implemented by all mohu PRNG engines.
 pub trait Generator: Send + Sync {
     /// Seed the generator from a u64.
-    fn seed(seed: u64) -> Self where Self: Sized;
+    fn seed(seed: u64) -> Self
+    where
+        Self: Sized;
     /// Fill a byte slice with random bytes.
     fn fill_bytes(&mut self, dest: &mut [u8]);
     /// Return a random u64.
@@ -20,7 +22,8 @@ impl Pcg64 {
     const MULTIPLIER: u128 = 0x2360_ED05_1FC6_5DA4_4385_DF64_9FCC_F645;
 
     fn step(&mut self) {
-        self.state = self.state
+        self.state = self
+            .state
             .wrapping_mul(Self::MULTIPLIER)
             .wrapping_add(self.inc);
     }
@@ -82,12 +85,7 @@ impl Philox4x64 {
         const M1: u64 = 0xCA5A826395121157;
         let (hi0, lo0) = mul128(M0, ctr[0]);
         let (hi1, lo1) = mul128(M1, ctr[2]);
-        [
-            hi1 ^ ctr[1] ^ key[0],
-            lo1,
-            hi0 ^ ctr[3] ^ key[1],
-            lo0,
-        ]
+        [hi1 ^ ctr[1] ^ key[0], lo1, hi0 ^ ctr[3] ^ key[1], lo0]
     }
 
     fn generate(&mut self) {

@@ -1,3 +1,4 @@
+#![allow(rustdoc::broken_intra_doc_links)]
 /// Universal-function (ufunc) protocol for mohu.
 ///
 /// A `Ufunc` is a typed, broadcast-aware function that operates element-wise
@@ -32,7 +33,6 @@
 ///
 /// Implement [`Ufunc`] and register it in the dispatch table.  The macro
 /// [`define_ufunc!`] generates the boilerplate for common binary/unary cases.
-
 pub mod broadcast;
 pub mod dispatch;
 pub mod loop_impl;

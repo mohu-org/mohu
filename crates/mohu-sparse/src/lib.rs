@@ -1,3 +1,4 @@
+#![allow(rustdoc::broken_intra_doc_links)]
 /// Sparse matrix formats and operations for mohu.
 ///
 /// Provides the three canonical sparse storage formats — COO, CSR, CSC —
@@ -33,13 +34,12 @@
 /// coo.push(5, 7, 2.71);
 /// let csr = CsrMatrix::from(coo);
 /// ```
-
 pub mod arith;
 pub mod bsr;
+pub mod convert;
 pub mod coo;
 pub mod csc;
 pub mod csr;
-pub mod convert;
 pub mod dia;
 pub mod linalg;
 pub mod slice;

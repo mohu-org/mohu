@@ -36,7 +36,7 @@ impl<T: Scalar> MohuElement for T {}
 /// assert_eq!(b.len(), 3);
 /// ```
 pub struct NdArray<T: MohuElement> {
-    buffer:  Buffer,
+    buffer: Buffer,
     _marker: PhantomData<T>,
 }
 
@@ -47,7 +47,10 @@ impl<T: MohuElement> NdArray<T> {
     /// Returns an error if the shape would overflow the address space.
     pub fn zeros(shape: &[usize]) -> MohuResult<Self> {
         let buffer = Buffer::zeros(T::DTYPE, shape)?;
-        Ok(Self { buffer, _marker: PhantomData })
+        Ok(Self {
+            buffer,
+            _marker: PhantomData,
+        })
     }
 
     /// Creates a new `NdArray` filled with ones.
@@ -56,7 +59,10 @@ impl<T: MohuElement> NdArray<T> {
     /// Returns an error if the shape would overflow the address space.
     pub fn ones(shape: &[usize]) -> MohuResult<Self> {
         let buffer = Buffer::ones(T::DTYPE, shape)?;
-        Ok(Self { buffer, _marker: PhantomData })
+        Ok(Self {
+            buffer,
+            _marker: PhantomData,
+        })
     }
 
     /// Creates a 1-D `NdArray` by copying elements from a slice.
@@ -65,7 +71,10 @@ impl<T: MohuElement> NdArray<T> {
     /// `data.len()`. Returns an error if the allocation fails.
     pub fn from_slice(data: &[T]) -> MohuResult<Self> {
         let buffer = Buffer::from_slice(data)?;
-        Ok(Self { buffer, _marker: PhantomData })
+        Ok(Self {
+            buffer,
+            _marker: PhantomData,
+        })
     }
 
     /// Returns the shape of the array as a slice of dimension sizes.
@@ -106,7 +115,7 @@ impl<T: MohuElement> NdArray<T> {
 impl<T: MohuElement> Clone for NdArray<T> {
     fn clone(&self) -> Self {
         Self {
-            buffer:  self.buffer.share(),
+            buffer: self.buffer.share(),
             _marker: PhantomData,
         }
     }

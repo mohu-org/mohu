@@ -91,17 +91,50 @@ fn from_slice_empty() {
 
 #[test]
 fn dtype_for_each_numeric_type() {
-    assert_eq!(NdArray::<f64>::zeros(&[1]).unwrap().dtype(), mohu_dtype::DType::F64);
-    assert_eq!(NdArray::<f32>::zeros(&[1]).unwrap().dtype(), mohu_dtype::DType::F32);
-    assert_eq!(NdArray::<i32>::zeros(&[1]).unwrap().dtype(), mohu_dtype::DType::I32);
-    assert_eq!(NdArray::<i64>::zeros(&[1]).unwrap().dtype(), mohu_dtype::DType::I64);
-    assert_eq!(NdArray::<u8>::zeros(&[1]).unwrap().dtype(), mohu_dtype::DType::U8);
-    assert_eq!(NdArray::<u16>::zeros(&[1]).unwrap().dtype(), mohu_dtype::DType::U16);
-    assert_eq!(NdArray::<u32>::zeros(&[1]).unwrap().dtype(), mohu_dtype::DType::U32);
-    assert_eq!(NdArray::<u64>::zeros(&[1]).unwrap().dtype(), mohu_dtype::DType::U64);
-    assert_eq!(NdArray::<i8>::zeros(&[1]).unwrap().dtype(), mohu_dtype::DType::I8);
-    assert_eq!(NdArray::<i16>::zeros(&[1]).unwrap().dtype(), mohu_dtype::DType::I16);
-    assert_eq!(NdArray::<bool>::zeros(&[1]).unwrap().dtype(), mohu_dtype::DType::Bool);
+    assert_eq!(
+        NdArray::<f64>::zeros(&[1]).unwrap().dtype(),
+        mohu_dtype::DType::F64
+    );
+    assert_eq!(
+        NdArray::<f32>::zeros(&[1]).unwrap().dtype(),
+        mohu_dtype::DType::F32
+    );
+    assert_eq!(
+        NdArray::<i32>::zeros(&[1]).unwrap().dtype(),
+        mohu_dtype::DType::I32
+    );
+    assert_eq!(
+        NdArray::<i64>::zeros(&[1]).unwrap().dtype(),
+        mohu_dtype::DType::I64
+    );
+    assert_eq!(
+        NdArray::<u8>::zeros(&[1]).unwrap().dtype(),
+        mohu_dtype::DType::U8
+    );
+    assert_eq!(
+        NdArray::<u16>::zeros(&[1]).unwrap().dtype(),
+        mohu_dtype::DType::U16
+    );
+    assert_eq!(
+        NdArray::<u32>::zeros(&[1]).unwrap().dtype(),
+        mohu_dtype::DType::U32
+    );
+    assert_eq!(
+        NdArray::<u64>::zeros(&[1]).unwrap().dtype(),
+        mohu_dtype::DType::U64
+    );
+    assert_eq!(
+        NdArray::<i8>::zeros(&[1]).unwrap().dtype(),
+        mohu_dtype::DType::I8
+    );
+    assert_eq!(
+        NdArray::<i16>::zeros(&[1]).unwrap().dtype(),
+        mohu_dtype::DType::I16
+    );
+    assert_eq!(
+        NdArray::<bool>::zeros(&[1]).unwrap().dtype(),
+        mohu_dtype::DType::Bool
+    );
 }
 
 // ── edge cases ─────────────────────────────────────────────────────────────────
