@@ -26,6 +26,15 @@ Polars proved you can rewrite the data layer in Rust and win. mohu is that same 
 
 Early. The foundation is being laid. If you believe the Python numerical stack deserves a rewrite, watch this repo or contribute.
 
+## windows
+
+On Windows, use `scripts/use-llvm-mingw.ps1` to run the `mohu-io` test target
+with the LLVM-MinGW linker setup that works in this workspace.
+
+```powershell
+.\scripts\use-llvm-mingw.ps1
+```
+
 ## built with
 
 - [Rust](https://rust-lang.org)
