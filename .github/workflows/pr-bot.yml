@@ -45,6 +45,9 @@ jobs:
           ref: ${{ github.event.pull_request.base.ref }}
           fetch-depth: 0
 
+      - name: Fetch PR head commit
+        run: git fetch origin pull/${{ github.event.pull_request.number }}/head
+
       - name: Get changed files via API
         id: changed
         uses: tj-actions/changed-files@v46
