@@ -16,3 +16,4 @@ arrow.workspace       = true
 serde.workspace       = true
 memmap2.workspace     = true
 thiserror.workspace   = true
+csv.workspace         = true
