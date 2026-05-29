@@ -348,6 +348,40 @@ impl CsvWriter {
 	}
 
 	fn write_impl<W: Write>(&self, table: &CsvTable, mut writer: W) -> CsvResult<()> {
+		if self.opts.line_terminator == "\n" || self.opts.line_terminator == "\r\n" {
+			let terminator = if self.opts.line_terminator == "\r\n" {
+				csv::Terminator::CRLF
+			} else {
+				csv::Terminator::Any(b'\n')
+			};
+			let mut csv_writer = csv::WriterBuilder::new()
+				.delimiter(self.opts.delimiter)
+				.has_headers(false)
+				.terminator(terminator)
+				.from_writer(&mut writer);
+
+			if self.opts.write_header && !table.headers.is_empty() {
+				csv_writer.write_record(table.headers.iter().map(String::as_str))?;
+			}
+
+			for row in &table.data {
+				let values = row
+					.iter()
+					.map(|value| {
+						if matches!(value, CsvValue::Missing) {
+							self.opts.missing_repr.as_str().to_owned()
+						} else {
+							value.to_csv_string()
+						}
+					})
+					.collect::<Vec<_>>();
+				csv_writer.write_record(values.iter().map(String::as_str))?;
+			}
+
+			csv_writer.flush()?;
+			return Ok(());
+		}
+
 		if self.opts.write_header && !table.headers.is_empty() {
 			self.write_row(&mut writer, table.headers.iter().map(String::as_str))?;
 		}
@@ -371,7 +405,7 @@ impl CsvWriter {
 	where
 		W: Write,
 		I: IntoIterator<Item = S>,
-		S: AsRef<str>,
+		S: AsRef<[u8]>,
 	{
 		let mut row_bytes = Vec::new();
 		{
