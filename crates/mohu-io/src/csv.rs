@@ -382,6 +382,8 @@ impl CsvWriter {
 			return Ok(());
 		}
 
+		// For custom multi-byte line terminators, keep per-row encoding so we only
+		// replace the record terminator and never touch embedded newlines in fields.
 		if self.opts.write_header && !table.headers.is_empty() {
 			self.write_row(&mut writer, table.headers.iter().map(String::as_str))?;
 		}
