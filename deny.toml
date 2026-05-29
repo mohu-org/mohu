@@ -11,7 +11,7 @@ allow = [
     "Unlicense",
     "CC0-1.0",
     "BSL-1.0",
-    "LGPL-2.1-or-later",
+    "LGPL-2.1",
 ]
 confidence-threshold = 0.8
 
