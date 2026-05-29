@@ -39,15 +39,15 @@
 /// ```
 use std::fmt;
 
-use crate::{chain::ErrorChain, MohuError};
+use crate::{MohuError, chain::ErrorChain};
 
 // ─── ANSI escape sequences ────────────────────────────────────────────────────
 
 mod ansi {
-    pub const RESET:     &str = "\x1b[0m";
-    pub const BOLD:      &str = "\x1b[1m";
-    pub const DIM:       &str = "\x1b[2m";
-    pub const BOLD_RED:  &str = "\x1b[1;31m";
+    pub const RESET: &str = "\x1b[0m";
+    pub const BOLD: &str = "\x1b[1m";
+    pub const DIM: &str = "\x1b[2m";
+    pub const BOLD_RED: &str = "\x1b[1;31m";
     pub const BOLD_CYAN: &str = "\x1b[1;36m";
 }
 
@@ -56,7 +56,7 @@ mod ansi {
 fn colour_enabled() -> bool {
     match std::env::var("MOHU_COLOR").as_deref() {
         Ok("always") => true,
-        Ok("never")  => false,
+        Ok("never") => false,
         // "auto" or unset: check for NO_COLOR and TERM
         _ => {
             if std::env::var("NO_COLOR").is_ok() {
@@ -68,7 +68,7 @@ fn colour_enabled() -> bool {
                 Ok("dumb") | Err(_) => false,
                 Ok(_) => true,
             }
-        }
+        },
     }
 }
 
@@ -93,14 +93,18 @@ pub enum ReportMode {
 /// and similar macros.
 pub struct ErrorReporter<'a> {
     error: &'a MohuError,
-    mode:  ReportMode,
+    mode: ReportMode,
     color: bool,
 }
 
 impl<'a> ErrorReporter<'a> {
     /// Creates a new reporter with the given mode.
     pub fn new(error: &'a MohuError, mode: ReportMode) -> Self {
-        Self { error, mode, color: colour_enabled() }
+        Self {
+            error,
+            mode,
+            color: colour_enabled(),
+        }
     }
 
     /// Compact single-line reporter.
@@ -115,7 +119,11 @@ impl<'a> ErrorReporter<'a> {
 
     /// JSON reporter (machine-readable, no ANSI).
     pub fn json(error: &'a MohuError) -> Self {
-        Self { error, mode: ReportMode::Json, color: false }
+        Self {
+            error,
+            mode: ReportMode::Json,
+            color: false,
+        }
     }
 
     /// Forces colour on or off regardless of environment detection.
@@ -141,10 +149,10 @@ impl<'a> ErrorReporter<'a> {
             f,
             "{bold_red}error[{code}]{reset} {bold}{msg}{reset}",
             bold_red = self.c(ansi::BOLD_RED),
-            code      = code,
-            reset     = self.reset(),
-            bold      = self.c(ansi::BOLD),
-            msg       = self.error,
+            code = code,
+            reset = self.reset(),
+            bold = self.c(ansi::BOLD),
+            msg = self.error,
         )
     }
 
@@ -158,10 +166,10 @@ impl<'a> ErrorReporter<'a> {
             f,
             "{bold_red}error[{code}]{reset}{bold}: {msg}{reset}",
             bold_red = self.c(ansi::BOLD_RED),
-            code      = code,
-            reset     = self.reset(),
-            bold      = self.c(ansi::BOLD),
-            msg       = root,
+            code = code,
+            reset = self.reset(),
+            bold = self.c(ansi::BOLD),
+            msg = root,
         )?;
 
         // ── context chain (outermost → innermost) ─────────────────────────

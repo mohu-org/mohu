@@ -12,7 +12,7 @@
 
 use mohu_buffer::{
     Buffer, SliceArg,
-    strides::{c_strides, f_strides, NdIndexIter, unravel_index, ravel_multi_index},
+    strides::{NdIndexIter, c_strides, f_strides, ravel_multi_index, unravel_index},
 };
 use mohu_dtype::DType;
 
@@ -20,7 +20,12 @@ fn main() {
     // ── Buffer creation from a Rust slice ──────────────────────────────────
     // NumPy: a = np.array([1.0, 2.0, 3.0, 4.0, 5.0], dtype=np.float32)
     let a = Buffer::from_slice::<f32>(&[1.0, 2.0, 3.0, 4.0, 5.0]).unwrap();
-    println!("from_slice: dtype={}, shape={:?}, len={}", a.dtype(), a.shape(), a.len());
+    println!(
+        "from_slice: dtype={}, shape={:?}, len={}",
+        a.dtype(),
+        a.shape(),
+        a.len()
+    );
 
     // Read elements back
     let v: f32 = a.get(&[2]).unwrap();
@@ -30,7 +35,11 @@ fn main() {
     // NumPy: a = np.array([[1, 2, 3], [4, 5, 6]], dtype=np.float64)
     let rows: &[&[f64]] = &[&[1.0, 2.0, 3.0], &[4.0, 5.0, 6.0]];
     let a2d = Buffer::from_slice_2d(rows).unwrap();
-    println!("\nfrom_slice_2d: shape={:?}, strides={:?}", a2d.shape(), a2d.strides());
+    println!(
+        "\nfrom_slice_2d: shape={:?}, strides={:?}",
+        a2d.shape(),
+        a2d.strides()
+    );
     let v: f64 = a2d.get(&[1, 2]).unwrap();
     println!("  a[1,2] = {v}"); // 6.0
 
@@ -79,7 +88,11 @@ fn main() {
     // ── Transpose (zero-copy view operation) ───────────────────────────────
     // NumPy: a.T
     let t = a2d.transpose();
-    println!("\nTranspose: shape={:?}, strides={:?}", t.shape(), t.strides());
+    println!(
+        "\nTranspose: shape={:?}, strides={:?}",
+        t.shape(),
+        t.strides()
+    );
     let v: f64 = t.get(&[2, 1]).unwrap(); // was a2d[1,2] = 6.0
     println!("  a.T[2,1] = {v}"); // 6.0
 
@@ -93,14 +106,25 @@ fn main() {
     // ── Slicing (zero-copy view with adjusted strides) ─────────────────────
     // NumPy: a[::2]  (every other element)
     let five = Buffer::from_slice::<f32>(&[10.0, 20.0, 30.0, 40.0, 50.0]).unwrap();
-    let sliced = five.slice_axis(0, SliceArg { start: Some(0), stop: None, step: Some(2) }).unwrap();
+    let sliced = five
+        .slice_axis(
+            0,
+            SliceArg {
+                start: Some(0),
+                stop: None,
+                step: Some(2),
+            },
+        )
+        .unwrap();
     let data = sliced.to_vec::<f32>().unwrap();
     println!("\nslice [::2]: {:?}", data); // [10.0, 30.0, 50.0]
 
     // ── Broadcast (zero-copy virtual replication) ──────────────────────────
     // NumPy: np.broadcast_to(np.array([1, 2, 3]), (3, 3))
-    let row = Buffer::from_slice::<f32>(&[1.0, 2.0, 3.0]).unwrap()
-        .expand_dims(0).unwrap();
+    let row = Buffer::from_slice::<f32>(&[1.0, 2.0, 3.0])
+        .unwrap()
+        .expand_dims(0)
+        .unwrap();
     let bc = row.broadcast_to(&[3, 3]).unwrap();
     println!("\nBroadcast to (3,3): shape={:?}", bc.shape());
     for i in 0..3 {
@@ -115,8 +139,8 @@ fn main() {
     println!("\n── Layout inspection ──");
     println!("a2d C-contiguous: {}", a2d.is_c_contiguous());
     println!("a2d F-contiguous: {}", a2d.is_f_contiguous());
-    println!("a2d.T C-contiguous: {}", t.is_c_contiguous());  // false after transpose
-    println!("a2d.T F-contiguous: {}", t.is_f_contiguous());  // true
+    println!("a2d.T C-contiguous: {}", t.is_c_contiguous()); // false after transpose
+    println!("a2d.T F-contiguous: {}", t.is_f_contiguous()); // true
 
     // ── Stride arithmetic ──────────────────────────────────────────────────
     println!("\n── Stride arithmetic ──");

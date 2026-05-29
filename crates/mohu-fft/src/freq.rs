@@ -1,4 +1,4 @@
-//! Frequency-axis helpers similar to NumPy's `fftfreq` and `fftshift`.
+/// Frequency-axis helpers similar to NumPy's `fftfreq` and `fftshift`.
 
 /// Return the Discrete Fourier Transform sample frequencies for a window of
 /// length `n` and sample spacing `d` (default 1.0).
@@ -20,7 +20,7 @@ pub fn fftfreq(n: usize, d: f64) -> Vec<f64> {
     freqs
 }
 
-/// Alias for `fftfreq` for real-input transforms; behavior is identical.
+/// Return the non-negative frequency bins for real-input transforms.
 pub fn rfftfreq(n: usize, d: f64) -> Vec<f64> {
     if n == 0 {
         return Vec::new();
@@ -31,10 +31,10 @@ pub fn rfftfreq(n: usize, d: f64) -> Vec<f64> {
 }
 
 /// Shift the zero-frequency component to the center of the spectrum.
-pub fn fftshift<T: Clone>(v: Vec<T>) -> Vec<T> {
+pub fn fftshift<T: Clone>(v: &[T]) -> Vec<T> {
     let n = v.len();
     if n == 0 {
-        return v;
+        return Vec::new();
     }
     let mid = n / 2;
     let mut out = Vec::with_capacity(n);
@@ -44,10 +44,10 @@ pub fn fftshift<T: Clone>(v: Vec<T>) -> Vec<T> {
 }
 
 /// The inverse of `fftshift`.
-pub fn ifftshift<T: Clone>(v: Vec<T>) -> Vec<T> {
+pub fn ifftshift<T: Clone>(v: &[T]) -> Vec<T> {
     let n = v.len();
     if n == 0 {
-        return v;
+        return Vec::new();
     }
     let mid = (n + 1) / 2;
     let mut out = Vec::with_capacity(n);
@@ -59,19 +59,20 @@ pub fn ifftshift<T: Clone>(v: Vec<T>) -> Vec<T> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use mohu_testing::assert_allclose;
 
     #[test]
     fn test_fftfreq_len() {
         let f = fftfreq(4, 1.0);
-        assert_eq!(f, vec![0.0, 0.25, -0.5, -0.25]);
+        assert_allclose!(f, vec![0.0, 0.25, -0.5, -0.25], atol = 1e-12);
     }
 
     #[test]
     fn test_fftshift() {
         let v = vec![0, 1, 2, 3];
-        let s = fftshift(v.clone());
+        let s = fftshift(&v);
         assert_eq!(s, vec![2, 3, 0, 1]);
-        let r = ifftshift(s);
+        let r = ifftshift(&s);
         assert_eq!(r, v);
     }
 }

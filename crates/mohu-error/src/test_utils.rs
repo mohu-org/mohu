@@ -101,7 +101,7 @@ pub fn assert_shape_err<T: std::fmt::Debug>(
                      got      ShapeMismatch {{ expected: {expected:?}, got: {got:?} }}"
                 );
             }
-        }
+        },
         other => panic!("assert_shape_err: expected ShapeMismatch, got {other:?}"),
     }
 }

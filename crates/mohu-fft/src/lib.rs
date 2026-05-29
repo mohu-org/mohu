@@ -17,7 +17,8 @@
 /// | `fft2(a, s, axes)`    | `np.fft.fft2`         |
 /// | `fftn(a, s, axes)`    | `np.fft.fftn`         |
 /// | `fftfreq(n, d)`       | `np.fft.fftfreq`      |
-/// | `fftshift(a, axes)`   | `np.fft.fftshift`     |
+/// | `fftshift(v)`         | `np.fft.fftshift`     |
+/// | `ifftshift(v)`        | `np.fft.ifftshift`    |
 ///
 /// # Normalization modes
 ///
@@ -26,7 +27,6 @@
 /// | `Backward` | 1              | 1/n (default)    |
 /// | `Ortho`    | 1/sqrt(n)      | 1/sqrt(n)        |
 /// | `Forward`  | 1/n            | 1                |
-
 pub mod freq;
 pub mod helpers;
 pub mod nd;

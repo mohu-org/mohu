@@ -62,16 +62,67 @@ pub fn ifft(input: &[Complex<f64>], n: Option<usize>, norm: Norm) -> Vec<Complex
 #[cfg(test)]
 mod tests {
     use super::*;
+    use mohu_testing::assert_allclose;
     use num_complex::Complex;
 
+    fn assert_complex_close(actual: &[Complex<f64>], expected: &[Complex<f64>]) {
+        let actual_re: Vec<f64> = actual.iter().map(|value| value.re).collect();
+        let actual_im: Vec<f64> = actual.iter().map(|value| value.im).collect();
+        let expected_re: Vec<f64> = expected.iter().map(|value| value.re).collect();
+        let expected_im: Vec<f64> = expected.iter().map(|value| value.im).collect();
+
+        assert_allclose!(actual_re, expected_re, atol = 1e-9);
+        assert_allclose!(actual_im, expected_im, atol = 1e-9);
+    }
+
     #[test]
-    fn roundtrip_fft_ifft() {
+    fn roundtrip_fft_ifft_backward() {
         let input: Vec<Complex<f64>> = (0..8).map(|i| Complex::new(i as f64, 0.0)).collect();
         let out = fft(&input, None, Norm::Backward);
         let back = ifft(&out, None, Norm::Backward);
-        for (a, b) in input.iter().zip(back.iter()) {
-            assert!((a.re - b.re).abs() < 1e-9);
-            assert!((a.im - b.im).abs() < 1e-9);
-        }
+        assert_complex_close(&back, &input);
+    }
+
+    #[test]
+    fn roundtrip_fft_ifft_ortho() {
+        let input: Vec<Complex<f64>> = (0..8)
+            .map(|i| Complex::new((i as f64) * 0.5, 0.0))
+            .collect();
+        let out = fft(&input, None, Norm::Ortho);
+        let back = ifft(&out, None, Norm::Ortho);
+        assert_complex_close(&back, &input);
+    }
+
+    #[test]
+    fn roundtrip_fft_ifft_forward() {
+        let input: Vec<Complex<f64>> = (0..8)
+            .map(|i| Complex::new((i as f64) - 3.0, 0.0))
+            .collect();
+        let out = fft(&input, None, Norm::Forward);
+        let back = ifft(&out, None, Norm::Forward);
+        assert_complex_close(&back, &input);
+    }
+
+    #[test]
+    fn fft_padding_roundtrip() {
+        let input = vec![Complex::new(1.0, 0.0), Complex::new(2.0, 0.0)];
+        let out = fft(&input, Some(4), Norm::Backward);
+        let back = ifft(&out, Some(4), Norm::Backward);
+        let expected = vec![
+            Complex::new(1.0, 0.0),
+            Complex::new(2.0, 0.0),
+            Complex::new(0.0, 0.0),
+            Complex::new(0.0, 0.0),
+        ];
+        assert_complex_close(&back, &expected);
+    }
+
+    #[test]
+    fn fft_truncation_roundtrip() {
+        let input: Vec<Complex<f64>> = (0..4).map(|i| Complex::new(i as f64, 0.0)).collect();
+        let out = fft(&input, Some(2), Norm::Backward);
+        let back = ifft(&out, Some(2), Norm::Backward);
+        let expected = vec![Complex::new(0.0, 0.0), Complex::new(1.0, 0.0)];
+        assert_complex_close(&back, &expected);
     }
 }

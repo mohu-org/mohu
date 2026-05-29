@@ -374,7 +374,7 @@ impl CsvWriter {
     where
         W: Write,
         I: IntoIterator<Item = S>,
-        S: AsRef<str>,
+        S: AsRef<[u8]>,
     {
         let mut row_bytes = Vec::new();
         {
