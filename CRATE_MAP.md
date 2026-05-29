@@ -3,6 +3,8 @@
 Structured map of all workspace crates, their dependencies, modules, and public API surface.
 
 > **Legend**: `[stub]` = module declared but source file is empty (not yet implemented).
+>
+> **See also**: [README.md](./README.md) for project overview, [CONTRIBUTING.md](./CONTRIBUTING.md) for development workflow.
 
 ---
 

@@ -1,5 +1,7 @@
 # Roadmap
 
+> **See also**: [README.md](./README.md) for project status, [CRATE_MAP.md](./CRATE_MAP.md) for implementation status per crate.
+
 ## Organization
 
 The following repositories are planned for the `mohu-org` GitHub organization.

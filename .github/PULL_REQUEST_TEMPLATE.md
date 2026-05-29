@@ -13,7 +13,8 @@
 ## Checklist
 
 - [ ] `cargo test --workspace` passes
-- [ ] `cargo clippy --workspace -- -D warnings` passes
+- [ ] `cargo clippy --workspace --all-targets --all-features -- -D warnings` passes
 - [ ] `cargo fmt --all` applied
 - [ ] `CHANGELOG.md` updated (if user-facing change)
+- [ ] Documentation cross-links updated (if documentation change)
 - [ ] Benchmarks added or updated (if performance-sensitive path)

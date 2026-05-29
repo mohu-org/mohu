@@ -2,6 +2,8 @@
 
 Guidance for AI coding agents (Codex, Claude, Copilot Workspace, etc.) working in this repository. Supplements `CLAUDE.md` with agent-specific behavior rules.
 
+> **See also**: [README.md](./README.md) for project overview, [CONTRIBUTING.md](./CONTRIBUTING.md) for development workflow.
+
 ---
 
 ## Read first

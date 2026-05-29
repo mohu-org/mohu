@@ -2,6 +2,10 @@
 
 Thank you for your interest in contributing. This document covers everything you need to get from zero to a merged pull request.
 
+> **First time?** Read [README.md](./README.md) for the project overview and [CRATE_MAP.md](./CRATE_MAP.md) for the crate architecture.
+>
+> AI coding agents should also read [AGENTS.md](./AGENTS.md) and [CLAUDE.md](./CLAUDE.md) for workspace-specific rules.
+
 ---
 
 ## Table of Contents
@@ -133,7 +137,7 @@ ci/<short-description>          # CI/tooling changes
 
 ## Crate map
 
-The workspace is layered — each layer only depends on layers below it.
+The workspace is layered — each layer only depends on layers below it. See [CRATE_MAP.md](./CRATE_MAP.md) for the complete API surface per crate.
 
 ### Foundation
 
@@ -247,6 +251,7 @@ cargo bench --no-run --all-features  # verify benchmarks compile
 - Every public item needs a doc comment.
 - Include at least one `# Example` section on non-trivial items.
 - Avoid restating what the name already says — document *why* and *when*.
+- See [README.md](./README.md#documentation) for links to all project documentation.
 
 ```rust
 /// Returns the total number of elements across all dimensions.
@@ -275,3 +280,4 @@ Before requesting review, confirm:
 - [ ] New public APIs have doc comments with examples
 - [ ] `CHANGELOG.md` entry added for user-visible changes
 - [ ] No `TODO`, `unimplemented!()`, or stub functions left in completed code
+- [ ] Cross-links to relevant documentation added where applicable

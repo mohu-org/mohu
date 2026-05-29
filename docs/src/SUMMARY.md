@@ -2,6 +2,10 @@
 
 - [Introduction](./introduction.md)
 - [Getting Started](./getting-started.md)
+- [Contributing](../CONTRIBUTING.md)
+- [Architecture](../design/001-dtype-system.md)
+- [Memory Layout](../design/002-memory-layout.md)
+- [RFCs](../rfcs/0001-array-api.md)
 
 # User Guide
 

@@ -2,6 +2,8 @@
 
 AI assistant guide for the mohu workspace. Read this before touching any code.
 
+> **See also**: [README.md](./README.md) for project overview, [CONTRIBUTING.md](./CONTRIBUTING.md) for development workflow, [AGENTS.md](./AGENTS.md) for agent-specific rules.
+
 ---
 
 ## What this project is
