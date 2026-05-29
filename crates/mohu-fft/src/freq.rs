@@ -44,7 +44,7 @@ pub fn fftshift<T: Clone>(v: Vec<T>) -> Vec<T> {
 }
 
 /// The inverse of `fftshift`.
-pub fn ifftshift<T: Clone>(mut v: Vec<T>) -> Vec<T> {
+pub fn ifftshift<T: Clone>(v: Vec<T>) -> Vec<T> {
     let n = v.len();
     if n == 0 {
         return v;
