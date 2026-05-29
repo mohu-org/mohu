@@ -19,7 +19,6 @@
 /// | [`dispatch_signed!`] | signed integers + floats |
 /// | [`for_each_dtype!`] | invoke a macro for every dtype (codegen helper) |
 /// | [`assert_dtype!`] | assert a DType at runtime or return an error |
-
 // ─── dtype_of! ───────────────────────────────────────────────────────────────
 
 /// Returns the `DType` constant for a Rust primitive type literal.
