@@ -125,7 +125,7 @@ ci: add musl cross-compile target
 - Title = commit subject format above.
 - Target `mohu-org/mohu:main`.
 - All commits must be signed (`Signed-off-by`). DCO check blocks merge.
-- Required status: `CI Pass` (the `ci-pass` job aggregates all 13 checks).
+- Required status: `CI Pass` (the `ci-pass` job aggregates the 9 blocking checks; `semver`, `cross`, `coverage`, and `miri` are advisory and do not block merge).
 - Do not force-push after review — amend is allowed only before first review comment.
 
 ---
@@ -150,20 +150,20 @@ ci: add musl cross-compile target
 
 ## CI pipeline summary
 
-All 13 jobs must pass (aggregated under `ci-pass`):
+Of the 13 CI jobs, nine are blocking (aggregated under `ci-pass`) and four are advisory:
 
-| Job | What it checks |
-|-----|---------------|
-| `dco` | Every commit has `Signed-off-by` (PR only) |
-| `fmt` | `rustfmt` — no diff |
-| `clippy` | Zero warnings, `-D warnings` |
-| `deny` | No banned deps, no unlicensed deps, no advisories |
-| `unused-deps` | No unused `[dependencies]` entries |
-| `build` | Workspace builds with all features |
-| `doc` | Docs build with `-D warnings` |
-| `msrv` | Builds on Rust 1.85 |
-| `bench-check` | All benchmarks compile |
-| `semver` | No accidental breaking API changes (PR only) |
-| `cross` | Builds for aarch64-linux, aarch64-darwin, x86_64-musl |
-| `coverage` | Test coverage reported to Codecov |
-| `miri` | `mohu-buffer` unsafe code passes Miri strict provenance |
+| Job | Blocking | What it checks |
+|-----|----------|---------------|
+| `dco` | yes | Every commit has `Signed-off-by` (PR only) |
+| `fmt` | yes | `rustfmt` — no diff |
+| `clippy` | yes | Zero warnings, `-D warnings` |
+| `deny` | yes | No banned deps, no unlicensed deps, no advisories |
+| `unused-deps` | yes | No unused `[dependencies]` entries |
+| `build` | yes | Workspace builds with all features |
+| `doc` | yes | Docs build with `-D warnings` |
+| `msrv` | yes | Builds on Rust 1.85 |
+| `bench-check` | yes | All benchmarks compile |
+| `semver` | advisory — `continue-on-error` until crates are published | No accidental breaking API changes (PR only) |
+| `cross` | advisory — runs on push to `main` only, never on PRs | Builds for aarch64-linux, aarch64-darwin, x86_64-musl |
+| `coverage` | advisory — `continue-on-error` (Codecov upload can be flaky) | Test coverage reported to Codecov |
+| `miri` | advisory — `continue-on-error` (nightly toolchain) | `mohu-buffer` unsafe code passes Miri strict provenance |
