@@ -664,7 +664,7 @@ impl AllocHandle {
             return false;
         }
         let slice = unsafe { std::slice::from_raw_parts(self.as_ptr(), self.len) };
-        slice.iter().any(|&b| b == POISON_BYTE)
+        slice.contains(&POISON_BYTE)
     }
 
     // ─── Byte-range view ──────────────────────────────────────────────────────

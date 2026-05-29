@@ -1315,7 +1315,7 @@ pub fn argmax_flat(buf: &Buffer) -> MohuResult<usize> {
 /// Fills a C-contiguous F32 buffer using non-temporal (streaming) AVX2 stores.
 ///
 /// Bypasses the CPU cache — achieves peak DRAM write bandwidth for buffers
-/// > a few MiB where the data will not be immediately re-read.
+/// exceeding a few MiB where the data will not be immediately re-read.
 /// Falls back to the standard Rayon fill on non-x86_64 platforms.
 pub fn fill_nontemporal_f32_buf(buf: &mut Buffer, value: f32) -> MohuResult<()> {
     use mohu_dtype::DType;
@@ -1376,7 +1376,7 @@ pub fn fill_nontemporal_f32_buf(buf: &mut Buffer, value: f32) -> MohuResult<()> 
     {
         let slice = unsafe { std::slice::from_raw_parts_mut(ptr, len) };
         slice.par_iter_mut().for_each(|x| *x = value);
-        return Ok(());
+        Ok(())
     }
 }
 

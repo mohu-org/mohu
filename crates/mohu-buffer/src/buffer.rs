@@ -361,7 +361,7 @@ impl Buffer {
             return Self::zeros(T::DTYPE, &[0, 0]);
         }
         let cols = data[0].len();
-        for (_row_idx, row) in data.iter().enumerate() {
+        for row in data.iter() {
             if row.len() != cols {
                 return Err(MohuError::ShapeMismatch {
                     expected: vec![cols],
@@ -2004,9 +2004,9 @@ fn dtype_one_bytes(dtype: DType) -> Vec<u8> {
 fn read_as_f64(ptr: *const u8, dtype: DType, _itemsize: usize) -> f64 {
     use mohu_dtype::DType::*;
     match dtype {
-        Bool => unsafe { *(ptr as *const u8) as f64 },
+        Bool => unsafe { *ptr as f64 },
         I8 => unsafe { *(ptr as *const i8) as f64 },
-        U8 => unsafe { *(ptr as *const u8) as f64 },
+        U8 => unsafe { *ptr as f64 },
         I16 => unsafe { *(ptr as *const i16) as f64 },
         U16 => unsafe { *(ptr as *const u16) as f64 },
         I32 => unsafe { *(ptr as *const i32) as f64 },

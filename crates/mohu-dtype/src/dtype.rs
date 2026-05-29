@@ -491,6 +491,7 @@ impl DType {
     /// Accepts canonical names, single-char codes, shorthand with byte counts,
     /// and common aliases. Case-insensitive except for uppercase char codes
     /// (B, H, I, L, F, D).
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> MohuResult<Self> {
         let lower = s.trim().to_ascii_lowercase();
         match lower.as_str() {

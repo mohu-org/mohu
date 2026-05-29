@@ -98,7 +98,7 @@ impl FloatInfo {
         let tiny = half::f16::MIN_POSITIVE.to_f64();
         // Smallest subnormal: 2^{-24}
         let smallest_sub = 5.960_464_477_539_063e-8_f64;
-        let precision = (10_u32 as f64 * f64::log10(2.0)).floor() as u32; // 3
+        let precision = (10.0_f64 * f64::log10(2.0)).floor() as u32; // 3
         Self {
             dtype: DType::F16,
             bits: 16,
@@ -127,7 +127,7 @@ impl FloatInfo {
         let max = half::bf16::MAX.to_f64();
         let tiny = half::bf16::MIN_POSITIVE.to_f64();
         let smallest_sub = 9.183_549_615_799_121e-41_f64;
-        let precision = (7_u32 as f64 * f64::log10(2.0)).floor() as u32; // 2
+        let precision = (7.0_f64 * f64::log10(2.0)).floor() as u32; // 2
         Self {
             dtype: DType::BF16,
             bits: 16,
@@ -155,7 +155,7 @@ impl FloatInfo {
         let max = f32::MAX as f64;
         let tiny = f32::MIN_POSITIVE as f64;
         let smallest_sub = 1.401_298_464_324_817e-45_f64;
-        let precision = (23_u32 as f64 * f64::log10(2.0)).floor() as u32; // 6
+        let precision = (23.0_f64 * f64::log10(2.0)).floor() as u32; // 6
         Self {
             dtype: DType::F32,
             bits: 32,
@@ -183,7 +183,7 @@ impl FloatInfo {
         let max = f64::MAX;
         let tiny = f64::MIN_POSITIVE;
         let smallest_sub = 5.0e-324_f64;
-        let precision = (52_u32 as f64 * f64::log10(2.0)).floor() as u32; // 15
+        let precision = (52.0_f64 * f64::log10(2.0)).floor() as u32; // 15
         Self {
             dtype: DType::F64,
             bits: 64,

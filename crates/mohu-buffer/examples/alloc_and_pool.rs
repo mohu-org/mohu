@@ -6,10 +6,7 @@
 // This is the kind of low-level memory control that NumPy doesn't expose
 // directly, but is critical for high-performance scientific computing.
 
-use mohu_buffer::{
-    AllocHandle, AllocStats, Buffer, BufferPool, CACHE_LINE, GLOBAL_POOL, PoolStats, SIMD_ALIGN,
-    Strategy,
-};
+use mohu_buffer::{AllocHandle, AllocStats, Buffer, CACHE_LINE, GLOBAL_POOL, SIMD_ALIGN, Strategy};
 use mohu_dtype::DType;
 
 fn main() {

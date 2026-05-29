@@ -96,14 +96,14 @@ impl SliceArg {
             if stop <= start {
                 0
             } else {
-                (stop - start + (step as usize) - 1) / (step as usize)
+                (stop - start).div_ceil(step as usize)
             }
         } else {
             let abs_step = (-step) as usize;
             if e_reversed_empty(start, stop) {
                 0
             } else {
-                (start.saturating_sub(stop) + abs_step - 1) / abs_step
+                start.saturating_sub(stop).div_ceil(abs_step)
             }
         };
 
@@ -252,7 +252,7 @@ impl Layout {
 
     /// Returns `true` if any dimension is 0 (zero-element array).
     pub fn is_empty(&self) -> bool {
-        self.shape.iter().any(|&d| d == 0)
+        self.shape.contains(&0)
     }
 
     // ─── Contiguity checks ────────────────────────────────────────────────────

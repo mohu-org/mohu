@@ -1,4 +1,4 @@
-/// PRNG generator trait and concrete engine types.
+//! PRNG generator trait and concrete engine types.
 
 /// Trait implemented by all mohu PRNG engines.
 pub trait Generator: Send + Sync {
