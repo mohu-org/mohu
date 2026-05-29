@@ -1,4 +1,4 @@
-/// Frequency-axis helpers similar to NumPy's `fftfreq` and `fftshift`.
+//! Frequency-axis helpers similar to NumPy's `fftfreq` and `fftshift`.
 
 /// Return the Discrete Fourier Transform sample frequencies for a window of
 /// length `n` and sample spacing `d` (default 1.0).
