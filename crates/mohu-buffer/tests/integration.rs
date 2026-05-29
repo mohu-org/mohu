@@ -1,7 +1,9 @@
 //! Integration tests for mohu-buffer — exercises every major subsystem.
 
+use std::ptr::NonNull;
+
 use mohu_buffer::{
-    Buffer, GLOBAL_POOL, Order, SliceArg, ops,
+    Buffer, GLOBAL_POOL, Layout, Order, SliceArg, ops,
     strides::{NdIndexIter, broadcast_strides, c_strides, f_strides},
 };
 use mohu_dtype::{DType, promote::CastMode};
@@ -280,6 +282,45 @@ fn copy_from_respects_fortran_destination_strides() {
     assert_eq!(dst.get::<i32>(&[1, 0]).unwrap(), 13);
     assert_eq!(dst.get::<i32>(&[1, 1]).unwrap(), 14);
     assert_eq!(dst.get::<i32>(&[1, 2]).unwrap(), 15);
+}
+
+#[test]
+fn copy_to_contiguous_respects_nonzero_offset_destination() {
+    let src = Buffer::from_slice(&[1_i32, 2, 3, 4]).unwrap().reshape(&[2, 2]).unwrap();
+    let mut backing = vec![-1_i32; 9];
+    let itemsize = std::mem::size_of::<i32>();
+    let layout = Layout::new_custom(
+        &[2, 2],
+        &[(3 * itemsize) as isize, itemsize as isize],
+        4 * itemsize,
+        itemsize,
+    )
+    .unwrap();
+    let ptr = NonNull::new(backing.as_mut_ptr() as *mut u8).unwrap();
+
+    // SAFETY: backing stays alive for the whole test, and the custom layout
+    // touches only elements 4, 5, 7, and 8 within the 9-element backing Vec.
+    let mut dst = unsafe {
+        Buffer::from_raw_parts(
+            ptr,
+            backing.len() * itemsize,
+            DType::I32,
+            layout,
+        )
+    };
+
+    assert_eq!(dst.offset(), 4 * itemsize);
+    assert!(!dst.is_c_contiguous());
+
+    ops::copy_to_contiguous(&src, &mut dst).unwrap();
+
+    assert_eq!(dst.get::<i32>(&[0, 0]).unwrap(), 1);
+    assert_eq!(dst.get::<i32>(&[0, 1]).unwrap(), 2);
+    assert_eq!(dst.get::<i32>(&[1, 0]).unwrap(), 3);
+    assert_eq!(dst.get::<i32>(&[1, 1]).unwrap(), 4);
+
+    drop(dst);
+    assert_eq!(backing, vec![-1, -1, -1, -1, 1, 2, -1, 3, 4]);
 }
 
 // ── 9. Buffer pool ────────────────────────────────────────────────────────────
