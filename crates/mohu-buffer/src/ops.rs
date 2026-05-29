@@ -94,7 +94,11 @@ where
         let ptr = unsafe { buf.as_mut_ptr() as *mut T };
         // SAFETY: uniqueness checked, C-contiguous, len is correct.
         let slice = unsafe { std::slice::from_raw_parts_mut(ptr, len) };
+        // Under Miri, rayon triggers Stacked Borrows violations via crossbeam-epoch.
+        #[cfg(not(miri))]
         slice.par_iter_mut().for_each(|x| *x = value);
+        #[cfg(miri)]
+        slice.iter_mut().for_each(|x| *x = value);
     } else {
         let raw_ptr = unsafe { buf.as_mut_ptr() };
         for off in StridedByteIter::new(buf.shape(), buf.strides(), buf.offset()) {
@@ -250,9 +254,19 @@ fn cast_typed<S: Scalar + Send + Sync, D: Scalar + Send + Sync>(
         let src_slice = unsafe { std::slice::from_raw_parts(src_ptr, len) };
         let dst_slice = unsafe { std::slice::from_raw_parts_mut(dst_ptr, len) };
 
+        // Under Miri, rayon's crossbeam-epoch dependency triggers Stacked
+        // Borrows violations on slices derived from raw pointers.
+        #[cfg(not(miri))]
         src_slice
             .par_iter()
             .zip(dst_slice.par_iter_mut())
+            .for_each(|(s, d)| {
+                *d = cast_scalar_unchecked::<S, D>(*s);
+            });
+        #[cfg(miri)]
+        src_slice
+            .iter()
+            .zip(dst_slice.iter_mut())
             .for_each(|(s, d)| {
                 *d = cast_scalar_unchecked::<S, D>(*s);
             });

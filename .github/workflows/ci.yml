@@ -220,7 +220,6 @@ jobs:
           RUSTUP_TOOLCHAIN: nightly
           MIRIFLAGS: "-Zmiri-symbolic-alignment-check"
           RUSTFLAGS: ""
-          RAYON_NUM_THREADS: 1
 
   # ── Final gate ───────────────────────────────────────────────────────────────
   # All blocking jobs listed here. Non-blocking jobs use continue-on-error and
