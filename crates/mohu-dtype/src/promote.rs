@@ -20,7 +20,7 @@
 /// | Safe      | No information loss guaranteed (i8→i16, f32→f64)   |
 /// | SameKind  | Within same kind, precision loss OK (f64→f32)       |
 /// | Unsafe    | Any cast, including float→int, complex→real          |
-use crate::dtype::{DType, DTYPE_COUNT};
+use crate::dtype::{DTYPE_COUNT, DType};
 
 // ─── CastMode ────────────────────────────────────────────────────────────────
 
@@ -69,7 +69,7 @@ pub const fn promote(a: DType, b: DType) -> DType {
 /// stored as its `u8` discriminant and cast back via `DType::from_u8` at
 /// lookup time.
 const PROMOTION_TABLE: [DType; DTYPE_COUNT * DTYPE_COUNT] = {
-    use DType::{Bool,I8,I16,I32,I64,U8,U16,U32,U64,F16,BF16,F32,F64,C64,C128};
+    use DType::{BF16, Bool, C64, C128, F16, F32, F64, I8, I16, I32, I64, U8, U16, U32, U64};
 
     // Row-major layout, symmetric.
     // Index mapping: Bool=0,I8=1,I16=2,I32=3,I64=4,U8=5,U16=6,U32=7,U64=8,
@@ -78,21 +78,23 @@ const PROMOTION_TABLE: [DType; DTYPE_COUNT * DTYPE_COUNT] = {
     // Read as: promote(ROW, COL) = entry
     [
         //         Bool  I8    I16   I32   I64   U8    U16   U32   U64   F16   BF16  F32   F64   C64   C128
-        /* Bool */ Bool, I8,   I16,  I32,  I64,  U8,   U16,  U32,  U64,  F16,  BF16, F32,  F64,  C64,  C128,
-        /* I8   */ I8,   I8,   I16,  I32,  I64,  I16,  I32,  I64,  F64,  F32,  BF16, F32,  F64,  C64,  C128,
-        /* I16  */ I16,  I16,  I16,  I32,  I64,  I16,  I32,  I64,  F64,  F32,  F32,  F32,  F64,  C64,  C128,
-        /* I32  */ I32,  I32,  I32,  I32,  I64,  I32,  I32,  I64,  F64,  F64,  F64,  F64,  F64,  C128, C128,
-        /* I64  */ I64,  I64,  I64,  I64,  I64,  I64,  I64,  I64,  F64,  F64,  F64,  F64,  F64,  C128, C128,
-        /* U8   */ U8,   I16,  I16,  I32,  I64,  U8,   U16,  U32,  U64,  F16,  BF16, F32,  F64,  C64,  C128,
-        /* U16  */ U16,  I32,  I32,  I32,  I64,  U16,  U16,  U32,  U64,  F32,  F32,  F32,  F64,  C64,  C128,
-        /* U32  */ U32,  I64,  I64,  I64,  I64,  U32,  U32,  U32,  U64,  F64,  F64,  F64,  F64,  C128, C128,
-        /* U64  */ U64,  F64,  F64,  F64,  F64,  U64,  U64,  U64,  U64,  F64,  F64,  F64,  F64,  C128, C128,
-        /* F16  */ F16,  F32,  F32,  F64,  F64,  F16,  F32,  F64,  F64,  F16,  F32,  F32,  F64,  C64,  C128,
-        /* BF16 */ BF16, BF16, F32,  F64,  F64,  BF16, F32,  F64,  F64,  F32,  BF16, F32,  F64,  C64,  C128,
-        /* F32  */ F32,  F32,  F32,  F64,  F64,  F32,  F32,  F64,  F64,  F32,  F32,  F32,  F64,  C64,  C128,
-        /* F64  */ F64,  F64,  F64,  F64,  F64,  F64,  F64,  F64,  F64,  F64,  F64,  F64,  F64,  C128, C128,
-        /* C64  */ C64,  C64,  C64,  C128, C128, C64,  C64,  C128, C128, C64,  C64,  C64,  C128, C64,  C128,
-        /* C128 */ C128, C128, C128, C128, C128, C128, C128, C128, C128, C128, C128, C128, C128, C128, C128,
+        /* Bool */
+        Bool, I8, I16, I32, I64, U8, U16, U32, U64, F16, BF16, F32, F64, C64, C128,
+        /* I8   */ I8, I8, I16, I32, I64, I16, I32, I64, F64, F32, BF16, F32, F64, C64, C128,
+        /* I16  */ I16, I16, I16, I32, I64, I16, I32, I64, F64, F32, F32, F32, F64, C64, C128,
+        /* I32  */ I32, I32, I32, I32, I64, I32, I32, I64, F64, F64, F64, F64, F64, C128,
+        C128, /* I64  */ I64, I64, I64, I64, I64, I64, I64, I64, F64, F64, F64, F64, F64,
+        C128, C128, /* U8   */ U8, I16, I16, I32, I64, U8, U16, U32, U64, F16, BF16, F32, F64,
+        C64, C128, /* U16  */ U16, I32, I32, I32, I64, U16, U16, U32, U64, F32, F32, F32, F64,
+        C64, C128, /* U32  */ U32, I64, I64, I64, I64, U32, U32, U32, U64, F64, F64, F64, F64,
+        C128, C128, /* U64  */ U64, F64, F64, F64, F64, U64, U64, U64, U64, F64, F64, F64,
+        F64, C128, C128, /* F16  */ F16, F32, F32, F64, F64, F16, F32, F64, F64, F16, F32,
+        F32, F64, C64, C128, /* BF16 */ BF16, BF16, F32, F64, F64, BF16, F32, F64, F64, F32,
+        BF16, F32, F64, C64, C128, /* F32  */ F32, F32, F32, F64, F64, F32, F32, F64, F64,
+        F32, F32, F32, F64, C64, C128, /* F64  */ F64, F64, F64, F64, F64, F64, F64, F64, F64,
+        F64, F64, F64, F64, C128, C128, /* C64  */ C64, C64, C64, C128, C128, C64, C64, C128,
+        C128, C64, C64, C64, C128, C64, C128, /* C128 */ C128, C128, C128, C128, C128, C128,
+        C128, C128, C128, C128, C128, C128, C128, C128, C128,
     ]
 };
 
@@ -109,9 +111,9 @@ const PROMOTION_TABLE: [DType; DTYPE_COUNT * DTYPE_COUNT] = {
 /// ```
 pub const fn can_cast(from: DType, to: DType, mode: CastMode) -> bool {
     match mode {
-        CastMode::Safe     => SAFE_CAST_TABLE[from as usize * DTYPE_COUNT + to as usize],
+        CastMode::Safe => SAFE_CAST_TABLE[from as usize * DTYPE_COUNT + to as usize],
         CastMode::SameKind => SAMEKIND_CAST_TABLE[from as usize * DTYPE_COUNT + to as usize],
-        CastMode::Unsafe   => true, // all casts are valid in unsafe mode
+        CastMode::Unsafe => true, // all casts are valid in unsafe mode
     }
 }
 
@@ -135,21 +137,16 @@ const SAFE_CAST_TABLE: [bool; DTYPE_COUNT * DTYPE_COUNT] = {
 
     //         Bool  I8    I16   I32   I64   U8    U16   U32   U64   F16   BF16  F32   F64   C64   C128
     [
-        /* Bool */ T, T,    T,    T,    T,    T,    T,    T,    T,    T,    T,    T,    T,    T,    T,
-        /* I8   */ F, T,    T,    T,    T,    F,    F,    F,    F,    T,    T,    T,    T,    T,    T,
-        /* I16  */ F, F,    T,    T,    T,    F,    F,    F,    F,    F,    F,    T,    T,    T,    T,
-        /* I32  */ F, F,    F,    T,    T,    F,    F,    F,    F,    F,    F,    F,    T,    F,    T,
-        /* I64  */ F, F,    F,    F,    T,    F,    F,    F,    F,    F,    F,    F,    T,    F,    T,
-        /* U8   */ F, F,    T,    T,    T,    T,    T,    T,    T,    T,    T,    T,    T,    T,    T,
-        /* U16  */ F, F,    F,    T,    T,    F,    T,    T,    T,    F,    F,    T,    T,    T,    T,
-        /* U32  */ F, F,    F,    F,    T,    F,    F,    T,    T,    F,    F,    F,    T,    F,    T,
-        /* U64  */ F, F,    F,    F,    F,    F,    F,    F,    T,    F,    F,    F,    T,    F,    T,
-        /* F16  */ F, F,    F,    F,    F,    F,    F,    F,    F,    T,    F,    T,    T,    T,    T,
-        /* BF16 */ F, F,    F,    F,    F,    F,    F,    F,    F,    F,    T,    T,    T,    T,    T,
-        /* F32  */ F, F,    F,    F,    F,    F,    F,    F,    F,    F,    F,    T,    T,    T,    T,
-        /* F64  */ F, F,    F,    F,    F,    F,    F,    F,    F,    F,    F,    F,    T,    F,    T,
-        /* C64  */ F, F,    F,    F,    F,    F,    F,    F,    F,    F,    F,    F,    F,    T,    T,
-        /* C128 */ F, F,    F,    F,    F,    F,    F,    F,    F,    F,    F,    F,    F,    F,    T,
+        /* Bool */ T, T, T, T, T, T, T, T, T, T, T, T, T, T, T, /* I8   */ F, T, T, T, T,
+        F, F, F, F, T, T, T, T, T, T, /* I16  */ F, F, T, T, T, F, F, F, F, F, F, T, T, T, T,
+        /* I32  */ F, F, F, T, T, F, F, F, F, F, F, F, T, F, T, /* I64  */ F, F, F, F, T,
+        F, F, F, F, F, F, F, T, F, T, /* U8   */ F, F, T, T, T, T, T, T, T, T, T, T, T, T, T,
+        /* U16  */ F, F, F, T, T, F, T, T, T, F, F, T, T, T, T, /* U32  */ F, F, F, F, T,
+        F, F, T, T, F, F, F, T, F, T, /* U64  */ F, F, F, F, F, F, F, F, T, F, F, F, T, F, T,
+        /* F16  */ F, F, F, F, F, F, F, F, F, T, F, T, T, T, T, /* BF16 */ F, F, F, F, F,
+        F, F, F, F, F, T, T, T, T, T, /* F32  */ F, F, F, F, F, F, F, F, F, F, F, T, T, T, T,
+        /* F64  */ F, F, F, F, F, F, F, F, F, F, F, F, T, F, T, /* C64  */ F, F, F, F, F,
+        F, F, F, F, F, F, F, F, T, T, /* C128 */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, T,
     ]
 };
 
@@ -165,21 +162,16 @@ const SAMEKIND_CAST_TABLE: [bool; DTYPE_COUNT * DTYPE_COUNT] = {
 
     //         Bool  I8    I16   I32   I64   U8    U16   U32   U64   F16   BF16  F32   F64   C64   C128
     [
-        /* Bool */ T, F,    F,    F,    F,    F,    F,    F,    F,    F,    F,    F,    F,    F,    F,
-        /* I8   */ F, T,    T,    T,    T,    T,    T,    T,    T,    F,    F,    F,    F,    F,    F,
-        /* I16  */ F, T,    T,    T,    T,    T,    T,    T,    T,    F,    F,    F,    F,    F,    F,
-        /* I32  */ F, T,    T,    T,    T,    T,    T,    T,    T,    F,    F,    F,    F,    F,    F,
-        /* I64  */ F, T,    T,    T,    T,    T,    T,    T,    T,    F,    F,    F,    F,    F,    F,
-        /* U8   */ F, T,    T,    T,    T,    T,    T,    T,    T,    F,    F,    F,    F,    F,    F,
-        /* U16  */ F, T,    T,    T,    T,    T,    T,    T,    T,    F,    F,    F,    F,    F,    F,
-        /* U32  */ F, T,    T,    T,    T,    T,    T,    T,    T,    F,    F,    F,    F,    F,    F,
-        /* U64  */ F, T,    T,    T,    T,    T,    T,    T,    T,    F,    F,    F,    F,    F,    F,
-        /* F16  */ F, F,    F,    F,    F,    F,    F,    F,    F,    T,    T,    T,    T,    F,    F,
-        /* BF16 */ F, F,    F,    F,    F,    F,    F,    F,    F,    T,    T,    T,    T,    F,    F,
-        /* F32  */ F, F,    F,    F,    F,    F,    F,    F,    F,    T,    T,    T,    T,    F,    F,
-        /* F64  */ F, F,    F,    F,    F,    F,    F,    F,    F,    T,    T,    T,    T,    F,    F,
-        /* C64  */ F, F,    F,    F,    F,    F,    F,    F,    F,    F,    F,    F,    F,    T,    T,
-        /* C128 */ F, F,    F,    F,    F,    F,    F,    F,    F,    F,    F,    F,    F,    T,    T,
+        /* Bool */ T, F, F, F, F, F, F, F, F, F, F, F, F, F, F, /* I8   */ F, T, T, T, T,
+        T, T, T, T, F, F, F, F, F, F, /* I16  */ F, T, T, T, T, T, T, T, T, F, F, F, F, F, F,
+        /* I32  */ F, T, T, T, T, T, T, T, T, F, F, F, F, F, F, /* I64  */ F, T, T, T, T,
+        T, T, T, T, F, F, F, F, F, F, /* U8   */ F, T, T, T, T, T, T, T, T, F, F, F, F, F, F,
+        /* U16  */ F, T, T, T, T, T, T, T, T, F, F, F, F, F, F, /* U32  */ F, T, T, T, T,
+        T, T, T, T, F, F, F, F, F, F, /* U64  */ F, T, T, T, T, T, T, T, T, F, F, F, F, F, F,
+        /* F16  */ F, F, F, F, F, F, F, F, F, T, T, T, T, F, F, /* BF16 */ F, F, F, F, F,
+        F, F, F, F, T, T, T, T, F, F, /* F32  */ F, F, F, F, F, F, F, F, F, T, T, T, T, F, F,
+        /* F64  */ F, F, F, F, F, F, F, F, F, T, T, T, T, F, F, /* C64  */ F, F, F, F, F,
+        F, F, F, F, F, F, F, F, T, T, /* C128 */ F, F, F, F, F, F, F, F, F, F, F, F, F, T, T,
     ]
 };
 
@@ -242,21 +234,37 @@ pub fn minimum_scalar_type(v: f64) -> DType {
     if v.fract() == 0.0 && v.is_finite() {
         if v >= 0.0 && v <= u64::MAX as f64 {
             let u = v as u64;
-            if u <= u8::MAX as u64  { return DType::U8;  }
-            if u <= u16::MAX as u64 { return DType::U16; }
-            if u <= u32::MAX as u64 { return DType::U32; }
+            if u <= u8::MAX as u64 {
+                return DType::U8;
+            }
+            if u <= u16::MAX as u64 {
+                return DType::U16;
+            }
+            if u <= u32::MAX as u64 {
+                return DType::U32;
+            }
             return DType::U64;
         } else if v < 0.0 && v >= i64::MIN as f64 {
             let i = v as i64;
-            if i >= i8::MIN as i64  { return DType::I8;  }
-            if i >= i16::MIN as i64 { return DType::I16; }
-            if i >= i32::MIN as i64 { return DType::I32; }
+            if i >= i8::MIN as i64 {
+                return DType::I8;
+            }
+            if i >= i16::MIN as i64 {
+                return DType::I16;
+            }
+            if i >= i32::MIN as i64 {
+                return DType::I32;
+            }
             return DType::I64;
         }
         // Value is an integer but too large for i64/u64 — fall through to float.
     }
     // Non-integer: check if f32 can represent it faithfully.
-    if (v as f32) as f64 == v { DType::F32 } else { DType::F64 }
+    if (v as f32) as f64 == v {
+        DType::F32
+    } else {
+        DType::F64
+    }
 }
 
 // ─── weak_promote (NumPy 2.0 style) ─────────────────────────────────────────

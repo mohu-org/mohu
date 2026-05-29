@@ -40,11 +40,11 @@ pub mod macros;
 pub mod promote;
 pub mod scalar;
 
-pub use dtype::{DType, ALL_DTYPES, DTYPE_COUNT};
+pub use dtype::{ALL_DTYPES, DTYPE_COUNT, DType};
 pub use finfo::FloatInfo;
 pub use iinfo::IntInfo;
 pub use promote::{
-    can_cast, common_type, minimum_scalar_type, promote, result_type, weak_promote, CastMode,
+    CastMode, can_cast, common_type, minimum_scalar_type, promote, result_type, weak_promote,
 };
 pub use scalar::{
     ComplexScalar, FloatScalar, IntScalar, RealScalar, Scalar, SignedScalar, UnsignedScalar,

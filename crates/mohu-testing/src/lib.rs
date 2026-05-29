@@ -32,13 +32,12 @@
 ///     }
 /// }
 /// ```
-
 pub mod approx;
 pub mod assert;
 pub mod dtype;
 pub mod fixtures;
-pub mod strategies;
 pub mod perf;
+pub mod strategies;
 
 pub use mohu_error::{MohuError, MohuResult};
 

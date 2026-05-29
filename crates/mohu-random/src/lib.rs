@@ -31,7 +31,6 @@
 ///
 /// All generators implement `Seed` — the same seed always produces the
 /// same sequence regardless of CPU count or mohu version within a major.
-
 pub mod continuous;
 pub mod discrete;
 pub mod entropy;
