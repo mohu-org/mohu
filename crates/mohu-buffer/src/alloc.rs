@@ -738,6 +738,8 @@ fn heap_alloc_inner(len: usize, align: usize) -> MohuResult<AllocInner> {
 /// where we won't re-read the data soon.  This avoids cache pollution and
 /// achieves peak memory bandwidth.
 ///
+/// # Safety
+///
 /// `ptr` must be 32-byte aligned. `count` must be a multiple of 8.
 #[cfg(target_arch = "x86_64")]
 #[target_feature(enable = "avx2")]
@@ -759,6 +761,8 @@ pub unsafe fn fill_nontemporal_f32(ptr: *mut f32, count: usize, value: f32) {
 }
 
 /// Fills `count` f64 values at `ptr` using non-temporal stores (AVX2).
+///
+/// # Safety
 ///
 /// `ptr` must be 32-byte aligned. `count` must be a multiple of 4.
 #[cfg(target_arch = "x86_64")]

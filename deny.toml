@@ -21,4 +21,9 @@ unknown-git      = "deny"
 allow-registry   = ["https://github.com/rust-lang/crates.io-index"]
 
 [advisories]
-ignore = []
+ignore = [
+    # pyo3 0.23.5 — buffer overflow in PyString::from_object.
+    # No fix release available for 0.23.x; pin resolved once 0.24.1 ships.
+    # https://rustsec.org/advisories/RUSTSEC-2025-0020
+    "RUSTSEC-2025-0020",
+]
