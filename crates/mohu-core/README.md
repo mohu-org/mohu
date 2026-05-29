@@ -40,4 +40,4 @@ mohu-core
 
 ## Contributing
 
-To contribute see [CONTRIBUTING.md] (https://github.com/mohu-org/mohu/blob/main/CONTRIBUTING.md) .
+To contribute see [CONTRIBUTING.md](https://github.com/mohu-org/mohu/blob/main/CONTRIBUTING.md) .
