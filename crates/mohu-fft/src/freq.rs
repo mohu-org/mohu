@@ -31,7 +31,7 @@ pub fn rfftfreq(n: usize, d: f64) -> Vec<f64> {
 }
 
 /// Shift the zero-frequency component to the center of the spectrum.
-pub fn fftshift<T: Clone>(mut v: Vec<T>) -> Vec<T> {
+pub fn fftshift<T: Clone>(v: Vec<T>) -> Vec<T> {
     let n = v.len();
     if n == 0 {
         return v;
