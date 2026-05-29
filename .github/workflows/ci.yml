@@ -235,6 +235,7 @@ jobs:
     continue-on-error: true
     env:
       RUSTFLAGS: ""
+      RUSTUP_TOOLCHAIN: nightly
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@nightly
@@ -244,8 +245,8 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           key: miri
-      - run: cargo miri setup
-      - run: cargo miri test -p mohu-buffer --all-features
+      - run: cargo +nightly miri setup
+      - run: cargo +nightly miri test -p mohu-buffer --all-features
         env:
           MIRIFLAGS: "-Zmiri-strict-provenance -Zmiri-symbolic-alignment-check"
 
