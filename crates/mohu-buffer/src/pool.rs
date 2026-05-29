@@ -300,11 +300,7 @@ impl BufferPool {
                 let c = cache.borrow_mut();
                 // Compute current TL cached bytes
                 let cur_bytes: usize = c.iter().map(|(_, h)| h.len()).sum();
-                if c.len() < TL_SLOTS && cur_bytes + handle.len() <= TL_MAX_BYTES {
-                    true
-                } else {
-                    false
-                }
+                c.len() < TL_SLOTS && cur_bytes + handle.len() <= TL_MAX_BYTES
             });
             if accepted {
                 let hlen = handle.len();

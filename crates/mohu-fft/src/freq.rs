@@ -10,7 +10,7 @@ pub fn fftfreq(n: usize, d: f64) -> Vec<f64> {
     let mut freqs = Vec::with_capacity(n);
     // For even `n` the Nyquist frequency (n/2) should be negative (-0.5/d).
     // Use `pos_len = (n + 1) / 2` as the number of non-negative frequency bins.
-    let pos_len = (n + 1) / 2;
+    let pos_len = n.div_ceil(2);
     for i in 0..pos_len {
         freqs.push(i as f64 * val);
     }
@@ -49,7 +49,7 @@ pub fn ifftshift<T: Clone>(v: &[T]) -> Vec<T> {
     if n == 0 {
         return Vec::new();
     }
-    let mid = (n + 1) / 2;
+    let mid = n.div_ceil(2);
     let mut out = Vec::with_capacity(n);
     out.extend_from_slice(&v[mid..]);
     out.extend_from_slice(&v[..mid]);

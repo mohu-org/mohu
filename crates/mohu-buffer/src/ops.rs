@@ -1313,7 +1313,7 @@ pub fn argmax_flat(buf: &Buffer) -> MohuResult<usize> {
 ///
 /// Bypasses the CPU cache — achieves peak DRAM write bandwidth for buffers
 /// > a few MiB where the data will not be immediately re-read.
-/// Falls back to the standard Rayon fill on non-x86_64 platforms.
+/// > Falls back to the standard Rayon fill on non-x86_64 platforms.
 pub fn fill_nontemporal_f32_buf(buf: &mut Buffer, value: f32) -> MohuResult<()> {
     use mohu_dtype::DType;
     if buf.dtype() != DType::F32 {
@@ -1366,7 +1366,7 @@ pub fn fill_nontemporal_f32_buf(buf: &mut Buffer, value: f32) -> MohuResult<()> 
                 ptr.add(i).write(value);
             }
         }
-        return Ok(());
+        Ok(())
     }
 
     #[cfg(not(target_arch = "x86_64"))]

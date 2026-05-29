@@ -361,7 +361,7 @@ impl Buffer {
             return Self::zeros(T::DTYPE, &[0, 0]);
         }
         let cols = data[0].len();
-        for (_row_idx, row) in data.iter().enumerate() {
+        for row in data.iter() {
             if row.len() != cols {
                 return Err(MohuError::ShapeMismatch {
                     expected: vec![cols],
