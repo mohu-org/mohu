@@ -596,8 +596,6 @@ dependencies = [
  "mohu-buffer",
  "mohu-dtype",
  "mohu-error",
- "num-traits",
- "rayon",
 ]
 
 [[package]]

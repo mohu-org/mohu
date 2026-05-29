@@ -14,5 +14,3 @@ categories.workspace  = true
 mohu-error.workspace  = true
 mohu-dtype.workspace  = true
 mohu-buffer.workspace = true
-num-traits.workspace  = true
-rayon.workspace       = true
