@@ -47,15 +47,26 @@ pub fn fill_raw(buf: &mut Buffer, fill_bytes: &[u8]) -> MohuResult<()> {
         let total = buf.len() * itemsize;
         // SAFETY: buf is uniquely owned, C-contiguous, pointer is valid.
         let slice = unsafe { std::slice::from_raw_parts_mut(buf.as_mut_ptr(), total) };
-        // Parallel fill: split into 4KiB chunks and fill each on Rayon threads.
-        let chunk_size = 4096.max(itemsize * 64);
-        slice.par_chunks_mut(chunk_size).for_each(|chunk| {
+        // Under Miri, rayon triggers Stacked Borrows violations via crossbeam-epoch.
+        #[cfg(not(miri))]
+        {
+            let chunk_size = 4096.max(itemsize * 64);
+            slice.par_chunks_mut(chunk_size).for_each(|chunk| {
+                let mut pos = 0;
+                while pos + itemsize <= chunk.len() {
+                    chunk[pos..pos + itemsize].copy_from_slice(fill_bytes);
+                    pos += itemsize;
+                }
+            });
+        }
+        #[cfg(miri)]
+        {
             let mut pos = 0;
-            while pos + itemsize <= chunk.len() {
-                chunk[pos..pos + itemsize].copy_from_slice(fill_bytes);
+            while pos + itemsize <= slice.len() {
+                slice[pos..pos + itemsize].copy_from_slice(fill_bytes);
                 pos += itemsize;
             }
-        });
+        }
     } else {
         // Non-contiguous: walk strides.
         let raw_ptr = unsafe { buf.as_mut_ptr() };
