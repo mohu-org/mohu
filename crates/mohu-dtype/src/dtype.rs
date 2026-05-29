@@ -523,6 +523,14 @@ impl fmt::Display for DType {
     }
 }
 
+impl std::str::FromStr for DType {
+    type Err = MohuError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        DType::from_str(s)
+    }
+}
+
 // ─── TryFrom ─────────────────────────────────────────────────────────────────
 
 impl TryFrom<&str> for DType {
