@@ -28,6 +28,7 @@ members = [
 
     # ── Developer tooling ─────────────────────────────────────────────────────
     "crates/mohu-testing",    # test fixtures, property tests, array comparison
+    "crates/mohu-benchmarks",
 ]
 resolver = "2"
 
