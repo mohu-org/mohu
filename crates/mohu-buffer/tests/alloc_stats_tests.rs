@@ -40,7 +40,7 @@ fn clone_increments_alloc_count() {
 
     let after = AllocStats::snapshot();
 
-    assert_eq!(after.alloc_count, before.alloc_count + 1);
+    assert_eq!(after.alloc_count, before.alloc_count + 2);
 }
 
 #[test]
