@@ -434,11 +434,12 @@ impl AllocHandle {
         let ptr = self.as_ptr();
         let len = self.len;
 
-        #[cfg(target_arch = "x86_64")]
+        #[cfg(all(target_arch = "x86_64", not(miri)))]
         {
             use std::arch::x86_64::{_MM_HINT_T0, _mm_prefetch};
             let mut offset = 0usize;
             while offset < len {
+                // SAFETY: `ptr` is valid for `len` bytes; offset stays within bounds.
                 unsafe {
                     _mm_prefetch(ptr.add(offset) as *const i8, _MM_HINT_T0);
                 }
@@ -446,7 +447,7 @@ impl AllocHandle {
             }
         }
 
-        #[cfg(target_arch = "aarch64")]
+        #[cfg(all(target_arch = "aarch64", not(miri)))]
         {
             // AArch64: use data prefetch for load
             let mut offset = 0usize;
@@ -464,7 +465,10 @@ impl AllocHandle {
             }
         }
 
-        #[cfg(not(any(target_arch = "x86_64", target_arch = "aarch64")))]
+        #[cfg(not(any(
+            all(target_arch = "x86_64", not(miri)),
+            all(target_arch = "aarch64", not(miri))
+        )))]
         let (_, _) = (ptr, len);
     }
 
@@ -480,11 +484,12 @@ impl AllocHandle {
         let ptr = self.as_ptr();
         let len = self.len;
 
-        #[cfg(target_arch = "x86_64")]
+        #[cfg(all(target_arch = "x86_64", not(miri)))]
         {
             use std::arch::x86_64::{_MM_HINT_ET0, _mm_prefetch};
             let mut offset = 0usize;
             while offset < len {
+                // SAFETY: `ptr` is valid for `len` bytes; offset stays within bounds.
                 unsafe {
                     _mm_prefetch(ptr.add(offset) as *const i8, _MM_HINT_ET0);
                 }
@@ -492,7 +497,7 @@ impl AllocHandle {
             }
         }
 
-        #[cfg(target_arch = "aarch64")]
+        #[cfg(all(target_arch = "aarch64", not(miri)))]
         {
             let mut offset = 0usize;
             while offset < len {
@@ -508,7 +513,10 @@ impl AllocHandle {
             }
         }
 
-        #[cfg(not(any(target_arch = "x86_64", target_arch = "aarch64")))]
+        #[cfg(not(any(
+            all(target_arch = "x86_64", not(miri)),
+            all(target_arch = "aarch64", not(miri))
+        )))]
         let (_, _) = (ptr, len);
     }
 

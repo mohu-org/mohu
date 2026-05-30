@@ -1878,7 +1878,7 @@ impl Buffer {
     #[inline]
     pub fn prefetch(&self) {
         let ptr = self.as_ptr();
-        #[cfg(target_arch = "x86_64")]
+        #[cfg(all(target_arch = "x86_64", not(miri)))]
         // SAFETY: Pointer is within bounds and data is correctly aligned.
         unsafe {
             std::arch::x86_64::_mm_prefetch(ptr as *const i8, std::arch::x86_64::_MM_HINT_T0);
