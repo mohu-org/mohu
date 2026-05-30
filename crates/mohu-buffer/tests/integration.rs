@@ -27,10 +27,7 @@ fn full_fills_bytes() {
     // full() takes raw bytes — pass f32 3.14 as bytes
     let fill: f32 = 3.15;
     let buf = Buffer::full(DType::F32, &[5, 5], &fill.to_le_bytes()).unwrap();
-    mohu_testing::approx::assert_allclose(
-        buf.as_slice::<f32>().unwrap(),
-        &[3.15_f32; 25]
-    );
+    mohu_testing::approx::assert_allclose(buf.as_slice::<f32>().unwrap(), &[3.15_f32; 25]);
 }
 
 // ── 2. from_slice + reshape + get/set ────────────────────────────────────────

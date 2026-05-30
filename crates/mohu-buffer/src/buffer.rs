@@ -422,9 +422,7 @@ impl Buffer {
         // We create a fake AllocHandle that owns nothing — zero-size handle.
         // Caller is responsible for the actual lifetime.
         let raw = Arc::new(RawBuffer {
-            source: BufferSource::Owned(
-                AllocHandle::alloc(0, SIMD_ALIGN)?,
-            ),
+            source: BufferSource::Owned(AllocHandle::alloc(0, SIMD_ALIGN)?),
             ptr,
             nbytes,
         });
@@ -461,7 +459,7 @@ impl Buffer {
             tensor_byte_offset,
             tensor_shape,
             tensor_strides,
-        // SAFETY: Pointer is within bounds and data is correctly aligned.
+            // SAFETY: Pointer is within bounds and data is correctly aligned.
         ) = unsafe {
             let m = &*managed;
             let t = &m.dl_tensor;
@@ -2113,7 +2111,7 @@ fn read_as_f64(ptr: *const u8, dtype: DType, _itemsize: usize) -> f64 {
         // SAFETY: Pointer is within bounds and data is correctly aligned.
         C64 => unsafe { *(ptr as *const f32) as f64 }, // real part
         // SAFETY: Pointer is within bounds and data is correctly aligned.
-        C128 => unsafe { *(ptr as *const f64) },       // real part
+        C128 => unsafe { *(ptr as *const f64) }, // real part
     }
 }
 
