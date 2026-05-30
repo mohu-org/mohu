@@ -1,12 +1,12 @@
 # mohu-core
 
-'mohu-core' is a convenience crate that re-exports the core Mohu foundation crates as a single dependency.
+`mohu-core` is a convenience crate that re-exports the core Mohu foundation crates as a single dependency.
 
-Instead of depending on individual crates such as mohu-error, mohu-dtype, mohu-buffer, and mohu-array users can import them through mohu-core.
+Instead of depending on individual crates such as `mohu-error`, `mohu-dtype`, `mohu-buffer`, and `mohu-array`, users can import them through `mohu-core`.
 
 ## When to use mohu-core
 
-Use mohu-core when:
+Use `mohu-core` when:
 
 - You need functionality from multiple Mohu foundation crates.
 - You prefer a single dependency and import path.
@@ -38,4 +38,4 @@ mohu-core
 
 ## Contributing
 
-See the workspace CONTRIBUTING.md for development guidelines.
+See the workspace [CONTRIBUTING.md](../../CONTRIBUTING.md) for development guidelines.
