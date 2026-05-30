@@ -183,7 +183,7 @@ unsafe impl Sync for RawBuffer {}
 impl RawBuffer {
     /// Creates a new owned `RawBuffer` by allocating `nbytes` bytes.
     fn alloc(nbytes: usize, zeroed: bool) -> MohuResult<Self> {
-        let handle = if zeroed {
+        let mut handle = if zeroed {
             AllocHandle::alloc_zeroed(nbytes, SIMD_ALIGN)?
         } else {
             AllocHandle::alloc(nbytes, SIMD_ALIGN)?
@@ -191,7 +191,7 @@ impl RawBuffer {
         let ptr = if nbytes == 0 {
             NonNull::dangling()
         } else {
-            handle.as_non_null()?
+            handle.as_mut_non_null()?
         };
         Ok(Self {
             source: BufferSource::Owned(handle),

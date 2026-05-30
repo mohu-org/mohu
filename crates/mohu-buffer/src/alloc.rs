@@ -364,14 +364,14 @@ impl AllocHandle {
         (self.as_ptr() as usize) % align == 0
     }
 
-    /// Returns the start pointer as a `NonNull<u8>`, or an error for zero-size.
-    pub fn as_non_null(&self) -> MohuResult<NonNull<u8>> {
+    /// Returns the start pointer as a mutable `NonNull<u8>`, or an error for zero-size.
+    pub fn as_mut_non_null(&mut self) -> MohuResult<NonNull<u8>> {
         if self.len == 0 {
             return Err(MohuError::bug(
-                "as_non_null called on a zero-size AllocHandle",
+                "as_mut_non_null called on a zero-size AllocHandle",
             ));
         }
-        Ok(unsafe { NonNull::new_unchecked(self.as_ptr() as *mut u8) })
+        Ok(unsafe { NonNull::new_unchecked(self.as_mut_ptr()) })
     }
 
     // ─── Memory advice ────────────────────────────────────────────────────────
