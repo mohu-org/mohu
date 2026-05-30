@@ -609,6 +609,7 @@ dependencies = [
  "memmap2",
  "mohu-dtype",
  "mohu-error",
+ "mohu-testing",
  "num-complex",
  "num-traits",
  "rayon",

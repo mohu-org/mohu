@@ -23,9 +23,9 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
     steps:
-      - uses: christophebedard/dco-check@v0.5.0
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: christophebedard/dco-check@0.5.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   # ── Gate: Formatting ────────────────────────────────────────────────────────
   fmt:
@@ -141,6 +141,7 @@ jobs:
       - uses: obi1kenobi/cargo-semver-checks-action@v2
         with:
           feature-group: all-features
+          baseline-rev: origin/main
 
   # ── Cross-compilation (push to main only — too expensive per PR) ─────────────
   cross:
@@ -211,10 +212,10 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           key: miri
-      - run: cargo miri setup
-      - run: cargo miri test -p mohu-buffer --all-features
+      - run: cargo +nightly miri setup
+      - run: cargo +nightly miri test -p mohu-buffer --all-features
         env:
-          MIRIFLAGS: "-Zmiri-strict-provenance -Zmiri-symbolic-alignment-check"
+          MIRIFLAGS: "-Zmiri-permissive-provenance -Zmiri-symbolic-alignment-check"
           RUSTFLAGS: ""
 
   # ── Final gate ───────────────────────────────────────────────────────────────

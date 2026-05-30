@@ -39,15 +39,15 @@
 /// ```
 use std::fmt;
 
-use crate::{chain::ErrorChain, MohuError};
+use crate::{MohuError, chain::ErrorChain};
 
 // ─── ANSI escape sequences ────────────────────────────────────────────────────
 
 mod ansi {
-    pub const RESET:     &str = "\x1b[0m";
-    pub const BOLD:      &str = "\x1b[1m";
-    pub const DIM:       &str = "\x1b[2m";
-    pub const BOLD_RED:  &str = "\x1b[1;31m";
+    pub const RESET: &str = "\x1b[0m";
+    pub const BOLD: &str = "\x1b[1m";
+    pub const DIM: &str = "\x1b[2m";
+    pub const BOLD_RED: &str = "\x1b[1;31m";
     pub const BOLD_CYAN: &str = "\x1b[1;36m";
 }
 
@@ -56,7 +56,7 @@ mod ansi {
 fn colour_enabled() -> bool {
     match std::env::var("MOHU_COLOR").as_deref() {
         Ok("always") => true,
-        Ok("never")  => false,
+        Ok("never") => false,
         // "auto" or unset: check for NO_COLOR and TERM
         _ => {
             if std::env::var("NO_COLOR").is_ok() {
@@ -68,7 +68,7 @@ fn colour_enabled() -> bool {
                 Ok("dumb") | Err(_) => false,
                 Ok(_) => true,
             }
-        }
+        },
     }
 }
 
@@ -93,14 +93,18 @@ pub enum ReportMode {
 /// and similar macros.
 pub struct ErrorReporter<'a> {
     error: &'a MohuError,
-    mode:  ReportMode,
+    mode: ReportMode,
     color: bool,
 }
 
 impl<'a> ErrorReporter<'a> {
     /// Creates a new reporter with the given mode.
     pub fn new(error: &'a MohuError, mode: ReportMode) -> Self {
-        Self { error, mode, color: colour_enabled() }
+        Self {
+            error,
+            mode,
+            color: colour_enabled(),
+        }
     }
 
     /// Compact single-line reporter.
@@ -115,7 +119,11 @@ impl<'a> ErrorReporter<'a> {
 
     /// JSON reporter (machine-readable, no ANSI).
     pub fn json(error: &'a MohuError) -> Self {
-        Self { error, mode: ReportMode::Json, color: false }
+        Self {
+            error,
+            mode: ReportMode::Json,
+            color: false,
+        }
     }
 
     /// Forces colour on or off regardless of environment detection.
@@ -141,16 +149,16 @@ impl<'a> ErrorReporter<'a> {
             f,
             "{bold_red}error[{code}]{reset} {bold}{msg}{reset}",
             bold_red = self.c(ansi::BOLD_RED),
-            code      = code,
-            reset     = self.reset(),
-            bold      = self.c(ansi::BOLD),
-            msg       = self.error,
+            code = code,
+            reset = self.reset(),
+            bold = self.c(ansi::BOLD),
+            msg = self.error,
         )
     }
 
     fn fmt_full(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let root  = ErrorChain::root(self.error);
-        let code  = root.code();
+        let root = ErrorChain::root(self.error);
+        let code = root.code();
         let depth = ErrorChain::depth(self.error);
 
         // ── header line ───────────────────────────────────────────────────
@@ -158,10 +166,10 @@ impl<'a> ErrorReporter<'a> {
             f,
             "{bold_red}error[{code}]{reset}{bold}: {msg}{reset}",
             bold_red = self.c(ansi::BOLD_RED),
-            code      = code,
-            reset     = self.reset(),
-            bold      = self.c(ansi::BOLD),
-            msg       = root,
+            code = code,
+            reset = self.reset(),
+            bold = self.c(ansi::BOLD),
+            msg = root,
         )?;
 
         // ── context chain (outermost → innermost) ─────────────────────────
@@ -170,17 +178,17 @@ impl<'a> ErrorReporter<'a> {
             writeln!(
                 f,
                 "{dim}  context chain:{reset}",
-                dim   = self.c(ansi::DIM),
+                dim = self.c(ansi::DIM),
                 reset = self.reset(),
             )?;
             for (i, ctx) in ctxs.iter().enumerate().rev() {
                 writeln!(
                     f,
                     "  {dim}{arrow}{reset} {ctx}",
-                    dim   = self.c(ansi::DIM),
+                    dim = self.c(ansi::DIM),
                     arrow = if i == 0 { "└─" } else { "├─" },
                     reset = self.reset(),
-                    ctx   = ctx,
+                    ctx = ctx,
                 )?;
             }
         }
@@ -192,9 +200,9 @@ impl<'a> ErrorReporter<'a> {
                 writeln!(
                     f,
                     "  {cyan}hint{reset}: {hint}",
-                    cyan  = self.c(ansi::BOLD_CYAN),
+                    cyan = self.c(ansi::BOLD_CYAN),
                     reset = self.reset(),
-                    hint  = hint,
+                    hint = hint,
                 )?;
             }
         }
@@ -203,24 +211,25 @@ impl<'a> ErrorReporter<'a> {
         writeln!(
             f,
             "  {dim}[{code}] {domain} error{reset}",
-            dim    = self.c(ansi::DIM),
-            code   = code,
+            dim = self.c(ansi::DIM),
+            code = code,
             domain = code.domain(),
-            reset  = self.reset(),
+            reset = self.reset(),
         )?;
 
         Ok(())
     }
 
     fn fmt_json(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let root  = ErrorChain::root(self.error);
-        let code  = root.code() as u32;
-        let kind  = crate::kind::ErrorKind::from(root.code());
+        let root = ErrorChain::root(self.error);
+        let code = root.code() as u32;
+        let kind = crate::kind::ErrorKind::from(root.code());
         let depth = ErrorChain::depth(self.error);
 
         // Build context array
-        let ctxs  = ErrorChain::context_messages(self.error);
-        let ctx_json: Vec<String> = ctxs.iter()
+        let ctxs = ErrorChain::context_messages(self.error);
+        let ctx_json: Vec<String> = ctxs
+            .iter()
             .map(|s| format!("\"{}\"", s.replace('"', "\\\"")))
             .collect();
 
@@ -237,12 +246,12 @@ impl<'a> ErrorReporter<'a> {
         write!(
             f,
             r#"{{"code":{code},"kind":"{kind}","message":"{primary}","context":[{ctx}],"hints":[{hints}],"chain_depth":{depth}}}"#,
-            code    = code,
-            kind    = kind,
+            code = code,
+            kind = kind,
             primary = primary,
-            ctx     = ctx_json.join(","),
-            hints   = hints.join(","),
-            depth   = depth,
+            ctx = ctx_json.join(","),
+            hints = hints.join(","),
+            depth = depth,
         )
     }
 }
@@ -251,8 +260,8 @@ impl fmt::Display for ErrorReporter<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self.mode {
             ReportMode::Compact => self.fmt_compact(f),
-            ReportMode::Full    => self.fmt_full(f),
-            ReportMode::Json    => self.fmt_json(f),
+            ReportMode::Full => self.fmt_full(f),
+            ReportMode::Json => self.fmt_json(f),
         }
     }
 }
@@ -295,8 +304,8 @@ impl Severity {
     pub fn label(self) -> &'static str {
         match self {
             Self::Warning => "warning",
-            Self::Error   => "error",
-            Self::Fatal   => "fatal",
+            Self::Error => "error",
+            Self::Fatal => "fatal",
         }
     }
 }
@@ -316,7 +325,7 @@ impl MohuError {
     pub fn severity(&self) -> Severity {
         match ErrorChain::root(self) {
             MohuError::Internal(_) => Severity::Fatal,
-            _                      => Severity::Error,
+            _ => Severity::Error,
         }
     }
 }

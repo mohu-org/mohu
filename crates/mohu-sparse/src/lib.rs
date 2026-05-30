@@ -22,7 +22,7 @@
 /// | [`spmv`]     | sparse matrix × dense vector                        |
 /// | [`spmm`]     | sparse matrix × dense matrix                        |
 /// | [`convert`]  | conversions between all format pairs                 |
-/// | [`slice`]    | row / column slicing                                 |
+/// | [`mod@slice`]    | row / column slicing                                 |
 /// | [`linalg`]   | triangular solve, norm, condest                     |
 ///
 /// # Construction
@@ -33,13 +33,12 @@
 /// coo.push(5, 7, 2.71);
 /// let csr = CsrMatrix::from(coo);
 /// ```
-
 pub mod arith;
 pub mod bsr;
+pub mod convert;
 pub mod coo;
 pub mod csc;
 pub mod csr;
-pub mod convert;
 pub mod dia;
 pub mod linalg;
 pub mod slice;

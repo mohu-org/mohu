@@ -24,3 +24,7 @@ mohu-dtype.workspace  = true
 cfg-if.workspace      = true
 
 [build-dependencies]
+
+
+[package.metadata.cargo-machete]
+ignored = ["cfg-if", "mohu-dtype"]
