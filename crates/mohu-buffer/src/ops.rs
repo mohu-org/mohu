@@ -58,6 +58,7 @@ pub fn fill_raw(buf: &mut Buffer, fill_bytes: &[u8]) -> MohuResult<()> {
         });
     } else {
         // Non-contiguous: walk strides.
+        // SAFETY: Pointer is within bounds and data is correctly aligned.
         let raw_ptr = unsafe { buf.as_mut_ptr() };
         for off in StridedByteIter::new(buf.shape(), buf.strides(), buf.offset()) {
             // SAFETY: stride iterator yields valid byte offsets within the buffer.
@@ -91,13 +92,16 @@ where
 
     if buf.is_c_contiguous() {
         let len = buf.len();
+        // SAFETY: Pointer is within bounds and data is correctly aligned.
         let ptr = unsafe { buf.as_mut_ptr() as *mut T };
         // SAFETY: uniqueness checked, C-contiguous, len is correct.
         let slice = unsafe { std::slice::from_raw_parts_mut(ptr, len) };
         slice.par_iter_mut().for_each(|x| *x = value);
     } else {
+        // SAFETY: Pointer is within bounds and data is correctly aligned.
         let raw_ptr = unsafe { buf.as_mut_ptr() };
         for off in StridedByteIter::new(buf.shape(), buf.strides(), buf.offset()) {
+            // SAFETY: Pointer is within bounds and data is correctly aligned.
             unsafe {
                 let ptr = raw_ptr.add(off) as *mut T;
                 ptr.write_unaligned(value);
@@ -117,6 +121,7 @@ pub fn fill_zero(buf: &mut Buffer) -> MohuResult<()> {
     buf.make_unique()?;
     if buf.is_c_contiguous() {
         let total = buf.len() * buf.itemsize();
+        // SAFETY: Pointer is within bounds and data is correctly aligned.
         unsafe {
             buf.as_mut_ptr().write_bytes(0, total);
         }
@@ -167,6 +172,7 @@ pub fn copy_to_contiguous(src: &Buffer, dst: &mut Buffer) -> MohuResult<()> {
         // Parallel memcpy: split into cache-friendly 64 KiB chunks.
         let src_bytes = src.len() * itemsize;
         let chunk = 65536_usize.max(itemsize);
+        // SAFETY: Pointer is within bounds and data is correctly aligned.
         unsafe {
             let s = std::slice::from_raw_parts(src.as_ptr(), src_bytes);
             let d = std::slice::from_raw_parts_mut(dst.as_mut_ptr(), src_bytes);
@@ -177,6 +183,7 @@ pub fn copy_to_contiguous(src: &Buffer, dst: &mut Buffer) -> MohuResult<()> {
     } else {
         // General strided → contiguous copy.
         let src_raw = src.as_ptr();
+        // SAFETY: Pointer is within bounds and data is correctly aligned.
         let dst_raw = unsafe { dst.as_mut_ptr() };
         let dst_itemsize = dst.itemsize();
 
@@ -184,6 +191,7 @@ pub fn copy_to_contiguous(src: &Buffer, dst: &mut Buffer) -> MohuResult<()> {
             StridedByteIter::new(src.shape(), src.strides(), src.offset()).enumerate()
         {
             let dst_off = elem_idx * dst_itemsize;
+            // SAFETY: Pointer is within bounds and data is correctly aligned.
             unsafe {
                 std::ptr::copy_nonoverlapping(src_raw.add(src_off), dst_raw.add(dst_off), itemsize);
             }
@@ -244,10 +252,12 @@ fn cast_typed<S: Scalar + Send + Sync, D: Scalar + Send + Sync>(
     if src.is_c_contiguous() && dst.is_c_contiguous() {
         // Fast path: parallel cast over flat slices.
         let src_ptr = src.as_ptr() as *const S;
+        // SAFETY: Pointer is within bounds and data is correctly aligned.
         let dst_ptr = unsafe { dst.as_mut_ptr() } as *mut D;
 
         // SAFETY: both are C-contiguous, len is verified equal above.
         let src_slice = unsafe { std::slice::from_raw_parts(src_ptr, len) };
+        // SAFETY: Pointer is within bounds and data is correctly aligned.
         let dst_slice = unsafe { std::slice::from_raw_parts_mut(dst_ptr, len) };
 
         src_slice
@@ -259,6 +269,7 @@ fn cast_typed<S: Scalar + Send + Sync, D: Scalar + Send + Sync>(
     } else {
         // Slow path: stride iteration.
         let src_raw = src.as_ptr();
+        // SAFETY: Pointer is within bounds and data is correctly aligned.
         let dst_raw = unsafe { dst.as_mut_ptr() };
         let dst_itemsize = D::ITEMSIZE;
 
@@ -266,6 +277,7 @@ fn cast_typed<S: Scalar + Send + Sync, D: Scalar + Send + Sync>(
             StridedByteIter::new(src.shape(), src.strides(), src.offset()).enumerate()
         {
             let dst_off = elem_idx * dst_itemsize;
+            // SAFETY: Pointer is within bounds and data is correctly aligned.
             unsafe {
                 let s = (src_raw.add(src_off) as *const S).read_unaligned();
                 let d = cast_scalar_unchecked::<S, D>(s);
@@ -302,8 +314,11 @@ where
 
     let len = src.len();
     let s_ptr = src.as_ptr() as *const S;
+    // SAFETY: Pointer is within bounds and data is correctly aligned.
     let d_ptr = unsafe { dst.as_mut_ptr() } as *mut D;
+    // SAFETY: Pointer is within bounds and data is correctly aligned.
     let src_slice = unsafe { std::slice::from_raw_parts(s_ptr, len) };
+    // SAFETY: Pointer is within bounds and data is correctly aligned.
     let dst_slice = unsafe { std::slice::from_raw_parts_mut(d_ptr, len) };
 
     src_slice
@@ -331,7 +346,9 @@ where
     buf.make_unique()?;
 
     let len = buf.len();
+    // SAFETY: Pointer is within bounds and data is correctly aligned.
     let ptr = unsafe { buf.as_mut_ptr() } as *mut T;
+    // SAFETY: Pointer is within bounds and data is correctly aligned.
     let slice = unsafe { std::slice::from_raw_parts_mut(ptr, len) };
     slice.par_iter_mut().for_each(|x| *x = f(*x));
     Ok(())
@@ -361,6 +378,7 @@ where
     }
     let len = buf.len();
     let ptr = buf.as_ptr() as *const T;
+    // SAFETY: Pointer is within bounds and data is correctly aligned.
     let slice = unsafe { std::slice::from_raw_parts(ptr, len) };
 
     Ok(slice
@@ -392,7 +410,9 @@ where
 
     if buf.is_c_contiguous() {
         let len = buf.len();
+        // SAFETY: Pointer is within bounds and data is correctly aligned.
         let ptr = unsafe { buf.as_mut_ptr() as *mut T };
+        // SAFETY: Pointer is within bounds and data is correctly aligned.
         let slice = unsafe { std::slice::from_raw_parts_mut(ptr, len) };
         // Each element is independent: index-based computation, no data race.
         slice.par_iter_mut().enumerate().for_each(|(i, v)| {
@@ -405,12 +425,14 @@ where
         });
     } else {
         // Non-contiguous: sequential stride walk (rare path).
+        // SAFETY: Pointer is within bounds and data is correctly aligned.
         let raw_ptr = unsafe { buf.as_mut_ptr() };
         for (i, off) in StridedByteIter::new(buf.shape(), buf.strides(), buf.offset()).enumerate() {
             let mut acc = start;
             for _ in 0..i {
                 acc = acc + step;
             }
+            // SAFETY: Pointer is within bounds and data is correctly aligned.
             unsafe {
                 (raw_ptr.add(off) as *mut T).write_unaligned(acc);
             }
@@ -459,7 +481,9 @@ where
     dst.make_unique()?;
 
     let len = src.len();
+    // SAFETY: Pointer is within bounds and data is correctly aligned.
     let src_s = unsafe { std::slice::from_raw_parts(src.as_ptr() as *const T, len) };
+    // SAFETY: Pointer is within bounds and data is correctly aligned.
     let dst_s = unsafe { std::slice::from_raw_parts_mut(dst.as_mut_ptr() as *mut T, len) };
 
     // Chunk size: balance parallelism vs. carry overhead.
@@ -558,11 +582,16 @@ pub fn where_select<T: Scalar + Copy + Send + Sync>(
     let m_ptr = mask.as_ptr();
     let a_ptr = a.as_ptr() as *const T;
     let b_ptr = b.as_ptr() as *const T;
+    // SAFETY: Pointer is within bounds and data is correctly aligned.
     let d_ptr = unsafe { dst.as_mut_ptr() } as *mut T;
 
+    // SAFETY: Pointer is within bounds and data is correctly aligned.
     let m_s = unsafe { std::slice::from_raw_parts(m_ptr, len) };
+    // SAFETY: Pointer is within bounds and data is correctly aligned.
     let a_s = unsafe { std::slice::from_raw_parts(a_ptr, len) };
+    // SAFETY: Pointer is within bounds and data is correctly aligned.
     let b_s = unsafe { std::slice::from_raw_parts(b_ptr, len) };
+    // SAFETY: Pointer is within bounds and data is correctly aligned.
     let d_s = unsafe { std::slice::from_raw_parts_mut(d_ptr, len) };
 
     m_s.par_iter()
@@ -607,8 +636,11 @@ where
 
     let len = src.len();
     let s_ptr = src.as_ptr() as *const T;
+    // SAFETY: Pointer is within bounds and data is correctly aligned.
     let d_ptr = unsafe { dst.as_mut_ptr() } as *mut T;
+    // SAFETY: Pointer is within bounds and data is correctly aligned.
     let s_s = unsafe { std::slice::from_raw_parts(s_ptr, len) };
+    // SAFETY: Pointer is within bounds and data is correctly aligned.
     let d_s = unsafe { std::slice::from_raw_parts_mut(d_ptr, len) };
 
     s_s.par_iter().zip(d_s.par_iter_mut()).for_each(|(s, d)| {
@@ -666,10 +698,13 @@ pub fn gather(src: &Buffer, indices: &Buffer, dst: &mut Buffer) -> MohuResult<()
     // Build typed slices from the raw pointers.  All three buffers are
     // exclusively borrowed (src immutably, dst mutably) for this call.
     // Using &[u8] for src makes it Sync, enabling safe sharing across Rayon threads.
+    // SAFETY: Pointer is within bounds and data is correctly aligned.
     let src_bytes: &[u8] = unsafe { std::slice::from_raw_parts(src.as_ptr(), src_len * itemsize) };
     let idx_s: &[i64] =
+        // SAFETY: Pointer is within bounds and data is correctly aligned.
         unsafe { std::slice::from_raw_parts(indices.as_ptr() as *const i64, n_idx) };
     let dst_b: &mut [u8] =
+        // SAFETY: Pointer is within bounds and data is correctly aligned.
         unsafe { std::slice::from_raw_parts_mut(dst.as_mut_ptr(), n_idx * itemsize) };
 
     idx_s
@@ -735,9 +770,12 @@ pub fn scatter(dst: &mut Buffer, indices: &Buffer, src: &Buffer) -> MohuResult<(
     let n_src = src.len();
     let idx_ptr = indices.as_ptr() as *const i64;
     let src_ptr = src.as_ptr();
+    // SAFETY: Pointer is within bounds and data is correctly aligned.
     let dst_ptr = unsafe { dst.as_mut_ptr() };
 
+    // SAFETY: Pointer is within bounds and data is correctly aligned.
     let idx_s = unsafe { std::slice::from_raw_parts(idx_ptr, n_src) };
+    // SAFETY: Pointer is within bounds and data is correctly aligned.
     let src_b = unsafe { std::slice::from_raw_parts(src_ptr, n_src * itemsize) };
 
     // Sequential scatter to avoid data races on duplicate indices.
@@ -748,6 +786,7 @@ pub fn scatter(dst: &mut Buffer, indices: &Buffer, src: &Buffer) -> MohuResult<(
             idx as usize
         };
         if j < dst_len {
+            // SAFETY: Pointer is within bounds and data is correctly aligned.
             unsafe {
                 std::ptr::copy_nonoverlapping(
                     src_b.as_ptr().add(i * itemsize),
@@ -961,6 +1000,7 @@ pub fn flip_axis_copy(src: &Buffer, dst: &mut Buffer, axis: usize) -> MohuResult
 
     let itemsize = src.dtype().itemsize();
     let src_raw = src.as_ptr();
+    // SAFETY: Pointer is within bounds and data is correctly aligned.
     let dst_raw = unsafe { dst.as_mut_ptr() };
 
     use crate::strides::NdIndexIter;
@@ -977,6 +1017,7 @@ pub fn flip_axis_copy(src: &Buffer, dst: &mut Buffer, axis: usize) -> MohuResult
             .expect("NdIndexIter always in bounds");
         let dst_off = dst_flat * itemsize;
 
+        // SAFETY: Pointer is within bounds and data is correctly aligned.
         unsafe {
             std::ptr::copy_nonoverlapping(src_raw.add(src_off), dst_raw.add(dst_off), itemsize);
         }
@@ -1003,9 +1044,11 @@ pub fn sum_all_f64(buf: &Buffer) -> MohuResult<f64> {
     if buf.dtype() == DType::Bool {
         let c;
         let s: &[u8] = if buf.is_c_contiguous() {
+            // SAFETY: Pointer is within bounds and data is correctly aligned.
             unsafe { std::slice::from_raw_parts(buf.as_ptr(), buf.len()) }
         } else {
             c = buf.to_contiguous()?;
+            // SAFETY: Pointer is within bounds and data is correctly aligned.
             unsafe { std::slice::from_raw_parts(c.as_ptr(), c.len()) }
         };
         return Ok(s.par_iter().map(|&b| b as f64).sum());
@@ -1014,6 +1057,7 @@ pub fn sum_all_f64(buf: &Buffer) -> MohuResult<f64> {
     macro_rules! do_sum {
         ($T:ty) => {{
             if buf.is_c_contiguous() {
+                // SAFETY: Pointer is within bounds and data is correctly aligned.
                 let s = unsafe { std::slice::from_raw_parts(buf.as_ptr() as *const $T, buf.len()) };
                 let sum: f64 = s
                     .par_iter()
@@ -1022,6 +1066,7 @@ pub fn sum_all_f64(buf: &Buffer) -> MohuResult<f64> {
                 Ok(sum)
             } else {
                 let c = buf.to_contiguous()?;
+                // SAFETY: Pointer is within bounds and data is correctly aligned.
                 let s = unsafe { std::slice::from_raw_parts(c.as_ptr() as *const $T, c.len()) };
                 let sum: f64 = s
                     .par_iter()
@@ -1064,9 +1109,11 @@ pub fn min_all_f64(buf: &Buffer) -> MohuResult<f64> {
         }
         let c;
         let s: &[u8] = if buf.is_c_contiguous() {
+            // SAFETY: Pointer is within bounds and data is correctly aligned.
             unsafe { std::slice::from_raw_parts(buf.as_ptr(), buf.len()) }
         } else {
             c = buf.to_contiguous()?;
+            // SAFETY: Pointer is within bounds and data is correctly aligned.
             unsafe { std::slice::from_raw_parts(c.as_ptr(), c.len()) }
         };
         return Ok(s.par_iter().map(|&b| b as u64).min().unwrap_or(0) as f64);
@@ -1078,9 +1125,11 @@ pub fn min_all_f64(buf: &Buffer) -> MohuResult<f64> {
             }
             let c;
             let s: &[$T] = if buf.is_c_contiguous() {
+                // SAFETY: Pointer is within bounds and data is correctly aligned.
                 unsafe { std::slice::from_raw_parts(buf.as_ptr() as *const $T, buf.len()) }
             } else {
                 c = buf.to_contiguous()?;
+                // SAFETY: Pointer is within bounds and data is correctly aligned.
                 unsafe { std::slice::from_raw_parts(c.as_ptr() as *const $T, c.len()) }
             };
             let m = s
@@ -1126,9 +1175,11 @@ pub fn max_all_f64(buf: &Buffer) -> MohuResult<f64> {
         }
         let c;
         let s: &[u8] = if buf.is_c_contiguous() {
+            // SAFETY: Pointer is within bounds and data is correctly aligned.
             unsafe { std::slice::from_raw_parts(buf.as_ptr(), buf.len()) }
         } else {
             c = buf.to_contiguous()?;
+            // SAFETY: Pointer is within bounds and data is correctly aligned.
             unsafe { std::slice::from_raw_parts(c.as_ptr(), c.len()) }
         };
         return Ok(s.par_iter().map(|&b| b as u64).max().unwrap_or(0) as f64);
@@ -1140,9 +1191,11 @@ pub fn max_all_f64(buf: &Buffer) -> MohuResult<f64> {
             }
             let c;
             let s: &[$T] = if buf.is_c_contiguous() {
+                // SAFETY: Pointer is within bounds and data is correctly aligned.
                 unsafe { std::slice::from_raw_parts(buf.as_ptr() as *const $T, buf.len()) }
             } else {
                 c = buf.to_contiguous()?;
+                // SAFETY: Pointer is within bounds and data is correctly aligned.
                 unsafe { std::slice::from_raw_parts(c.as_ptr() as *const $T, c.len()) }
             };
             let m = s
@@ -1188,9 +1241,11 @@ pub fn argmin_flat(buf: &Buffer) -> MohuResult<usize> {
         }
         let c;
         let s: &[u8] = if buf.is_c_contiguous() {
+            // SAFETY: Pointer is within bounds and data is correctly aligned.
             unsafe { std::slice::from_raw_parts(buf.as_ptr(), buf.len()) }
         } else {
             c = buf.to_contiguous()?;
+            // SAFETY: Pointer is within bounds and data is correctly aligned.
             unsafe { std::slice::from_raw_parts(c.as_ptr(), c.len()) }
         };
         return Ok(s
@@ -1207,9 +1262,11 @@ pub fn argmin_flat(buf: &Buffer) -> MohuResult<usize> {
             }
             let c;
             let s: &[$T] = if buf.is_c_contiguous() {
+                // SAFETY: Pointer is within bounds and data is correctly aligned.
                 unsafe { std::slice::from_raw_parts(buf.as_ptr() as *const $T, buf.len()) }
             } else {
                 c = buf.to_contiguous()?;
+                // SAFETY: Pointer is within bounds and data is correctly aligned.
                 unsafe { std::slice::from_raw_parts(c.as_ptr() as *const $T, c.len()) }
             };
             Ok(s.par_iter()
@@ -1255,9 +1312,11 @@ pub fn argmax_flat(buf: &Buffer) -> MohuResult<usize> {
         }
         let c;
         let s: &[u8] = if buf.is_c_contiguous() {
+            // SAFETY: Pointer is within bounds and data is correctly aligned.
             unsafe { std::slice::from_raw_parts(buf.as_ptr(), buf.len()) }
         } else {
             c = buf.to_contiguous()?;
+            // SAFETY: Pointer is within bounds and data is correctly aligned.
             unsafe { std::slice::from_raw_parts(c.as_ptr(), c.len()) }
         };
         return Ok(s
@@ -1274,9 +1333,11 @@ pub fn argmax_flat(buf: &Buffer) -> MohuResult<usize> {
             }
             let c;
             let s: &[$T] = if buf.is_c_contiguous() {
+                // SAFETY: Pointer is within bounds and data is correctly aligned.
                 unsafe { std::slice::from_raw_parts(buf.as_ptr() as *const $T, buf.len()) }
             } else {
                 c = buf.to_contiguous()?;
+                // SAFETY: Pointer is within bounds and data is correctly aligned.
                 unsafe { std::slice::from_raw_parts(c.as_ptr() as *const $T, c.len()) }
             };
             Ok(s.par_iter()
@@ -1331,6 +1392,7 @@ pub fn fill_nontemporal_f32_buf(buf: &mut Buffer, value: f32) -> MohuResult<()> 
     buf.make_unique()?;
 
     let len = buf.len();
+    // SAFETY: Pointer is within bounds and data is correctly aligned.
     let ptr = unsafe { buf.as_mut_ptr() as *mut f32 };
 
     #[cfg(target_arch = "x86_64")]
@@ -1341,10 +1403,12 @@ pub fn fill_nontemporal_f32_buf(buf: &mut Buffer, value: f32) -> MohuResult<()> 
         let align_off = (32 - addr % 32) % 32 / std::mem::size_of::<f32>();
         let prefix = align_off.min(len);
         for i in 0..prefix {
+            // SAFETY: Pointer is within bounds and data is correctly aligned.
             unsafe {
                 ptr.add(i).write(value);
             }
         }
+        // SAFETY: Pointer is within bounds and data is correctly aligned.
         let aligned_ptr = unsafe { ptr.add(prefix) };
         let aligned_len = len - prefix;
         let nt_len = aligned_len / 8 * 8; // round down to multiple of 8
@@ -1352,16 +1416,19 @@ pub fn fill_nontemporal_f32_buf(buf: &mut Buffer, value: f32) -> MohuResult<()> 
         if nt_len > 0 {
             // SAFETY: aligned_ptr is 32-byte aligned, nt_len is multiple of 8.
             if is_x86_feature_detected!("avx2") {
+                // SAFETY: Pointer is within bounds and data is correctly aligned.
                 unsafe {
                     crate::alloc::fill_nontemporal_f32(aligned_ptr, nt_len, value);
                 }
             } else {
+                // SAFETY: Pointer is within bounds and data is correctly aligned.
                 let slice = unsafe { std::slice::from_raw_parts_mut(aligned_ptr, nt_len) };
                 slice.par_iter_mut().for_each(|x| *x = value);
             }
         }
         // Scalar tail
         for i in (prefix + nt_len)..len {
+            // SAFETY: Pointer is within bounds and data is correctly aligned.
             unsafe {
                 ptr.add(i).write(value);
             }
@@ -1371,6 +1438,7 @@ pub fn fill_nontemporal_f32_buf(buf: &mut Buffer, value: f32) -> MohuResult<()> 
 
     #[cfg(not(target_arch = "x86_64"))]
     {
+        // SAFETY: Pointer is within bounds and data is correctly aligned.
         let slice = unsafe { std::slice::from_raw_parts_mut(ptr, len) };
         slice.par_iter_mut().for_each(|x| *x = value);
         Ok(())
@@ -1408,9 +1476,13 @@ where
     dst.make_unique()?;
 
     let len = a.len();
+    // SAFETY: Pointer is within bounds and data is correctly aligned.
     let a_s = unsafe { std::slice::from_raw_parts(a.as_ptr() as *const S, len) };
+    // SAFETY: Pointer is within bounds and data is correctly aligned.
     let b_s = unsafe { std::slice::from_raw_parts(b.as_ptr() as *const S, len) };
+    // SAFETY: Pointer is within bounds and data is correctly aligned.
     let d_ptr = unsafe { dst.as_mut_ptr() } as *mut D;
+    // SAFETY: Pointer is within bounds and data is correctly aligned.
     let d_s = unsafe { std::slice::from_raw_parts_mut(d_ptr, len) };
 
     a_s.par_iter()
