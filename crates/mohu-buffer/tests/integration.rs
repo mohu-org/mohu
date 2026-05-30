@@ -49,6 +49,46 @@ fn from_slice_reshape_to_2d() {
 }
 
 #[test]
+fn shape_predicates_vector_matrix_scalar() {
+    let vector = Buffer::from_slice(&[1.0_f64, 2.0, 3.0]).unwrap();
+    assert!(vector.is_vector());
+    assert!(!vector.is_matrix());
+    assert!(!vector.is_square());
+    assert!(!vector.is_scalar_shape());
+
+    let matrix = Buffer::from_slice(&[1.0_f64, 2.0, 3.0, 4.0]).unwrap().reshape(&[2, 2]).unwrap();
+    assert!(matrix.is_matrix());
+    assert!(matrix.is_square());
+    assert!(!matrix.is_vector());
+    assert!(!matrix.is_scalar_shape());
+
+    let scalar = Buffer::zeros(DType::F64, &[]).unwrap();
+    assert!(scalar.is_scalar_shape());
+    assert!(!scalar.is_vector());
+    assert!(!scalar.is_matrix());
+    assert!(!scalar.is_square());
+}
+
+#[test]
+fn shape_predicates_square_and_rectangular() {
+    let square = Buffer::from_slice(&[1_i32]).unwrap().reshape(&[1, 1]).unwrap();
+    assert!(square.is_square());
+    assert!(square.is_matrix());
+
+    let rect = Buffer::from_slice(&[1_i32, 2, 3, 4, 5, 6]).unwrap().reshape(&[2, 3]).unwrap();
+    assert!(rect.is_matrix());
+    assert!(!rect.is_square());
+}
+
+#[test]
+fn shape_predicates_non_2d_false_for_square() {
+    let tensor = Buffer::from_slice(&[1.0_f32, 2.0, 3.0, 4.0]).unwrap().reshape(&[2, 2, 1]).unwrap();
+    assert!(!tensor.is_square());
+    assert!(!tensor.is_matrix());
+    assert!(!tensor.is_vector());
+}
+
+#[test]
 fn get_set_roundtrip() {
     let mut buf = Buffer::zeros(DType::F64, &[4, 4]).unwrap();
     buf.set::<f64>(&[1, 2], 99.0).unwrap();
