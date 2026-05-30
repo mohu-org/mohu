@@ -1,0 +1,49 @@
+name: Benchmark
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Run every Monday at 3:00 UTC
+    - cron: '0 3 * * 1'
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+
+jobs:
+  benchmark:
+    name: Run Benchmarks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Run benchmarks
+        run: |
+          cd crates/mohu-benchmarks
+          cargo bench -- --output-format bencher | tee output.txt
+      - name: Upload benchmark results
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-results
+          path: crates/mohu-benchmarks/output.txt
+          retention-days: 30
+      - name: Upload Criterion reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: criterion-reports
+          path: crates/mohu-benchmarks/target/criterion/
+          retention-days: 30
+      # Optional: Enable github-action-benchmark for trend charts
+      # To enable:
+      # 1. Uncomment the step below
+      # 2. Create a GitHub secret named BENCHMARK_TOKEN (or use GITHUB_TOKEN)
+      # 3. Set up the benchmark-data repository or use the default
+      # See: https://github.com/benchmark-action/github-action-benchmark
+      # - name: Store benchmark result
+      #   uses: benchmark-action/github-action-benchmark@v1
+      #   with:
+      #     tool: 'cargo'
+      #     output-file-path: crates/mohu-benchmarks/output.txt
+      #     github-token: ${{ secrets.GITHUB_TOKEN }}
+      #     auto-push: true
