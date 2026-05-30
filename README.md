@@ -26,6 +26,29 @@ Polars proved you can rewrite the data layer in Rust and win. mohu is that same 
 
 Early. The foundation is being laid. If you believe the Python numerical stack deserves a rewrite, watch this repo or contribute.
 
+## quick start
+
+### prerequisites
+- Rust
+- Python
+- maturin
+
+### build & install
+
+```bash
+pip install maturin
+maturin develop
+```
+
+### usage example
+
+```python
+import mohu as mh
+
+arr = mh.array([1, 2, 3])
+print(arr)
+```
+
 ## built with
 
 - [Rust](https://rust-lang.org)
