@@ -45,7 +45,6 @@ Polars proved you can rewrite the data layer in Rust and win. Mohu is that same 
 Before building Mohu, ensure you have the following installed on your system:
 - [Rust](https://www.rust-lang.org/tools/install) (latest stable)
 - [Python](https://www.python.org/downloads/) 3.10+
-- [Maturin](https://maturin.rs/installation.html) (for building the Python bindings)
 
 ### Build Instructions
 To build and install the extension locally for development:
@@ -59,7 +58,10 @@ To build and install the extension locally for development:
 2. Create a virtual environment and install Maturin:
    ```bash
    python -m venv .venv
+   # On macOS/Linux:
    source .venv/bin/activate
+   # On Windows:
+   # .venv\Scripts\activate
    pip install maturin
    ```
 
