@@ -26,12 +26,12 @@
 /// # Reduce / accumulate
 ///
 /// `reduce` collapses one axis; `accumulate` returns a running reduction.
-/// Both are implemented generically in [`reduce`] and specialised per ufunc.
+/// Both are implemented generically in `reduce` and specialised per ufunc.
 ///
 /// # Adding a new ufunc
 ///
-/// Implement [`Ufunc`] and register it in the dispatch table.  The macro
-/// [`define_ufunc!`] generates the boilerplate for common binary/unary cases.
+/// Implement `Ufunc` and register it in the dispatch table.  The macro
+/// `define_ufunc!` generates the boilerplate for common binary/unary cases.
 pub mod broadcast;
 pub mod dispatch;
 pub mod loop_impl;

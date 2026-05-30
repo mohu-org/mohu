@@ -11,7 +11,7 @@
 /// | [`boolean`]  | Boolean mask indexing         | `a[a > 0]`                 |
 /// | [`take`]     | `take` / `put` operations     | `take(a, indices, axis=0)` |
 /// | [`where_op`] | `where` / `nonzero`           | `np.where(cond, x, y)`     |
-/// | [`slice`]    | Composite slice objects       | `s_[1:5:2, None, ...]`     |
+/// | [`mod@slice`]| Composite slice objects       | `s_[1:5:2, None, ...]`     |
 /// | [`gather`]   | Scatter / gather              | used internally by ufuncs  |
 ///
 /// # Notes on fancy indexing

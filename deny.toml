@@ -18,4 +18,4 @@ unknown-git      = "deny"
 allow-registry   = ["https://github.com/rust-lang/crates.io-index"]
 
 [advisories]
-ignore = []
+ignore = ["RUSTSEC-2025-0020"]

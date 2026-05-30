@@ -741,6 +741,8 @@ fn heap_alloc_inner(len: usize, align: usize) -> MohuResult<AllocInner> {
 /// `ptr` must be 32-byte aligned. `count` must be a multiple of 8.
 #[cfg(target_arch = "x86_64")]
 #[target_feature(enable = "avx2")]
+/// # Safety
+/// The caller must ensure that `ptr` is valid for writes of `count` elements.
 pub unsafe fn fill_nontemporal_f32(ptr: *mut f32, count: usize, value: f32) {
     use std::arch::x86_64::*;
     debug_assert!(ptr as usize % 32 == 0, "ptr must be 32-byte aligned");
@@ -763,6 +765,8 @@ pub unsafe fn fill_nontemporal_f32(ptr: *mut f32, count: usize, value: f32) {
 /// `ptr` must be 32-byte aligned. `count` must be a multiple of 4.
 #[cfg(target_arch = "x86_64")]
 #[target_feature(enable = "avx2")]
+/// # Safety
+/// The caller must ensure that `ptr` is valid for writes of `count` elements.
 pub unsafe fn fill_nontemporal_f64(ptr: *mut f64, count: usize, value: f64) {
     use std::arch::x86_64::*;
     debug_assert!(ptr as usize % 32 == 0, "ptr must be 32-byte aligned");

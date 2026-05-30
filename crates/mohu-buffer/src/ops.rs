@@ -1366,7 +1366,7 @@ pub fn fill_nontemporal_f32_buf(buf: &mut Buffer, value: f32) -> MohuResult<()> 
                 ptr.add(i).write(value);
             }
         }
-        return Ok(());
+        Ok(())
     }
 
     #[cfg(not(target_arch = "x86_64"))]
