@@ -11,13 +11,10 @@
 /// `Buffer` can wrap externally-owned memory via [`Buffer::from_dlpack`].
 /// In that case the backing `RawBuffer` holds a `*mut DLManagedTensor`
 /// and calls its deleter when the last Arc reference is dropped.
-use std::{
-    ptr::NonNull,
-    sync::Arc,
-};
+use std::{ptr::NonNull, sync::Arc};
 
 use mohu_dtype::{
-    dlpack::{assert_cpu_device, DLDataType},
+    dlpack::{DLDataType, assert_cpu_device},
     dtype::DType,
     promote::CastMode,
     scalar::Scalar,
@@ -38,24 +35,32 @@ pub struct BufferFlags(u8);
 
 impl BufferFlags {
     /// Array is writeable (not read-only / not a broadcast view).
-    pub const WRITEABLE:     Self = Self(1 << 0);
+    pub const WRITEABLE: Self = Self(1 << 0);
     /// This `Buffer` is the (sole or shared) owner of the backing bytes.
-    pub const OWNS_DATA:     Self = Self(1 << 1);
+    pub const OWNS_DATA: Self = Self(1 << 1);
     /// Array is C-contiguous in the backing buffer.
-    pub const C_CONTIGUOUS:  Self = Self(1 << 2);
+    pub const C_CONTIGUOUS: Self = Self(1 << 2);
     /// Array is Fortran-contiguous in the backing buffer.
-    pub const F_CONTIGUOUS:  Self = Self(1 << 3);
+    pub const F_CONTIGUOUS: Self = Self(1 << 3);
     /// Backing memory is SIMD-aligned (≥ 64 bytes).
-    pub const ALIGNED:       Self = Self(1 << 4);
+    pub const ALIGNED: Self = Self(1 << 4);
 
     /// Returns an empty flag set with no flags enabled.
-    pub const fn empty() -> Self { Self(0) }
+    pub const fn empty() -> Self {
+        Self(0)
+    }
     /// Returns `true` if all flags in `other` are set in `self`.
-    pub const fn contains(self, other: Self) -> bool { self.0 & other.0 == other.0 }
+    pub const fn contains(self, other: Self) -> bool {
+        self.0 & other.0 == other.0
+    }
     /// Returns a new flag set with all flags from both `self` and `other`.
-    pub const fn insert(self, other: Self) -> Self { Self(self.0 | other.0) }
+    pub const fn insert(self, other: Self) -> Self {
+        Self(self.0 | other.0)
+    }
     /// Returns a new flag set with `other`'s flags cleared from `self`.
-    pub const fn remove(self, other: Self) -> Self { Self(self.0 & !other.0) }
+    pub const fn remove(self, other: Self) -> Self {
+        Self(self.0 & !other.0)
+    }
 }
 
 // ─── DLPack C-ABI types ───────────────────────────────────────────────────────
@@ -64,8 +69,8 @@ impl BufferFlags {
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
 pub struct RawDLDataType {
-    pub code:  u8,
-    pub bits:  u8,
+    pub code: u8,
+    pub bits: u8,
     pub lanes: u16,
 }
 
@@ -81,40 +86,42 @@ impl From<DLDataType> for RawDLDataType {
 #[derive(Debug, Clone, Copy)]
 pub struct RawDLDevice {
     pub device_type: i32,
-    pub device_id:   i32,
+    pub device_id: i32,
 }
 
 /// C-ABI DLTensor (DLPack v0.8 layout).
 #[repr(C)]
 pub struct DLTensor {
-    pub data:        *mut std::ffi::c_void,
-    pub device:      RawDLDevice,
-    pub ndim:        i32,
-    pub dtype:       RawDLDataType,
-    pub shape:       *const i64,
-    pub strides:     *const i64,
+    pub data: *mut std::ffi::c_void,
+    pub device: RawDLDevice,
+    pub ndim: i32,
+    pub dtype: RawDLDataType,
+    pub shape: *const i64,
+    pub strides: *const i64,
     pub byte_offset: u64,
 }
 
 /// Context kept alive for the lifetime of an exported `DLManagedTensor`.
 struct DLExportCtx {
     /// Keeps the backing buffer alive until the DLPack consumer is done.
-    _raw:    Arc<RawBuffer>,
-    shape:   Vec<i64>,
+    _raw: Arc<RawBuffer>,
+    shape: Vec<i64>,
     strides: Vec<i64>,
 }
 
 /// C-ABI DLManagedTensor (DLPack v0.8).
 #[repr(C)]
 pub struct DLManagedTensor {
-    pub dl_tensor:   DLTensor,
+    pub dl_tensor: DLTensor,
     pub manager_ctx: *mut std::ffi::c_void,
-    pub deleter:     Option<unsafe extern "C" fn(*mut DLManagedTensor)>,
+    pub deleter: Option<unsafe extern "C" fn(*mut DLManagedTensor)>,
 }
 
 /// Called by the DLPack consumer when it no longer needs the tensor.
 unsafe extern "C" fn dlmanaged_deleter(ptr: *mut DLManagedTensor) {
-    if ptr.is_null() { return; }
+    if ptr.is_null() {
+        return;
+    }
     unsafe {
         let managed = &*ptr;
         if !managed.manager_ctx.is_null() {
@@ -133,9 +140,7 @@ enum BufferSource {
     Owned(AllocHandle),
     /// Externally owned memory imported via DLPack.
     /// The deleter is invoked when this `RawBuffer` is dropped.
-    DLPack {
-        managed: *mut DLManagedTensor,
-    },
+    DLPack { managed: *mut DLManagedTensor },
 }
 
 // SAFETY: *mut DLManagedTensor is owned exclusively by this RawBuffer.
@@ -163,7 +168,7 @@ pub struct RawBuffer {
     source: BufferSource,
     /// Pointer to the usable start of the data (may be offset into the
     /// DLPack allocation).
-    ptr:    NonNull<u8>,
+    ptr: NonNull<u8>,
     /// Number of usable bytes.
     nbytes: usize,
 }
@@ -185,7 +190,11 @@ impl RawBuffer {
         } else {
             handle.as_non_null()?
         };
-        Ok(Self { source: BufferSource::Owned(handle), ptr, nbytes })
+        Ok(Self {
+            source: BufferSource::Owned(handle),
+            ptr,
+            nbytes,
+        })
     }
 
     /// Wraps an externally owned DLPack pointer.
@@ -197,8 +206,8 @@ impl RawBuffer {
     ///   in `managed` is invoked.
     unsafe fn from_dlpack_ptr(
         managed: *mut DLManagedTensor,
-        ptr:     NonNull<u8>,
-        nbytes:  usize,
+        ptr: NonNull<u8>,
+        nbytes: usize,
     ) -> Self {
         Self {
             source: BufferSource::DLPack { managed },
@@ -208,11 +217,20 @@ impl RawBuffer {
     }
 
     /// Returns the data pointer.
-    #[inline] pub fn as_ptr(&self) -> *const u8 { self.ptr.as_ptr() }
+    #[inline]
+    pub fn as_ptr(&self) -> *const u8 {
+        self.ptr.as_ptr()
+    }
     /// Returns a mutable data pointer (caller must ensure exclusive access).
-    #[inline] pub fn as_mut_ptr(&self) -> *mut u8 { self.ptr.as_ptr() }
+    #[inline]
+    pub fn as_mut_ptr(&self) -> *mut u8 {
+        self.ptr.as_ptr()
+    }
     /// Returns the byte capacity of this raw buffer.
-    #[inline] pub fn nbytes(&self) -> usize { self.nbytes }
+    #[inline]
+    pub fn nbytes(&self) -> usize {
+        self.nbytes
+    }
 
     /// Returns `true` if the backing memory is SIMD-aligned.
     #[inline]
@@ -229,7 +247,7 @@ impl RawBuffer {
 impl std::fmt::Debug for RawBuffer {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("RawBuffer")
-            .field("ptr",    &format_args!("{:p}", self.ptr))
+            .field("ptr", &format_args!("{:p}", self.ptr))
             .field("nbytes", &self.nbytes)
             .field("external", &self.is_external())
             .finish()
@@ -250,10 +268,10 @@ impl std::fmt::Debug for RawBuffer {
 /// To get an independent copy of the data, call [`make_unique`](Buffer::make_unique).
 #[derive(Debug)]
 pub struct Buffer {
-    raw:    Arc<RawBuffer>,
-    dtype:  DType,
+    raw: Arc<RawBuffer>,
+    dtype: DType,
     layout: Layout,
-    flags:  BufferFlags,
+    flags: BufferFlags,
 }
 
 impl Buffer {
@@ -268,7 +286,12 @@ impl Buffer {
             Order::F => Layout::new_f(shape, dtype.itemsize())?,
         };
         let flags = Self::compute_flags(&raw, &layout);
-        Ok(Self { raw, dtype, layout, flags })
+        Ok(Self {
+            raw,
+            dtype,
+            layout,
+            flags,
+        })
     }
 
     /// Allocates a zeroed buffer with `dtype` and `shape`.
@@ -277,7 +300,12 @@ impl Buffer {
         let raw = Arc::new(RawBuffer::alloc(nbytes, true)?);
         let layout = Layout::new_c(shape, dtype.itemsize())?;
         let flags = Self::compute_flags(&raw, &layout);
-        Ok(Self { raw, dtype, layout, flags })
+        Ok(Self {
+            raw,
+            dtype,
+            layout,
+            flags,
+        })
     }
 
     /// Allocates a buffer filled with the one-value for `dtype`.
@@ -292,15 +320,12 @@ impl Buffer {
     /// Allocates a buffer filled with `fill_bytes` repeated for each element.
     ///
     /// `fill_bytes.len()` must equal `dtype.itemsize()`.
-    pub fn full(
-        dtype:      DType,
-        shape:      &[usize],
-        fill_bytes: &[u8],
-    ) -> MohuResult<Self> {
+    pub fn full(dtype: DType, shape: &[usize], fill_bytes: &[u8]) -> MohuResult<Self> {
         if fill_bytes.len() != dtype.itemsize() {
             return Err(MohuError::bug(format!(
                 "Buffer::full: fill_bytes.len()={} != dtype.itemsize()={}",
-                fill_bytes.len(), dtype.itemsize()
+                fill_bytes.len(),
+                dtype.itemsize()
             )));
         }
         let mut buf = Self::alloc(dtype, shape, Order::C)?;
@@ -312,22 +337,22 @@ impl Buffer {
 
     /// Copies elements from a typed slice into a new C-contiguous buffer.
     pub fn from_slice<T: Scalar>(data: &[T]) -> MohuResult<Self> {
-        let dtype  = T::DTYPE;
-        let shape  = [data.len()];
+        let dtype = T::DTYPE;
+        let shape = [data.len()];
         let nbytes = data.len() * dtype.itemsize();
-        let raw    = Arc::new(RawBuffer::alloc(nbytes, false)?);
+        let raw = Arc::new(RawBuffer::alloc(nbytes, false)?);
         // SAFETY: raw has exactly nbytes of valid writable memory.
         unsafe {
-            std::ptr::copy_nonoverlapping(
-                data.as_ptr() as *const u8,
-                raw.as_mut_ptr(),
-                nbytes,
-            );
+            std::ptr::copy_nonoverlapping(data.as_ptr() as *const u8, raw.as_mut_ptr(), nbytes);
         }
         let layout = Layout::new_c(&shape, dtype.itemsize())?;
-        let flags  = Self::compute_flags(&raw, &layout)
-            .insert(BufferFlags::WRITEABLE);
-        Ok(Self { raw, dtype, layout, flags })
+        let flags = Self::compute_flags(&raw, &layout).insert(BufferFlags::WRITEABLE);
+        Ok(Self {
+            raw,
+            dtype,
+            layout,
+            flags,
+        })
     }
 
     /// Copies a 2D slice-of-slices into a row-major buffer.
@@ -336,35 +361,35 @@ impl Buffer {
             return Self::zeros(T::DTYPE, &[0, 0]);
         }
         let cols = data[0].len();
-        for (_row_idx, row) in data.iter().enumerate() {
+        for row in data.iter() {
             if row.len() != cols {
                 return Err(MohuError::ShapeMismatch {
                     expected: vec![cols],
-                    got:      vec![row.len()],
+                    got: vec![row.len()],
                 });
             }
         }
-        let rows   = data.len();
-        let dtype  = T::DTYPE;
-        let shape  = [rows, cols];
+        let rows = data.len();
+        let dtype = T::DTYPE;
+        let shape = [rows, cols];
         let nbytes = rows * cols * dtype.itemsize();
-        let raw    = Arc::new(RawBuffer::alloc(nbytes, false)?);
+        let raw = Arc::new(RawBuffer::alloc(nbytes, false)?);
         unsafe {
             let mut dst = raw.as_mut_ptr();
             for row in data {
                 let row_bytes = row.len() * dtype.itemsize();
-                std::ptr::copy_nonoverlapping(
-                    row.as_ptr() as *const u8,
-                    dst,
-                    row_bytes,
-                );
+                std::ptr::copy_nonoverlapping(row.as_ptr() as *const u8, dst, row_bytes);
                 dst = dst.add(row_bytes);
             }
         }
         let layout = Layout::new_c(&shape, dtype.itemsize())?;
-        let flags  = Self::compute_flags(&raw, &layout)
-            .insert(BufferFlags::WRITEABLE);
-        Ok(Self { raw, dtype, layout, flags })
+        let flags = Self::compute_flags(&raw, &layout).insert(BufferFlags::WRITEABLE);
+        Ok(Self {
+            raw,
+            dtype,
+            layout,
+            flags,
+        })
     }
 
     /// Wraps a `Vec<T>` by copying it into a mohu buffer.
@@ -383,23 +408,27 @@ impl Buffer {
     ///
     /// Prefer `from_slice` or DLPack import for safer alternatives.
     pub unsafe fn from_raw_parts(
-        ptr:    NonNull<u8>,
+        ptr: NonNull<u8>,
         nbytes: usize,
-        dtype:  DType,
+        dtype: DType,
         layout: Layout,
     ) -> Self {
         // We create a fake AllocHandle that owns nothing — zero-size handle.
         // Caller is responsible for the actual lifetime.
         let raw = Arc::new(RawBuffer {
             source: BufferSource::Owned(
-                AllocHandle::alloc(0, SIMD_ALIGN)
-                    .expect("zero-size alloc never fails")
+                AllocHandle::alloc(0, SIMD_ALIGN).expect("zero-size alloc never fails"),
             ),
             ptr,
             nbytes,
         });
         let flags = Self::compute_flags(&raw, &layout);
-        Self { raw, dtype, layout, flags }
+        Self {
+            raw,
+            dtype,
+            layout,
+            flags,
+        }
     }
 
     // ─── DLPack import ────────────────────────────────────────────────────────
@@ -417,27 +446,37 @@ impl Buffer {
         if managed.is_null() {
             return Err(MohuError::DLPackNullPointer);
         }
-        let (tensor_device, tensor_dtype, tensor_ndim, tensor_data,
-             tensor_byte_offset, tensor_shape, tensor_strides) = unsafe {
+        let (
+            tensor_device,
+            tensor_dtype,
+            tensor_ndim,
+            tensor_data,
+            tensor_byte_offset,
+            tensor_shape,
+            tensor_strides,
+        ) = unsafe {
             let m = &*managed;
             let t = &m.dl_tensor;
-            (t.device, t.dtype, t.ndim, t.data, t.byte_offset, t.shape, t.strides)
+            (
+                t.device,
+                t.dtype,
+                t.ndim,
+                t.data,
+                t.byte_offset,
+                t.shape,
+                t.strides,
+            )
         };
 
         assert_cpu_device(tensor_device.device_type)?;
 
-        let dtype = DType::from_dlpack(
-            tensor_dtype.code,
-            tensor_dtype.bits,
-            tensor_dtype.lanes,
-        )?;
+        let dtype = DType::from_dlpack(tensor_dtype.code, tensor_dtype.bits, tensor_dtype.lanes)?;
 
         let ndim = tensor_ndim as usize;
         let byte_offset = tensor_byte_offset as usize;
         let base_ptr = unsafe { (tensor_data as *mut u8).add(byte_offset) };
-        let ptr = NonNull::new(base_ptr).ok_or_else(|| {
-            MohuError::DLPackInvalid("DLTensor.data is null".to_string())
-        })?;
+        let ptr = NonNull::new(base_ptr)
+            .ok_or_else(|| MohuError::DLPackInvalid("DLTensor.data is null".to_string()))?;
 
         let shape: Vec<usize> = if ndim == 0 {
             vec![]
@@ -467,7 +506,12 @@ impl Buffer {
         let mut flags = Self::compute_flags(&raw, &layout);
         flags = flags.remove(BufferFlags::WRITEABLE);
 
-        Ok(Self { raw, dtype, layout, flags })
+        Ok(Self {
+            raw,
+            dtype,
+            layout,
+            flags,
+        })
     }
 
     // ─── DLPack export ────────────────────────────────────────────────────────
@@ -484,41 +528,46 @@ impl Buffer {
     /// Dropping the returned pointer without calling the deleter leaks memory.
     pub fn to_dlpack(&self) -> MohuResult<*mut DLManagedTensor> {
         let dl_dtype = RawDLDataType::from(self.dtype.to_dlpack());
-        let ndim     = self.layout.ndim();
+        let ndim = self.layout.ndim();
 
-        let shape: Vec<i64> = self.layout.shape().iter()
-            .map(|&d| d as i64).collect();
+        let shape: Vec<i64> = self.layout.shape().iter().map(|&d| d as i64).collect();
 
         // Convert byte strides to element strides.
         let itemsize = self.dtype.itemsize() as isize;
-        let strides: Vec<i64> = self.layout.strides().iter()
-            .map(|&s| (s / itemsize) as i64).collect();
+        let strides: Vec<i64> = self
+            .layout
+            .strides()
+            .iter()
+            .map(|&s| (s / itemsize) as i64)
+            .collect();
 
         let ctx = Box::new(DLExportCtx {
-            _raw:    Arc::clone(&self.raw),
+            _raw: Arc::clone(&self.raw),
             shape,
             strides,
         });
         let ctx_ptr = Box::into_raw(ctx);
 
-        let data_ptr = unsafe {
-            self.raw.as_mut_ptr().add(self.layout.offset()) as *mut std::ffi::c_void
-        };
+        let data_ptr =
+            unsafe { self.raw.as_mut_ptr().add(self.layout.offset()) as *mut std::ffi::c_void };
 
         let dl_tensor = DLTensor {
-            data:        data_ptr,
-            device:      RawDLDevice { device_type: 1, device_id: 0 },
-            ndim:        ndim as i32,
-            dtype:       dl_dtype,
-            shape:       unsafe { (*ctx_ptr).shape.as_ptr() },
-            strides:     unsafe { (*ctx_ptr).strides.as_ptr() },
+            data: data_ptr,
+            device: RawDLDevice {
+                device_type: 1,
+                device_id: 0,
+            },
+            ndim: ndim as i32,
+            dtype: dl_dtype,
+            shape: unsafe { (*ctx_ptr).shape.as_ptr() },
+            strides: unsafe { (*ctx_ptr).strides.as_ptr() },
             byte_offset: 0,
         };
 
         let managed = Box::new(DLManagedTensor {
             dl_tensor,
             manager_ctx: ctx_ptr as *mut std::ffi::c_void,
-            deleter:     Some(dlmanaged_deleter),
+            deleter: Some(dlmanaged_deleter),
         });
 
         Ok(Box::into_raw(managed))
@@ -527,40 +576,84 @@ impl Buffer {
     // ─── Properties ───────────────────────────────────────────────────────────
 
     /// Returns the element data type of this buffer.
-    #[inline] pub fn dtype(&self)    -> DType   { self.dtype }
+    #[inline]
+    pub fn dtype(&self) -> DType {
+        self.dtype
+    }
     /// Returns a reference to this buffer's layout descriptor.
-    #[inline] pub fn layout(&self)   -> &Layout { &self.layout }
+    #[inline]
+    pub fn layout(&self) -> &Layout {
+        &self.layout
+    }
     /// Returns the shape of this buffer as a slice of dimension sizes.
-    #[inline] pub fn shape(&self)    -> &[usize] { self.layout.shape() }
+    #[inline]
+    pub fn shape(&self) -> &[usize] {
+        self.layout.shape()
+    }
     /// Returns the byte strides of this buffer.
-    #[inline] pub fn strides(&self)  -> &[isize] { self.layout.strides() }
+    #[inline]
+    pub fn strides(&self) -> &[isize] {
+        self.layout.strides()
+    }
     /// Returns the number of dimensions (axes) of this buffer.
-    #[inline] pub fn ndim(&self)     -> usize    { self.layout.ndim() }
+    #[inline]
+    pub fn ndim(&self) -> usize {
+        self.layout.ndim()
+    }
     /// Returns the total number of elements in this buffer.
-    #[inline] pub fn len(&self)      -> usize    { self.layout.size() }
+    #[inline]
+    pub fn len(&self) -> usize {
+        self.layout.size()
+    }
     /// Returns the total byte size of this buffer's data (`len * itemsize`).
-    #[inline] pub fn nbytes(&self)   -> usize    { self.layout.nbytes() }
+    #[inline]
+    pub fn nbytes(&self) -> usize {
+        self.layout.nbytes()
+    }
     /// Returns the byte size of a single element.
-    #[inline] pub fn itemsize(&self) -> usize    { self.dtype.itemsize() }
+    #[inline]
+    pub fn itemsize(&self) -> usize {
+        self.dtype.itemsize()
+    }
     /// Returns the byte offset from the backing buffer start to element `[0, …, 0]`.
-    #[inline] pub fn offset(&self)   -> usize    { self.layout.offset() }
+    #[inline]
+    pub fn offset(&self) -> usize {
+        self.layout.offset()
+    }
     /// Returns the bitfield flags describing this buffer's properties.
-    #[inline] pub fn flags(&self)    -> BufferFlags { self.flags }
+    #[inline]
+    pub fn flags(&self) -> BufferFlags {
+        self.flags
+    }
 
     /// Returns `true` if any dimension is zero (zero-element buffer).
-    pub fn is_empty(&self)         -> bool { self.layout.is_empty() }
+    pub fn is_empty(&self) -> bool {
+        self.layout.is_empty()
+    }
     /// Returns `true` if this buffer is writeable.
-    pub fn is_writeable(&self)     -> bool { self.flags.contains(BufferFlags::WRITEABLE) }
+    pub fn is_writeable(&self) -> bool {
+        self.flags.contains(BufferFlags::WRITEABLE)
+    }
     /// Returns `true` if this buffer is C-contiguous (row-major).
-    pub fn is_c_contiguous(&self)  -> bool { self.layout.is_c_contiguous() }
+    pub fn is_c_contiguous(&self) -> bool {
+        self.layout.is_c_contiguous()
+    }
     /// Returns `true` if this buffer is Fortran-contiguous (column-major).
-    pub fn is_f_contiguous(&self)  -> bool { self.layout.is_f_contiguous() }
+    pub fn is_f_contiguous(&self) -> bool {
+        self.layout.is_f_contiguous()
+    }
     /// Returns `true` if this buffer is contiguous in either C or F order.
-    pub fn is_contiguous(&self)    -> bool { self.layout.is_contiguous() }
+    pub fn is_contiguous(&self) -> bool {
+        self.layout.is_contiguous()
+    }
     /// Returns `true` if the backing memory is SIMD-aligned.
-    pub fn is_aligned(&self)       -> bool { self.flags.contains(BufferFlags::ALIGNED) }
+    pub fn is_aligned(&self) -> bool {
+        self.flags.contains(BufferFlags::ALIGNED)
+    }
     /// Returns `true` if the backing memory is shared with other `Buffer` instances.
-    pub fn is_shared(&self)        -> bool { Arc::strong_count(&self.raw) > 1 }
+    pub fn is_shared(&self) -> bool {
+        Arc::strong_count(&self.raw) > 1
+    }
 
     /// Returns a raw const pointer to element `[0, 0, …, 0]`.
     #[inline]
@@ -588,7 +681,7 @@ impl Buffer {
         if T::DTYPE != self.dtype {
             return Err(MohuError::DTypeMismatch {
                 expected: T::DTYPE.to_string(),
-                got:      self.dtype.to_string(),
+                got: self.dtype.to_string(),
             });
         }
         if !self.is_c_contiguous() {
@@ -606,7 +699,7 @@ impl Buffer {
         if T::DTYPE != self.dtype {
             return Err(MohuError::DTypeMismatch {
                 expected: T::DTYPE.to_string(),
-                got:      self.dtype.to_string(),
+                got: self.dtype.to_string(),
             });
         }
         if !self.is_writeable() {
@@ -630,7 +723,7 @@ impl Buffer {
         if T::DTYPE != self.dtype {
             return Err(MohuError::DTypeMismatch {
                 expected: T::DTYPE.to_string(),
-                got:      self.dtype.to_string(),
+                got: self.dtype.to_string(),
             });
         }
         let off = self.layout.byte_offset(indices)?;
@@ -644,7 +737,7 @@ impl Buffer {
         if T::DTYPE != self.dtype {
             return Err(MohuError::DTypeMismatch {
                 expected: T::DTYPE.to_string(),
-                got:      self.dtype.to_string(),
+                got: self.dtype.to_string(),
             });
         }
         if !self.is_writeable() {
@@ -666,10 +759,10 @@ impl Buffer {
     /// To get an independent copy, call [`make_unique`](Self::make_unique).
     pub fn share(&self) -> Self {
         Self {
-            raw:    Arc::clone(&self.raw),
-            dtype:  self.dtype,
+            raw: Arc::clone(&self.raw),
+            dtype: self.dtype,
             layout: self.layout.clone(),
-            flags:  self.flags.remove(BufferFlags::WRITEABLE), // shared = read-only
+            flags: self.flags.remove(BufferFlags::WRITEABLE), // shared = read-only
         }
     }
 
@@ -713,11 +806,13 @@ impl Buffer {
     /// Returns a transposed view (reverses axis order, no copy).
     pub fn transpose(&self) -> Self {
         Self {
-            raw:    Arc::clone(&self.raw),
-            dtype:  self.dtype,
+            raw: Arc::clone(&self.raw),
+            dtype: self.dtype,
             layout: self.layout.transpose(),
-            flags:  self.flags.remove(BufferFlags::WRITEABLE)
-                               .remove(BufferFlags::C_CONTIGUOUS),
+            flags: self
+                .flags
+                .remove(BufferFlags::WRITEABLE)
+                .remove(BufferFlags::C_CONTIGUOUS),
         }
     }
 
@@ -725,21 +820,23 @@ impl Buffer {
     pub fn permute(&self, axes: &[usize]) -> MohuResult<Self> {
         let layout = self.layout.permute(axes)?;
         Ok(Self {
-            raw:    Arc::clone(&self.raw),
-            dtype:  self.dtype,
+            raw: Arc::clone(&self.raw),
+            dtype: self.dtype,
             layout,
-            flags:  self.flags.remove(BufferFlags::WRITEABLE)
-                               .remove(BufferFlags::C_CONTIGUOUS),
+            flags: self
+                .flags
+                .remove(BufferFlags::WRITEABLE)
+                .remove(BufferFlags::C_CONTIGUOUS),
         })
     }
 
     /// Returns a reshaped view.  Requires C-contiguous layout.
     pub fn reshape(&self, new_shape: &[usize]) -> MohuResult<Self> {
         let layout = self.layout.reshape(new_shape)?;
-        let flags  = Self::compute_flags(&self.raw, &layout);
+        let flags = Self::compute_flags(&self.raw, &layout);
         Ok(Self {
-            raw:    Arc::clone(&self.raw),
-            dtype:  self.dtype,
+            raw: Arc::clone(&self.raw),
+            dtype: self.dtype,
             layout,
             flags,
         })
@@ -748,21 +845,27 @@ impl Buffer {
     /// Returns a slice along `axis` with the given `SliceArg`.
     pub fn slice_axis(&self, axis: usize, arg: SliceArg) -> MohuResult<Self> {
         let layout = self.layout.slice_axis(axis, arg)?;
-        let flags  = self.flags
+        let flags = self
+            .flags
             .remove(BufferFlags::WRITEABLE)
             .remove(BufferFlags::C_CONTIGUOUS)
             .remove(BufferFlags::F_CONTIGUOUS);
-        Ok(Self { raw: Arc::clone(&self.raw), dtype: self.dtype, layout, flags })
+        Ok(Self {
+            raw: Arc::clone(&self.raw),
+            dtype: self.dtype,
+            layout,
+            flags,
+        })
     }
 
     /// Returns a broadcast view to `new_shape`.  Broadcast axes are read-only.
     pub fn broadcast_to(&self, new_shape: &[usize]) -> MohuResult<Self> {
         let layout = self.layout.broadcast_to(new_shape)?;
         Ok(Self {
-            raw:    Arc::clone(&self.raw),
-            dtype:  self.dtype,
+            raw: Arc::clone(&self.raw),
+            dtype: self.dtype,
             layout,
-            flags:  self.flags.remove(BufferFlags::WRITEABLE),
+            flags: self.flags.remove(BufferFlags::WRITEABLE),
         })
     }
 
@@ -770,20 +873,20 @@ impl Buffer {
     pub fn expand_dims(&self, axis: usize) -> MohuResult<Self> {
         let layout = self.layout.expand_dims(axis)?;
         Ok(Self {
-            raw:    Arc::clone(&self.raw),
-            dtype:  self.dtype,
+            raw: Arc::clone(&self.raw),
+            dtype: self.dtype,
             layout,
-            flags:  self.flags,
+            flags: self.flags,
         })
     }
 
     /// Removes all axes of size 1.
     pub fn squeeze(&self) -> Self {
         Self {
-            raw:    Arc::clone(&self.raw),
-            dtype:  self.dtype,
+            raw: Arc::clone(&self.raw),
+            dtype: self.dtype,
             layout: self.layout.squeeze(),
-            flags:  self.flags,
+            flags: self.flags,
         }
     }
 
@@ -809,7 +912,7 @@ impl Buffer {
         if T::DTYPE != self.dtype {
             return Err(MohuError::DTypeMismatch {
                 expected: T::DTYPE.to_string(),
-                got:      self.dtype.to_string(),
+                got: self.dtype.to_string(),
             });
         }
         if self.is_c_contiguous() {
@@ -835,9 +938,15 @@ impl Buffer {
         let mut f = BufferFlags::empty()
             .insert(BufferFlags::WRITEABLE)
             .insert(BufferFlags::OWNS_DATA);
-        if raw.is_aligned() { f = f.insert(BufferFlags::ALIGNED); }
-        if layout.is_c_contiguous() { f = f.insert(BufferFlags::C_CONTIGUOUS); }
-        if layout.is_f_contiguous() { f = f.insert(BufferFlags::F_CONTIGUOUS); }
+        if raw.is_aligned() {
+            f = f.insert(BufferFlags::ALIGNED);
+        }
+        if layout.is_c_contiguous() {
+            f = f.insert(BufferFlags::C_CONTIGUOUS);
+        }
+        if layout.is_f_contiguous() {
+            f = f.insert(BufferFlags::F_CONTIGUOUS);
+        }
         f
     }
 }
@@ -847,10 +956,10 @@ impl Clone for Buffer {
     /// for a deep (independent) copy.
     fn clone(&self) -> Self {
         Self {
-            raw:    Arc::clone(&self.raw),
-            dtype:  self.dtype,
+            raw: Arc::clone(&self.raw),
+            dtype: self.dtype,
             layout: self.layout.clone(),
-            flags:  self.flags.remove(BufferFlags::WRITEABLE),
+            flags: self.flags.remove(BufferFlags::WRITEABLE),
         }
     }
 }
@@ -889,7 +998,7 @@ impl Buffer {
 
         let buf = Self::alloc(DType::F64, &[n], Order::C)?;
         if n > 0 {
-            let ptr   = unsafe { buf.as_mut_ptr() as *mut f64 };
+            let ptr = unsafe { buf.as_mut_ptr() as *mut f64 };
             let slice = unsafe { std::slice::from_raw_parts_mut(ptr, n) };
             // Index-based so every element is independent — safe for Rayon.
             use rayon::prelude::*;
@@ -898,28 +1007,36 @@ impl Buffer {
             });
         }
 
-        if dtype == DType::F64 { Ok(buf) } else { buf.cast(dtype, CastMode::Unsafe) }
+        if dtype == DType::F64 {
+            Ok(buf)
+        } else {
+            buf.cast(dtype, CastMode::Unsafe)
+        }
     }
 
     /// Creates a 1-D buffer of `n` evenly-spaced values from `start` to `stop`.
     ///
     /// Equivalent to `np.linspace`.  If `endpoint` is `true`, `stop` is included.
     pub fn linspace(
-        start:    f64,
-        stop:     f64,
-        n:        usize,
+        start: f64,
+        stop: f64,
+        n: usize,
         endpoint: bool,
-        dtype:    DType,
+        dtype: DType,
     ) -> MohuResult<Self> {
         if n == 0 {
             return Self::alloc(dtype, &[0], Order::C);
         }
-        let div  = if endpoint && n > 1 { (n - 1) as f64 } else { n as f64 };
+        let div = if endpoint && n > 1 {
+            (n - 1) as f64
+        } else {
+            n as f64
+        };
         let span = stop - start;
 
         let buf = Self::alloc(DType::F64, &[n], Order::C)?;
         {
-            let ptr   = unsafe { buf.as_mut_ptr() as *mut f64 };
+            let ptr = unsafe { buf.as_mut_ptr() as *mut f64 };
             let slice = unsafe { std::slice::from_raw_parts_mut(ptr, n) };
             use rayon::prelude::*;
             slice.par_iter_mut().enumerate().for_each(|(i, v)| {
@@ -930,7 +1047,11 @@ impl Buffer {
             }
         }
 
-        if dtype == DType::F64 { Ok(buf) } else { buf.cast(dtype, CastMode::Unsafe) }
+        if dtype == DType::F64 {
+            Ok(buf)
+        } else {
+            buf.cast(dtype, CastMode::Unsafe)
+        }
     }
 
     /// Creates an `n × m` identity matrix with ones on diagonal `k`.
@@ -939,11 +1060,13 @@ impl Buffer {
     /// Equivalent to `np.eye`.
     pub fn eye(n: usize, m: usize, k: i64, dtype: DType) -> MohuResult<Self> {
         let buf = Self::zeros(dtype, &[n, m])?;
-        if n == 0 || m == 0 { return Ok(buf); }
+        if n == 0 || m == 0 {
+            return Ok(buf);
+        }
 
         let one_bytes = dtype_one_bytes(dtype);
-        let itemsize  = dtype.itemsize();
-        let raw_ptr   = unsafe { buf.as_mut_ptr() };
+        let itemsize = dtype.itemsize();
+        let raw_ptr = unsafe { buf.as_mut_ptr() };
 
         let (row_start, col_start) = if k >= 0 {
             (0usize, k as usize)
@@ -968,13 +1091,17 @@ impl Buffer {
         if v.ndim() != 1 {
             return Err(MohuError::bug("Buffer::diag: input must be 1-D"));
         }
-        let n    = v.len();
-        let size = if k >= 0 { n + k as usize } else { n + (-k) as usize };
+        let n = v.len();
+        let size = if k >= 0 {
+            n + k as usize
+        } else {
+            n + (-k) as usize
+        };
         let out = Self::zeros(v.dtype(), &[size, size])?;
 
         let itemsize = v.dtype().itemsize();
-        let src_raw  = v.as_ptr();
-        let dst_raw  = unsafe { out.as_mut_ptr() };
+        let src_raw = v.as_ptr();
+        let dst_raw = unsafe { out.as_mut_ptr() };
 
         let (row_start, col_start) = if k >= 0 {
             (0usize, k as usize)
@@ -1000,9 +1127,9 @@ impl Buffer {
         if self.ndim() < 2 {
             return Err(MohuError::bug("diagonal: requires at least 2 dimensions"));
         }
-        let nd  = self.ndim();
-        let n   = self.shape()[nd - 2];
-        let m   = self.shape()[nd - 1];
+        let nd = self.ndim();
+        let n = self.shape()[nd - 2];
+        let m = self.shape()[nd - 1];
 
         let (row_start, col_start) = if k >= 0 {
             (0usize, k as usize)
@@ -1028,18 +1155,15 @@ impl Buffer {
         let mut new_strides: Vec<isize> = self.strides()[..nd - 2].to_vec();
         new_strides.push(diag_stride);
 
-        let layout = Layout::new_custom(
-            &new_shape,
-            &new_strides,
-            start_off,
-            self.layout.itemsize(),
-        )?;
+        let layout =
+            Layout::new_custom(&new_shape, &new_strides, start_off, self.layout.itemsize())?;
 
         Ok(Self {
-            raw:    Arc::clone(&self.raw),
-            dtype:  self.dtype,
+            raw: Arc::clone(&self.raw),
+            dtype: self.dtype,
             layout,
-            flags:  self.flags
+            flags: self
+                .flags
                 .remove(BufferFlags::WRITEABLE)
                 .remove(BufferFlags::C_CONTIGUOUS)
                 .remove(BufferFlags::F_CONTIGUOUS),
@@ -1057,7 +1181,7 @@ impl Buffer {
                 self.ndim()
             )));
         }
-        let dim   = self.shape()[axis];
+        let dim = self.shape()[axis];
         let mut new_strides: Vec<isize> = self.strides().to_vec();
         // New offset = old offset + (dim-1) * old_stride[axis]
         let offset_delta = if dim > 0 {
@@ -1080,10 +1204,11 @@ impl Buffer {
         )?;
 
         Ok(Self {
-            raw:    Arc::clone(&self.raw),
-            dtype:  self.dtype,
+            raw: Arc::clone(&self.raw),
+            dtype: self.dtype,
             layout,
-            flags:  self.flags
+            flags: self
+                .flags
                 .remove(BufferFlags::WRITEABLE)
                 .remove(BufferFlags::C_CONTIGUOUS)
                 .remove(BufferFlags::F_CONTIGUOUS),
@@ -1156,15 +1281,19 @@ impl Buffer {
     /// Works for non-square matrices.  The buffer must be writeable.
     pub fn fill_diagonal<T: Scalar>(&mut self, value: T) -> MohuResult<()> {
         if self.ndim() != 2 {
-            return Err(MohuError::bug("fill_diagonal: requires exactly 2 dimensions"));
+            return Err(MohuError::bug(
+                "fill_diagonal: requires exactly 2 dimensions",
+            ));
         }
         if T::DTYPE != self.dtype {
             return Err(MohuError::DTypeMismatch {
                 expected: T::DTYPE.to_string(),
-                got:      self.dtype.to_string(),
+                got: self.dtype.to_string(),
             });
         }
-        if !self.is_writeable() { return Err(MohuError::ReadOnly); }
+        if !self.is_writeable() {
+            return Err(MohuError::ReadOnly);
+        }
         self.make_unique()?;
 
         let n = self.shape()[0].min(self.shape()[1]);
@@ -1187,7 +1316,9 @@ impl Buffer {
     /// Computes the arithmetic mean of all elements as f64.
     pub fn mean_all_f64(&self) -> MohuResult<f64> {
         let n = self.len();
-        if n == 0 { return Ok(f64::NAN); }
+        if n == 0 {
+            return Ok(f64::NAN);
+        }
         Ok(crate::ops::sum_all_f64(self)? / n as f64)
     }
 
@@ -1213,7 +1344,9 @@ impl Buffer {
             });
         }
         let n = self.len();
-        if n <= ddof { return Ok(f64::NAN); }
+        if n <= ddof {
+            return Ok(f64::NAN);
+        }
         let mean = self.mean_all_f64()?;
 
         // Second pass: sum of squared deviations.
@@ -1227,10 +1360,13 @@ impl Buffer {
                 unsafe { std::slice::from_raw_parts(c.as_ptr(), n) }
             };
             use rayon::prelude::*;
-            let ss: f64 = s.par_iter().map(|&x| {
-                let d = x as f64 - mean;
-                d * d
-            }).sum();
+            let ss: f64 = s
+                .par_iter()
+                .map(|&x| {
+                    let d = x as f64 - mean;
+                    d * d
+                })
+                .sum();
             return Ok(ss / (n - ddof) as f64);
         }
         macro_rules! do_var {
@@ -1243,26 +1379,29 @@ impl Buffer {
                     unsafe { std::slice::from_raw_parts(c.as_ptr() as *const $T, n) }
                 };
                 use rayon::prelude::*;
-                let ss: f64 = s.par_iter().map(|&x| {
-                    let d = num_traits::cast::<$T, f64>(x).unwrap_or(0.0) - mean;
-                    d * d
-                }).sum();
+                let ss: f64 = s
+                    .par_iter()
+                    .map(|&x| {
+                        let d = num_traits::cast::<$T, f64>(x).unwrap_or(0.0) - mean;
+                        d * d
+                    })
+                    .sum();
                 Ok(ss / (n - ddof) as f64)
             }};
         }
         match self.dtype {
-            DType::I8   => do_var!(i8),
-            DType::I16  => do_var!(i16),
-            DType::I32  => do_var!(i32),
-            DType::I64  => do_var!(i64),
-            DType::U8   => do_var!(u8),
-            DType::U16  => do_var!(u16),
-            DType::U32  => do_var!(u32),
-            DType::U64  => do_var!(u64),
-            DType::F16  => do_var!(::half::f16),
+            DType::I8 => do_var!(i8),
+            DType::I16 => do_var!(i16),
+            DType::I32 => do_var!(i32),
+            DType::I64 => do_var!(i64),
+            DType::U8 => do_var!(u8),
+            DType::U16 => do_var!(u16),
+            DType::U32 => do_var!(u32),
+            DType::U64 => do_var!(u64),
+            DType::F16 => do_var!(::half::f16),
             DType::BF16 => do_var!(::half::bf16),
-            DType::F32  => do_var!(f32),
-            DType::F64  => do_var!(f64),
+            DType::F32 => do_var!(f32),
+            DType::F64 => do_var!(f64),
             _ => unreachable!(),
         }
     }
@@ -1288,13 +1427,18 @@ impl Buffer {
     pub fn sum_axis(&self, axis: usize, keepdims: bool) -> MohuResult<Self> {
         if axis >= self.ndim() {
             return Err(MohuError::bug(format!(
-                "sum_axis: axis {axis} out of bounds for ndim {}", self.ndim()
+                "sum_axis: axis {axis} out of bounds for ndim {}",
+                self.ndim()
             )));
         }
         // Build output shape
         let mut out_shape: Vec<usize> = self.shape().to_vec();
         let axis_size = out_shape[axis];
-        if keepdims { out_shape[axis] = 1; } else { out_shape.remove(axis); }
+        if keepdims {
+            out_shape[axis] = 1;
+        } else {
+            out_shape.remove(axis);
+        }
 
         let out = Self::zeros(DType::F64, &out_shape)?;
         let out_raw = unsafe { out.as_mut_ptr() as *mut f64 };
@@ -1307,7 +1451,7 @@ impl Buffer {
 
         // Build src index from out index by inserting the axis.
         let itemsize = self.dtype.itemsize();
-        let src_raw  = self.as_ptr();
+        let src_raw = self.as_ptr();
 
         for (out_flat, out_idx) in NdIndexIter::new(&out_shape_full).enumerate() {
             let mut acc = 0.0f64;
@@ -1324,7 +1468,9 @@ impl Buffer {
                 let val = read_as_f64(unsafe { src_raw.add(off) }, self.dtype, itemsize);
                 acc += val;
             }
-            unsafe { out_raw.add(out_flat).write(acc); }
+            unsafe {
+                out_raw.add(out_flat).write(acc);
+            }
         }
 
         Ok(out)
@@ -1348,7 +1494,7 @@ impl Buffer {
                     unsafe { std::slice::from_raw_parts(c.as_ptr(), n) }
                 };
                 return Ok(s.par_iter().any(|&x| x != 0));
-            }
+            },
             DType::C64 => {
                 let c;
                 let s: &[num_complex::Complex<f32>] = if self.is_c_contiguous() {
@@ -1358,7 +1504,7 @@ impl Buffer {
                     unsafe { std::slice::from_raw_parts(c.as_ptr() as *const _, n) }
                 };
                 return Ok(s.par_iter().any(|x| x.re != 0.0 || x.im != 0.0));
-            }
+            },
             DType::C128 => {
                 let c;
                 let s: &[num_complex::Complex<f64>] = if self.is_c_contiguous() {
@@ -1368,8 +1514,8 @@ impl Buffer {
                     unsafe { std::slice::from_raw_parts(c.as_ptr() as *const _, n) }
                 };
                 return Ok(s.par_iter().any(|x| x.re != 0.0 || x.im != 0.0));
-            }
-            _ => {}
+            },
+            _ => {},
         }
         macro_rules! do_any {
             ($T:ty) => {{
@@ -1381,23 +1527,25 @@ impl Buffer {
                     unsafe { std::slice::from_raw_parts(c.as_ptr() as *const $T, n) }
                 };
                 Ok(s.par_iter().any(|&x| {
-                    num_traits::cast::<$T, f64>(x).map(|v| v != 0.0).unwrap_or(false)
+                    num_traits::cast::<$T, f64>(x)
+                        .map(|v| v != 0.0)
+                        .unwrap_or(false)
                 }))
             }};
         }
         match self.dtype {
-            DType::I8   => do_any!(i8),
-            DType::I16  => do_any!(i16),
-            DType::I32  => do_any!(i32),
-            DType::I64  => do_any!(i64),
-            DType::U8   => do_any!(u8),
-            DType::U16  => do_any!(u16),
-            DType::U32  => do_any!(u32),
-            DType::U64  => do_any!(u64),
-            DType::F16  => do_any!(::half::f16),
+            DType::I8 => do_any!(i8),
+            DType::I16 => do_any!(i16),
+            DType::I32 => do_any!(i32),
+            DType::I64 => do_any!(i64),
+            DType::U8 => do_any!(u8),
+            DType::U16 => do_any!(u16),
+            DType::U32 => do_any!(u32),
+            DType::U64 => do_any!(u64),
+            DType::F16 => do_any!(::half::f16),
             DType::BF16 => do_any!(::half::bf16),
-            DType::F32  => do_any!(f32),
-            DType::F64  => do_any!(f64),
+            DType::F32 => do_any!(f32),
+            DType::F64 => do_any!(f64),
             _ => unreachable!(),
         }
     }
@@ -1417,7 +1565,7 @@ impl Buffer {
                     unsafe { std::slice::from_raw_parts(c.as_ptr(), n) }
                 };
                 return Ok(s.par_iter().all(|&x| x != 0));
-            }
+            },
             DType::C64 => {
                 let c;
                 let s: &[num_complex::Complex<f32>] = if self.is_c_contiguous() {
@@ -1427,7 +1575,7 @@ impl Buffer {
                     unsafe { std::slice::from_raw_parts(c.as_ptr() as *const _, n) }
                 };
                 return Ok(s.par_iter().all(|x| x.re != 0.0 || x.im != 0.0));
-            }
+            },
             DType::C128 => {
                 let c;
                 let s: &[num_complex::Complex<f64>] = if self.is_c_contiguous() {
@@ -1437,8 +1585,8 @@ impl Buffer {
                     unsafe { std::slice::from_raw_parts(c.as_ptr() as *const _, n) }
                 };
                 return Ok(s.par_iter().all(|x| x.re != 0.0 || x.im != 0.0));
-            }
-            _ => {}
+            },
+            _ => {},
         }
         macro_rules! do_all {
             ($T:ty) => {{
@@ -1450,23 +1598,25 @@ impl Buffer {
                     unsafe { std::slice::from_raw_parts(c.as_ptr() as *const $T, n) }
                 };
                 Ok(s.par_iter().all(|&x| {
-                    num_traits::cast::<$T, f64>(x).map(|v| v != 0.0).unwrap_or(false)
+                    num_traits::cast::<$T, f64>(x)
+                        .map(|v| v != 0.0)
+                        .unwrap_or(false)
                 }))
             }};
         }
         match self.dtype {
-            DType::I8   => do_all!(i8),
-            DType::I16  => do_all!(i16),
-            DType::I32  => do_all!(i32),
-            DType::I64  => do_all!(i64),
-            DType::U8   => do_all!(u8),
-            DType::U16  => do_all!(u16),
-            DType::U32  => do_all!(u32),
-            DType::U64  => do_all!(u64),
-            DType::F16  => do_all!(::half::f16),
+            DType::I8 => do_all!(i8),
+            DType::I16 => do_all!(i16),
+            DType::I32 => do_all!(i32),
+            DType::I64 => do_all!(i64),
+            DType::U8 => do_all!(u8),
+            DType::U16 => do_all!(u16),
+            DType::U32 => do_all!(u32),
+            DType::U64 => do_all!(u64),
+            DType::F16 => do_all!(::half::f16),
             DType::BF16 => do_all!(::half::bf16),
-            DType::F32  => do_all!(f32),
-            DType::F64  => do_all!(f64),
+            DType::F32 => do_all!(f32),
+            DType::F64 => do_all!(f64),
             _ => unreachable!(),
         }
     }
@@ -1486,7 +1636,7 @@ impl Buffer {
                     unsafe { std::slice::from_raw_parts(c.as_ptr(), n) }
                 };
                 return Ok(s.par_iter().filter(|&&x| x != 0).count());
-            }
+            },
             DType::C64 => {
                 let c;
                 let s: &[num_complex::Complex<f32>] = if self.is_c_contiguous() {
@@ -1496,7 +1646,7 @@ impl Buffer {
                     unsafe { std::slice::from_raw_parts(c.as_ptr() as *const _, n) }
                 };
                 return Ok(s.par_iter().filter(|x| x.re != 0.0 || x.im != 0.0).count());
-            }
+            },
             DType::C128 => {
                 let c;
                 let s: &[num_complex::Complex<f64>] = if self.is_c_contiguous() {
@@ -1506,8 +1656,8 @@ impl Buffer {
                     unsafe { std::slice::from_raw_parts(c.as_ptr() as *const _, n) }
                 };
                 return Ok(s.par_iter().filter(|x| x.re != 0.0 || x.im != 0.0).count());
-            }
-            _ => {}
+            },
+            _ => {},
         }
         macro_rules! do_cnz {
             ($T:ty) => {{
@@ -1518,24 +1668,28 @@ impl Buffer {
                     c = self.to_contiguous()?;
                     unsafe { std::slice::from_raw_parts(c.as_ptr() as *const $T, n) }
                 };
-                Ok(s.par_iter().filter(|&&x| {
-                    num_traits::cast::<$T, f64>(x).map(|v| v != 0.0).unwrap_or(false)
-                }).count())
+                Ok(s.par_iter()
+                    .filter(|&&x| {
+                        num_traits::cast::<$T, f64>(x)
+                            .map(|v| v != 0.0)
+                            .unwrap_or(false)
+                    })
+                    .count())
             }};
         }
         match self.dtype {
-            DType::I8   => do_cnz!(i8),
-            DType::I16  => do_cnz!(i16),
-            DType::I32  => do_cnz!(i32),
-            DType::I64  => do_cnz!(i64),
-            DType::U8   => do_cnz!(u8),
-            DType::U16  => do_cnz!(u16),
-            DType::U32  => do_cnz!(u32),
-            DType::U64  => do_cnz!(u64),
-            DType::F16  => do_cnz!(::half::f16),
+            DType::I8 => do_cnz!(i8),
+            DType::I16 => do_cnz!(i16),
+            DType::I32 => do_cnz!(i32),
+            DType::I64 => do_cnz!(i64),
+            DType::U8 => do_cnz!(u8),
+            DType::U16 => do_cnz!(u16),
+            DType::U32 => do_cnz!(u32),
+            DType::U64 => do_cnz!(u64),
+            DType::F16 => do_cnz!(::half::f16),
             DType::BF16 => do_cnz!(::half::bf16),
-            DType::F32  => do_cnz!(f32),
-            DType::F64  => do_cnz!(f64),
+            DType::F32 => do_cnz!(f32),
+            DType::F64 => do_cnz!(f64),
             _ => unreachable!(),
         }
     }
@@ -1552,10 +1706,12 @@ impl Buffer {
         let a = self.cast(DType::F64, CastMode::Unsafe)?;
         let b = other.cast(DType::F64, CastMode::Unsafe)?;
         let as_ = a.as_slice::<f64>()?;
-        let bs  = b.as_slice::<f64>()?;
+        let bs = b.as_slice::<f64>()?;
         use rayon::prelude::*;
         Ok(as_.par_iter().zip(bs.par_iter()).all(|(a, b)| {
-            if a.is_nan() && b.is_nan() { return true; }
+            if a.is_nan() && b.is_nan() {
+                return true;
+            }
             (a - b).abs() <= atol + rtol * b.abs()
         }))
     }
@@ -1684,11 +1840,17 @@ impl Buffer {
         if cap > 0 {
             let _ = write!(s, "  data[:{}]: [", cap);
             for i in 0..cap {
-                if i > 0 { let _ = write!(s, ", "); }
+                if i > 0 {
+                    let _ = write!(s, ", ");
+                }
                 // Convert flat index to multi-dim and read as f64 for display
                 let idx = flat_to_indices(i, self.shape());
                 if let Ok(off) = self.layout.byte_offset(&idx) {
-                    let v = read_as_f64(unsafe { self.raw.as_ptr().add(off) }, self.dtype, self.dtype.itemsize());
+                    let v = read_as_f64(
+                        unsafe { self.raw.as_ptr().add(off) },
+                        self.dtype,
+                        self.dtype.itemsize(),
+                    );
                     let _ = write!(s, "{v:.4}");
                 }
             }
@@ -1710,22 +1872,30 @@ impl std::fmt::Display for Buffer {
 }
 
 fn fmt_buffer_data(
-    buf:     &Buffer,
-    f:       &mut std::fmt::Formatter<'_>,
-    shape:   &[usize],
-    idx:     &mut Vec<usize>,
-    dim:     usize,
+    buf: &Buffer,
+    f: &mut std::fmt::Formatter<'_>,
+    shape: &[usize],
+    idx: &mut Vec<usize>,
+    dim: usize,
     _indent: usize,
 ) -> std::fmt::Result {
     if shape.is_empty() {
         // Scalar
         let off = buf.layout.byte_offset(idx).map_err(|_| std::fmt::Error)?;
-        let v = read_as_f64(unsafe { buf.raw.as_ptr().add(off) }, buf.dtype, buf.dtype.itemsize());
+        let v = read_as_f64(
+            unsafe { buf.raw.as_ptr().add(off) },
+            buf.dtype,
+            buf.dtype.itemsize(),
+        );
         return write!(f, "{v}");
     }
     if dim == shape.len() {
         let off = buf.layout.byte_offset(idx).map_err(|_| std::fmt::Error)?;
-        let v = read_as_f64(unsafe { buf.raw.as_ptr().add(off) }, buf.dtype, buf.dtype.itemsize());
+        let v = read_as_f64(
+            unsafe { buf.raw.as_ptr().add(off) },
+            buf.dtype,
+            buf.dtype.itemsize(),
+        );
         return write!(f, "{v}");
     }
 
@@ -1735,7 +1905,9 @@ fn fmt_buffer_data(
     write!(f, "[")?;
     let show = n.min(MAX_DISPLAY);
     for i in 0..show {
-        if i > 0 { write!(f, ", ")?; }
+        if i > 0 {
+            write!(f, ", ")?;
+        }
         idx[dim] = i;
         fmt_buffer_data(buf, f, shape, idx, dim + 1, _indent + 1)?;
     }
@@ -1763,8 +1935,14 @@ impl PartialEq for Buffer {
         {
             return true; // literally the same view
         }
-        let a = match self.to_contiguous()  { Ok(b) => b, Err(_) => return false };
-        let b = match other.to_contiguous() { Ok(b) => b, Err(_) => return false };
+        let a = match self.to_contiguous() {
+            Ok(b) => b,
+            Err(_) => return false,
+        };
+        let b = match other.to_contiguous() {
+            Ok(b) => b,
+            Err(_) => return false,
+        };
         let ab = unsafe { std::slice::from_raw_parts(a.as_ptr(), a.nbytes()) };
         let bb = unsafe { std::slice::from_raw_parts(b.as_ptr(), b.nbytes()) };
         ab == bb
@@ -1774,19 +1952,29 @@ impl PartialEq for Buffer {
 // ─── From impls ───────────────────────────────────────────────────────────────
 
 impl From<Vec<f64>> for Buffer {
-    fn from(v: Vec<f64>) -> Self { Buffer::from_vec(v).expect("from Vec<f64>") }
+    fn from(v: Vec<f64>) -> Self {
+        Buffer::from_vec(v).expect("from Vec<f64>")
+    }
 }
 impl From<Vec<f32>> for Buffer {
-    fn from(v: Vec<f32>) -> Self { Buffer::from_vec(v).expect("from Vec<f32>") }
+    fn from(v: Vec<f32>) -> Self {
+        Buffer::from_vec(v).expect("from Vec<f32>")
+    }
 }
 impl From<Vec<i32>> for Buffer {
-    fn from(v: Vec<i32>) -> Self { Buffer::from_vec(v).expect("from Vec<i32>") }
+    fn from(v: Vec<i32>) -> Self {
+        Buffer::from_vec(v).expect("from Vec<i32>")
+    }
 }
 impl From<Vec<i64>> for Buffer {
-    fn from(v: Vec<i64>) -> Self { Buffer::from_vec(v).expect("from Vec<i64>") }
+    fn from(v: Vec<i64>) -> Self {
+        Buffer::from_vec(v).expect("from Vec<i64>")
+    }
 }
 impl From<Vec<u8>> for Buffer {
-    fn from(v: Vec<u8>) -> Self { Buffer::from_vec(v).expect("from Vec<u8>") }
+    fn from(v: Vec<u8>) -> Self {
+        Buffer::from_vec(v).expect("from Vec<u8>")
+    }
 }
 
 // ─── Internal helpers ─────────────────────────────────────────────────────────
@@ -1816,27 +2004,27 @@ fn dtype_one_bytes(dtype: DType) -> Vec<u8> {
 fn read_as_f64(ptr: *const u8, dtype: DType, _itemsize: usize) -> f64 {
     use mohu_dtype::DType::*;
     match dtype {
-        Bool => unsafe { *(ptr as *const u8) as f64 },
-        I8   => unsafe { *(ptr as *const i8)  as f64 },
-        U8   => unsafe { *(ptr as *const u8)  as f64 },
-        I16  => unsafe { *(ptr as *const i16) as f64 },
-        U16  => unsafe { *(ptr as *const u16) as f64 },
-        I32  => unsafe { *(ptr as *const i32) as f64 },
-        U32  => unsafe { *(ptr as *const u32) as f64 },
-        I64  => unsafe { *(ptr as *const i64) as f64 },
-        U64  => unsafe { *(ptr as *const u64) as f64 },
-        F32  => unsafe { *(ptr as *const f32)  as f64 },
-        F64  => unsafe { *(ptr as *const f64) },
-        F16  => {
+        Bool => unsafe { *ptr as f64 },
+        I8 => unsafe { *(ptr as *const i8) as f64 },
+        U8 => unsafe { *ptr as f64 },
+        I16 => unsafe { *(ptr as *const i16) as f64 },
+        U16 => unsafe { *(ptr as *const u16) as f64 },
+        I32 => unsafe { *(ptr as *const i32) as f64 },
+        U32 => unsafe { *(ptr as *const u32) as f64 },
+        I64 => unsafe { *(ptr as *const i64) as f64 },
+        U64 => unsafe { *(ptr as *const u64) as f64 },
+        F32 => unsafe { *(ptr as *const f32) as f64 },
+        F64 => unsafe { *(ptr as *const f64) },
+        F16 => {
             let bits = unsafe { (ptr as *const u16).read_unaligned() };
             half::f16::from_bits(bits).to_f64()
-        }
+        },
         BF16 => {
             let bits = unsafe { (ptr as *const u16).read_unaligned() };
             half::bf16::from_bits(bits).to_f64()
-        }
-        C64  => unsafe { *(ptr as *const f32) as f64 }, // real part
-        C128 => unsafe { *(ptr as *const f64) },         // real part
+        },
+        C64 => unsafe { *(ptr as *const f32) as f64 }, // real part
+        C128 => unsafe { *(ptr as *const f64) },       // real part
     }
 }
 
@@ -1851,6 +2039,6 @@ fn flat_to_indices(mut flat: usize, shape: &[usize]) -> Vec<usize> {
     idx
 }
 
-use num_traits;
 #[cfg(unix)]
 use libc;
+use num_traits;

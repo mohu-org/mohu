@@ -56,9 +56,9 @@ pub fn f_strides(shape: &[usize], itemsize: usize) -> StrideVec {
     let ndim = shape.len();
     let mut strides = StrideVec::with_capacity(ndim);
     let mut acc: isize = itemsize as isize;
-    for i in 0..ndim {
+    for &s in shape {
         strides.push(acc);
-        acc = acc.saturating_mul(shape[i] as isize);
+        acc = acc.saturating_mul(s as isize);
     }
     strides
 }
@@ -70,11 +70,13 @@ pub fn f_strides(shape: &[usize], itemsize: usize) -> StrideVec {
 pub fn shape_size(shape: &[usize]) -> MohuResult<usize> {
     let mut total: usize = 1;
     for &dim in shape {
-        total = total.checked_mul(dim).ok_or(MohuError::ShapeOverflow {
-            max: usize::MAX,
-        })?;
+        total = total
+            .checked_mul(dim)
+            .ok_or(MohuError::ShapeOverflow { max: usize::MAX })?;
         if total > isize::MAX as usize {
-            return Err(MohuError::ShapeOverflow { max: isize::MAX as usize });
+            return Err(MohuError::ShapeOverflow {
+                max: isize::MAX as usize,
+            });
         }
     }
     Ok(total)
@@ -104,9 +106,9 @@ pub fn contiguous_nbytes(shape: &[usize], itemsize: usize) -> MohuResult<usize> 
 ///
 /// Returns `Err(BroadcastError)` if broadcasting is impossible.
 pub fn broadcast_strides(
-    src_shape:   &[usize],
+    src_shape: &[usize],
     src_strides: &[isize],
-    tgt_shape:   &[usize],
+    tgt_shape: &[usize],
 ) -> MohuResult<StrideVec> {
     let src_ndim = src_shape.len();
     let tgt_ndim = tgt_shape.len();
@@ -127,9 +129,7 @@ pub fn broadcast_strides(
     }
 
     // Align and validate the trailing dimensions.
-    for (axis, (&s_dim, &s_stride)) in
-        src_shape.iter().zip(src_strides.iter()).enumerate()
-    {
+    for (axis, (&s_dim, &s_stride)) in src_shape.iter().zip(src_strides.iter()).enumerate() {
         let t_dim = tgt_shape[offset + axis];
         if s_dim == t_dim {
             out.push(s_stride);
@@ -156,7 +156,7 @@ pub fn unravel_index(flat: usize, shape: &[usize]) -> MohuResult<ShapeVec> {
     if flat >= size && size > 0 {
         return Err(MohuError::IndexOutOfBounds {
             index: flat as i64,
-            axis:  0,
+            axis: 0,
             size,
         });
     }
@@ -177,7 +177,7 @@ pub fn ravel_multi_index(indices: &[usize], shape: &[usize]) -> MohuResult<usize
     if indices.len() != shape.len() {
         return Err(MohuError::TooManyIndices {
             given: indices.len(),
-            ndim:  shape.len(),
+            ndim: shape.len(),
         });
     }
     let mut flat: usize = 0;
@@ -200,11 +200,7 @@ pub fn ravel_multi_index(indices: &[usize], shape: &[usize]) -> MohuResult<usize
 ///
 /// Caller must guarantee `indices[i] < shape[i]` for all `i`.
 #[inline]
-pub fn byte_offset(
-    indices: &[usize],
-    strides: &[isize],
-    base_offset: usize,
-) -> isize {
+pub fn byte_offset(indices: &[usize], strides: &[isize], base_offset: usize) -> isize {
     let mut off: isize = base_offset as isize;
     for (&idx, &stride) in indices.iter().zip(strides.iter()) {
         off += idx as isize * stride;
@@ -226,11 +222,11 @@ pub fn byte_offset(
 /// ```
 #[derive(Debug, Clone)]
 pub struct NdIndexIter {
-    shape:   ShapeVec,
+    shape: ShapeVec,
     current: ShapeVec,
-    done:    bool,
-    count:   usize,
-    total:   usize,
+    done: bool,
+    count: usize,
+    total: usize,
 }
 
 impl NdIndexIter {
@@ -251,7 +247,9 @@ impl NdIndexIter {
     }
 
     /// Returns the total number of indices this iterator will yield.
-    pub fn total(&self) -> usize { self.total }
+    pub fn total(&self) -> usize {
+        self.total
+    }
 
     fn advance(&mut self) {
         let ndim = self.shape.len();
@@ -309,8 +307,8 @@ impl ExactSizeIterator for NdIndexIter {}
 /// without an allocation.
 #[derive(Debug, Clone)]
 pub struct StridedByteIter {
-    nd_iter:     NdIndexIter,
-    strides:     StrideVec,
+    nd_iter: NdIndexIter,
+    strides: StrideVec,
     base_offset: usize,
 }
 
@@ -350,10 +348,10 @@ impl ExactSizeIterator for StridedByteIter {}
 /// Broadcast strides (stride = 0) are excluded from the overlap check because
 /// they represent read-only virtual replication of a single element.
 pub fn validate_strides(
-    shape:     &[usize],
-    strides:   &[isize],
-    itemsize:  usize,
-    mutable:   bool,
+    shape: &[usize],
+    strides: &[isize],
+    itemsize: usize,
+    mutable: bool,
 ) -> MohuResult<()> {
     for (axis, (&stride, &dim)) in strides.iter().zip(shape.iter()).enumerate() {
         if dim <= 1 {
@@ -380,11 +378,7 @@ pub fn validate_strides(
 
 /// Returns `Err(OverlappingStrides)` if the stride+shape combination would
 /// cause two distinct elements to share a byte address.
-fn check_no_overlap(
-    shape:    &[usize],
-    strides:  &[isize],
-    itemsize: usize,
-) -> MohuResult<()> {
+fn check_no_overlap(shape: &[usize], strides: &[isize], itemsize: usize) -> MohuResult<()> {
     // Fast path: only one axis has stride != 0 — can't overlap.
     let non_broadcast: Vec<_> = strides
         .iter()
@@ -404,7 +398,7 @@ fn check_no_overlap(
         .map(|(&s, &d)| (s, d))
         .filter(|&(s, d)| s != 0 && d > 1)
         .collect();
-    axes.sort_by(|a, b| b.0.unsigned_abs().cmp(&a.0.unsigned_abs()));
+    axes.sort_by_key(|b| std::cmp::Reverse(b.0.unsigned_abs()));
 
     for i in 1..axes.len() {
         let (prev_stride, prev_dim) = axes[i - 1];
@@ -412,8 +406,8 @@ fn check_no_overlap(
         // The span of the current axis must not exceed the spacing of the prev.
         if curr_stride.unsigned_abs() < prev_stride.unsigned_abs() * prev_dim {
             return Err(MohuError::OverlappingStrides {
-                shape:        shape.to_vec(),
-                strides:      strides.to_vec(),
+                shape: shape.to_vec(),
+                strides: strides.to_vec(),
                 element_size: itemsize,
             });
         }

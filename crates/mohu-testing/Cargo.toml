@@ -16,3 +16,7 @@ mohu-dtype.workspace  = true
 mohu-buffer.workspace = true
 approx.workspace      = true
 proptest.workspace    = true
+
+
+[package.metadata.cargo-machete]
+ignored = ["mohu-buffer", "mohu-dtype"]
