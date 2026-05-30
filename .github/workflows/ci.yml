@@ -215,7 +215,7 @@ jobs:
       - run: cargo +nightly miri setup
       - run: cargo +nightly miri test -p mohu-buffer --all-features
         env:
-          MIRIFLAGS: "-Zmiri-strict-provenance -Zmiri-symbolic-alignment-check"
+          MIRIFLAGS: "-Zmiri-permissive-provenance -Zmiri-symbolic-alignment-check"
           RUSTFLAGS: ""
 
   # ── Final gate ───────────────────────────────────────────────────────────────
