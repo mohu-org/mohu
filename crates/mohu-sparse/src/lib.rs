@@ -22,7 +22,7 @@
 /// | [`spmv`]     | sparse matrix × dense vector                        |
 /// | [`spmm`]     | sparse matrix × dense matrix                        |
 /// | [`convert`]  | conversions between all format pairs                 |
-/// | [`slice`]    | row / column slicing                                 |
+/// | [`mod@slice`]    | row / column slicing                                 |
 /// | [`linalg`]   | triangular solve, norm, condest                     |
 ///
 /// # Construction
