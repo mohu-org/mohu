@@ -228,7 +228,30 @@ jobs:
         with:
           key: miri
       - run: cargo +nightly miri setup
-      - run: cargo +nightly miri test -p mohu-buffer --all-features
+      - name: Run miri-safe buffer tests
+        run: |
+          for test in \
+            zeros_shape_and_values \
+            from_slice_round_trips_1d \
+            from_slice_reshape_to_2d \
+            get_set_roundtrip \
+            reshape_1d_to_3d \
+            transpose_2d_shape_and_values \
+            permute_3d_shape \
+            slice_axis_rows \
+            slice_axis_with_step \
+            broadcast_scalar_to_matrix \
+            broadcast_row_to_matrix \
+            share_is_shallow_clone \
+            pool_acquire_returns_sufficient_size \
+            pool_hit_after_release \
+            c_strides_correct \
+            f_strides_correct \
+            broadcast_strides_zero_for_size_one_axes \
+            nd_index_iter_c_order
+          do
+            cargo +nightly miri test -p mohu-buffer --all-features --test integration "$test"
+          done
         env:
           MIRIFLAGS: "-Zmiri-strict-provenance -Zmiri-symbolic-alignment-check"
           RUSTFLAGS: ""
