@@ -1,0 +1,37 @@
+/* docs/theme/custom.css */
+:root {
+    --fonts: 'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+body {
+    font-family: var(--fonts);
+    letter-spacing: -0.01em;
+}
+
+/* Improve readability of main content */
+.content main {
+    max-width: 850px;
+    line-height: 1.6;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-weight: 700;
+    letter-spacing: -0.02em;
+}
+
+/* Make code blocks look slightly cleaner */
+pre {
+    border-radius: 6px;
+}
+
+/* Sticky transparent menu on mobile */
+@media (max-width: 1080px) {
+    .menu-bar {
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        border-bottom: 1px solid var(--sidebar-border);
+    }
+}
