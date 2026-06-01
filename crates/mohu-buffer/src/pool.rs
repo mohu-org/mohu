@@ -60,11 +60,11 @@ thread_local! {
 #[derive(Debug, Clone, Copy, Default)]
 pub struct TlStats {
     /// Number of TL cache hits.
-    pub hits:         u64,
+    pub hits: u64,
     /// Number of TL cache misses (fell through to global pool).
-    pub misses:       u64,
+    pub misses: u64,
     /// Number of handles returned to the TL cache.
-    pub returns:      u64,
+    pub returns: u64,
     /// Total bytes currently cached in this thread's TL cache.
     pub cached_bytes: usize,
 }
@@ -80,20 +80,25 @@ impl TlStats {
 
 #[inline]
 fn size_class(n: usize) -> usize {
-    if n == 0 { return 1; }
+    if n == 0 {
+        return 1;
+    }
     n.next_power_of_two()
 }
 
 // ─── PoolBucket ───────────────────────────────────────────────────────────────
 
 struct PoolBucket {
-    handles:      Vec<AllocHandle>,
+    handles: Vec<AllocHandle>,
     cached_bytes: usize,
 }
 
 impl PoolBucket {
     fn new() -> Self {
-        Self { handles: Vec::new(), cached_bytes: 0 }
+        Self {
+            handles: Vec::new(),
+            cached_bytes: 0,
+        }
     }
 
     fn push(&mut self, handle: AllocHandle) {
@@ -113,7 +118,9 @@ impl PoolBucket {
         self.cached_bytes = 0;
     }
 
-    fn len(&self) -> usize { self.handles.len() }
+    fn len(&self) -> usize {
+        self.handles.len()
+    }
 }
 
 // ─── SizeClassStats ───────────────────────────────────────────────────────────
@@ -122,11 +129,11 @@ impl PoolBucket {
 #[derive(Debug, Clone, Copy)]
 pub struct SizeClassStats {
     /// Size class in bytes (always a power of two).
-    pub size_class:     usize,
+    pub size_class: usize,
     /// Number of cached handles.
     pub cached_handles: usize,
     /// Total cached bytes in this class.
-    pub cached_bytes:   usize,
+    pub cached_bytes: usize,
 }
 
 // ─── BufferPool ───────────────────────────────────────────────────────────────
@@ -138,25 +145,25 @@ pub struct SizeClassStats {
 /// Use [`acquire`](Self::acquire) / [`release`](Self::release) for the global
 /// pool directly (no TL cache involvement).
 pub struct BufferPool {
-    inner:            Mutex<PoolInner>,
+    inner: Mutex<PoolInner>,
     max_cached_bytes: usize,
 }
 
 struct PoolInner {
-    buckets:      BTreeMap<usize, PoolBucket>,
+    buckets: BTreeMap<usize, PoolBucket>,
     cached_bytes: usize,
-    hit_count:    u64,
-    miss_count:   u64,
+    hit_count: u64,
+    miss_count: u64,
     return_count: u64,
 }
 
 impl PoolInner {
     fn new() -> Self {
         Self {
-            buckets:      BTreeMap::new(),
+            buckets: BTreeMap::new(),
             cached_bytes: 0,
-            hit_count:    0,
-            miss_count:   0,
+            hit_count: 0,
+            miss_count: 0,
             return_count: 0,
         }
     }
@@ -166,19 +173,19 @@ impl PoolInner {
 #[derive(Debug, Clone, Copy)]
 pub struct PoolStats {
     /// Total bytes currently cached in the pool.
-    pub cached_bytes:  usize,
+    pub cached_bytes: usize,
     /// Total number of cached allocation handles.
     pub cached_blocks: usize,
     /// Number of successful acquisitions from the cache.
-    pub hit_count:     u64,
+    pub hit_count: u64,
     /// Number of acquisitions that required a new allocation.
-    pub miss_count:    u64,
+    pub miss_count: u64,
     /// Number of handles returned to the pool.
-    pub return_count:  u64,
+    pub return_count: u64,
     /// Cache hit rate as a fraction in `[0.0, 1.0]`.
-    pub hit_rate:      f64,
+    pub hit_rate: f64,
     /// Number of distinct active size classes.
-    pub size_classes:  usize,
+    pub size_classes: usize,
 }
 
 impl BufferPool {
@@ -218,7 +225,9 @@ impl BufferPool {
 
     /// Returns an `AllocHandle` to the **global** pool.
     pub fn release(&self, handle: AllocHandle) {
-        if handle.is_empty() { return; }
+        if handle.is_empty() {
+            return;
+        }
         let class = size_class(handle.len());
         let mut inner = self.lock();
         if inner.cached_bytes + handle.len() > self.max_cached_bytes {
@@ -229,7 +238,8 @@ impl BufferPool {
         let handle_len = handle.len();
         inner.cached_bytes += handle_len;
         inner.return_count += 1;
-        inner.buckets
+        inner
+            .buckets
             .entry(class)
             .or_insert_with(PoolBucket::new)
             .push(handle);
@@ -252,12 +262,10 @@ impl BufferPool {
         if class <= TL_MAX_BYTES {
             let from_tl = TL_CACHE.with(|cache| {
                 let mut c = cache.borrow_mut();
-                c.iter()
-                    .position(|(k, _)| *k == class)
-                    .map(|pos| {
-                        let (_, handle) = c.swap_remove(pos);
-                        handle
-                    })
+                c.iter().position(|(k, _)| *k == class).map(|pos| {
+                    let (_, handle) = c.swap_remove(pos);
+                    handle
+                })
             });
             if let Some(handle) = from_tl {
                 TL_STATS.with(|s| {
@@ -279,7 +287,9 @@ impl BufferPool {
     ///
     /// Optionally poisons the handle before caching (debug builds only).
     pub fn fast_release(&self, mut handle: AllocHandle) {
-        if handle.is_empty() { return; }
+        if handle.is_empty() {
+            return;
+        }
         handle.poison(); // no-op in release builds
 
         let class = size_class(handle.len());
@@ -290,11 +300,7 @@ impl BufferPool {
                 let c = cache.borrow_mut();
                 // Compute current TL cached bytes
                 let cur_bytes: usize = c.iter().map(|(_, h)| h.len()).sum();
-                if c.len() < TL_SLOTS && cur_bytes + handle.len() <= TL_MAX_BYTES {
-                    true
-                } else {
-                    false
-                }
+                c.len() < TL_SLOTS && cur_bytes + handle.len() <= TL_MAX_BYTES
             });
             if accepted {
                 let hlen = handle.len();
@@ -343,7 +349,9 @@ impl BufferPool {
     /// ```
     pub fn warm(&self, sizes: &[usize], count_per_size: usize) -> MohuResult<()> {
         for &size in sizes {
-            if size == 0 { continue; }
+            if size == 0 {
+                continue;
+            }
             let class = size_class(size);
             // Allocate outside the lock.
             let mut handles = Vec::with_capacity(count_per_size);
@@ -359,7 +367,8 @@ impl BufferPool {
                 let hlen = h.len();
                 inner.cached_bytes += hlen;
                 inner.return_count += 1;
-                inner.buckets
+                inner
+                    .buckets
                     .entry(class)
                     .or_insert_with(PoolBucket::new)
                     .push(h);
@@ -421,11 +430,11 @@ impl BufferPool {
         let inner = self.lock();
         let total_calls = inner.hit_count + inner.miss_count;
         PoolStats {
-            cached_bytes:  inner.cached_bytes,
+            cached_bytes: inner.cached_bytes,
             cached_blocks: inner.buckets.values().map(|b| b.len()).sum(),
-            hit_count:     inner.hit_count,
-            miss_count:    inner.miss_count,
-            return_count:  inner.return_count,
+            hit_count: inner.hit_count,
+            miss_count: inner.miss_count,
+            return_count: inner.return_count,
             hit_rate: if total_calls == 0 {
                 0.0
             } else {
@@ -438,11 +447,15 @@ impl BufferPool {
     /// Returns per-size-class breakdown of cached blocks.
     pub fn size_class_stats(&self) -> Vec<SizeClassStats> {
         let inner = self.lock();
-        inner.buckets.iter().map(|(&class, b)| SizeClassStats {
-            size_class:     class,
-            cached_handles: b.len(),
-            cached_bytes:   b.cached_bytes,
-        }).collect()
+        inner
+            .buckets
+            .iter()
+            .map(|(&class, b)| SizeClassStats {
+                size_class: class,
+                cached_handles: b.len(),
+                cached_bytes: b.cached_bytes,
+            })
+            .collect()
     }
 
     /// Current number of cached bytes (global pool only).
@@ -471,11 +484,11 @@ impl std::fmt::Debug for BufferPool {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let stats = self.stats();
         f.debug_struct("BufferPool")
-            .field("cached_bytes",  &stats.cached_bytes)
+            .field("cached_bytes", &stats.cached_bytes)
             .field("cached_blocks", &stats.cached_blocks)
-            .field("size_classes",  &stats.size_classes)
-            .field("max_bytes",     &self.max_cached_bytes)
-            .field("hit_rate",      &format_args!("{:.1}%", stats.hit_rate * 100.0))
+            .field("size_classes", &stats.size_classes)
+            .field("max_bytes", &self.max_cached_bytes)
+            .field("hit_rate", &format_args!("{:.1}%", stats.hit_rate * 100.0))
             .finish()
     }
 }

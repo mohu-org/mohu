@@ -1,24 +1,24 @@
-/// Compile-time and runtime dispatch macros for scalar types.
-///
-/// These macros are the foundation of how mohu achieves zero-overhead
-/// generic dispatch over runtime `DType` values.  Every hot-path kernel
-/// in `mohu-buffer`, `mohu-array`, and `mohu-ops` uses `dispatch_dtype!`
-/// to monomorphise a single generic function over the correct scalar type
-/// without a vtable or allocation.
-///
-/// # Macro reference
-///
-/// | Macro | Purpose |
-/// |-------|---------|
-/// | [`dtype_of!`] | `DType` constant for a Rust type literal |
-/// | [`dispatch_dtype!`] | runtime DType → monomorphised call |
-/// | [`dispatch_numeric!`] | same, excluding `Bool` |
-/// | [`dispatch_integer!`] | integers only |
-/// | [`dispatch_float!`] | floats only (F16/BF16/F32/F64) |
-/// | [`dispatch_real!`] | integers + real floats (no complex, no bool) |
-/// | [`dispatch_signed!`] | signed integers + floats |
-/// | [`for_each_dtype!`] | invoke a macro for every dtype (codegen helper) |
-/// | [`assert_dtype!`] | assert a DType at runtime or return an error |
+//! Compile-time and runtime dispatch macros for scalar types.
+//!
+//! These macros are the foundation of how mohu achieves zero-overhead
+//! generic dispatch over runtime `DType` values.  Every hot-path kernel
+//! in `mohu-buffer`, `mohu-array`, and `mohu-ops` uses `dispatch_dtype!`
+//! to monomorphise a single generic function over the correct scalar type
+//! without a vtable or allocation.
+//!
+//! # Macro reference
+//!
+//! | Macro | Purpose |
+//! |-------|---------|
+//! | `dtype_of!` | `DType` constant for a Rust type literal |
+//! | `dispatch_dtype!` | runtime DType → monomorphised call |
+//! | `dispatch_numeric!` | same, excluding `Bool` |
+//! | `dispatch_integer!` | integers only |
+//! | `dispatch_float!` | floats only (F16/BF16/F32/F64) |
+//! | `dispatch_real!` | integers + real floats (no complex, no bool) |
+//! | `dispatch_signed!` | signed integers + floats |
+//! | `for_each_dtype!` | invoke a macro for every dtype (codegen helper) |
+//! | `assert_dtype!` | assert a DType at runtime or return an error |
 
 // ─── dtype_of! ───────────────────────────────────────────────────────────────
 
@@ -36,25 +36,63 @@
 /// ```
 #[macro_export]
 macro_rules! dtype_of {
-    (bool)                        => { $crate::dtype::DType::Bool };
-    (i8)                          => { $crate::dtype::DType::I8   };
-    (i16)                         => { $crate::dtype::DType::I16  };
-    (i32)                         => { $crate::dtype::DType::I32  };
-    (i64)                         => { $crate::dtype::DType::I64  };
-    (u8)                          => { $crate::dtype::DType::U8   };
-    (u16)                         => { $crate::dtype::DType::U16  };
-    (u32)                         => { $crate::dtype::DType::U32  };
-    (u64)                         => { $crate::dtype::DType::U64  };
-    (f16)                         => { $crate::dtype::DType::F16  };
-    (::half::f16)                 => { $crate::dtype::DType::F16  };
-    (bf16)                        => { $crate::dtype::DType::BF16 };
-    (::half::bf16)                => { $crate::dtype::DType::BF16 };
-    (f32)                         => { $crate::dtype::DType::F32  };
-    (f64)                         => { $crate::dtype::DType::F64  };
-    (Complex<f32>)                        => { $crate::dtype::DType::C64  };
-    (::num_complex::Complex<f32>)         => { $crate::dtype::DType::C64  };
-    (Complex<f64>)                        => { $crate::dtype::DType::C128 };
-    (::num_complex::Complex<f64>)         => { $crate::dtype::DType::C128 };
+    (bool) => {
+        $crate::dtype::DType::Bool
+    };
+    (i8) => {
+        $crate::dtype::DType::I8
+    };
+    (i16) => {
+        $crate::dtype::DType::I16
+    };
+    (i32) => {
+        $crate::dtype::DType::I32
+    };
+    (i64) => {
+        $crate::dtype::DType::I64
+    };
+    (u8) => {
+        $crate::dtype::DType::U8
+    };
+    (u16) => {
+        $crate::dtype::DType::U16
+    };
+    (u32) => {
+        $crate::dtype::DType::U32
+    };
+    (u64) => {
+        $crate::dtype::DType::U64
+    };
+    (f16) => {
+        $crate::dtype::DType::F16
+    };
+    (::half::f16) => {
+        $crate::dtype::DType::F16
+    };
+    (bf16) => {
+        $crate::dtype::DType::BF16
+    };
+    (::half::bf16) => {
+        $crate::dtype::DType::BF16
+    };
+    (f32) => {
+        $crate::dtype::DType::F32
+    };
+    (f64) => {
+        $crate::dtype::DType::F64
+    };
+    (Complex<f32>) => {
+        $crate::dtype::DType::C64
+    };
+    (::num_complex::Complex<f32>) => {
+        $crate::dtype::DType::C64
+    };
+    (Complex<f64>) => {
+        $crate::dtype::DType::C128
+    };
+    (::num_complex::Complex<f64>) => {
+        $crate::dtype::DType::C128
+    };
 }
 
 // ─── dispatch_dtype! ─────────────────────────────────────────────────────────
@@ -158,19 +196,19 @@ macro_rules! dispatch_numeric {
                 op: "numeric dispatch",
                 dtype: "bool".to_string(),
             }),
-            $crate::dtype::DType::I8   => Ok($macro!(i8)),
-            $crate::dtype::DType::I16  => Ok($macro!(i16)),
-            $crate::dtype::DType::I32  => Ok($macro!(i32)),
-            $crate::dtype::DType::I64  => Ok($macro!(i64)),
-            $crate::dtype::DType::U8   => Ok($macro!(u8)),
-            $crate::dtype::DType::U16  => Ok($macro!(u16)),
-            $crate::dtype::DType::U32  => Ok($macro!(u32)),
-            $crate::dtype::DType::U64  => Ok($macro!(u64)),
-            $crate::dtype::DType::F16  => Ok($macro!(::half::f16)),
+            $crate::dtype::DType::I8 => Ok($macro!(i8)),
+            $crate::dtype::DType::I16 => Ok($macro!(i16)),
+            $crate::dtype::DType::I32 => Ok($macro!(i32)),
+            $crate::dtype::DType::I64 => Ok($macro!(i64)),
+            $crate::dtype::DType::U8 => Ok($macro!(u8)),
+            $crate::dtype::DType::U16 => Ok($macro!(u16)),
+            $crate::dtype::DType::U32 => Ok($macro!(u32)),
+            $crate::dtype::DType::U64 => Ok($macro!(u64)),
+            $crate::dtype::DType::F16 => Ok($macro!(::half::f16)),
             $crate::dtype::DType::BF16 => Ok($macro!(::half::bf16)),
-            $crate::dtype::DType::F32  => Ok($macro!(f32)),
-            $crate::dtype::DType::F64  => Ok($macro!(f64)),
-            $crate::dtype::DType::C64  => Ok($macro!(::num_complex::Complex<f32>)),
+            $crate::dtype::DType::F32 => Ok($macro!(f32)),
+            $crate::dtype::DType::F64 => Ok($macro!(f64)),
+            $crate::dtype::DType::C64 => Ok($macro!(::num_complex::Complex<f32>)),
             $crate::dtype::DType::C128 => Ok($macro!(::num_complex::Complex<f64>)),
         }
     };
@@ -185,14 +223,14 @@ macro_rules! dispatch_numeric {
 macro_rules! dispatch_integer {
     ($dtype:expr, $macro:ident) => {
         match $dtype {
-            $crate::dtype::DType::I8   => Ok($macro!(i8)),
-            $crate::dtype::DType::I16  => Ok($macro!(i16)),
-            $crate::dtype::DType::I32  => Ok($macro!(i32)),
-            $crate::dtype::DType::I64  => Ok($macro!(i64)),
-            $crate::dtype::DType::U8   => Ok($macro!(u8)),
-            $crate::dtype::DType::U16  => Ok($macro!(u16)),
-            $crate::dtype::DType::U32  => Ok($macro!(u32)),
-            $crate::dtype::DType::U64  => Ok($macro!(u64)),
+            $crate::dtype::DType::I8 => Ok($macro!(i8)),
+            $crate::dtype::DType::I16 => Ok($macro!(i16)),
+            $crate::dtype::DType::I32 => Ok($macro!(i32)),
+            $crate::dtype::DType::I64 => Ok($macro!(i64)),
+            $crate::dtype::DType::U8 => Ok($macro!(u8)),
+            $crate::dtype::DType::U16 => Ok($macro!(u16)),
+            $crate::dtype::DType::U32 => Ok($macro!(u32)),
+            $crate::dtype::DType::U64 => Ok($macro!(u64)),
             other => Err($crate::MohuError::UnsupportedDType {
                 op: "integer dispatch",
                 dtype: other.to_string(),
@@ -210,10 +248,10 @@ macro_rules! dispatch_integer {
 macro_rules! dispatch_float {
     ($dtype:expr, $macro:ident) => {
         match $dtype {
-            $crate::dtype::DType::F16  => Ok($macro!(::half::f16)),
+            $crate::dtype::DType::F16 => Ok($macro!(::half::f16)),
             $crate::dtype::DType::BF16 => Ok($macro!(::half::bf16)),
-            $crate::dtype::DType::F32  => Ok($macro!(f32)),
-            $crate::dtype::DType::F64  => Ok($macro!(f64)),
+            $crate::dtype::DType::F32 => Ok($macro!(f32)),
+            $crate::dtype::DType::F64 => Ok($macro!(f64)),
             other => Err($crate::MohuError::UnsupportedDType {
                 op: "float dispatch",
                 dtype: other.to_string(),
@@ -231,18 +269,18 @@ macro_rules! dispatch_float {
 macro_rules! dispatch_real {
     ($dtype:expr, $macro:ident) => {
         match $dtype {
-            $crate::dtype::DType::I8   => Ok($macro!(i8)),
-            $crate::dtype::DType::I16  => Ok($macro!(i16)),
-            $crate::dtype::DType::I32  => Ok($macro!(i32)),
-            $crate::dtype::DType::I64  => Ok($macro!(i64)),
-            $crate::dtype::DType::U8   => Ok($macro!(u8)),
-            $crate::dtype::DType::U16  => Ok($macro!(u16)),
-            $crate::dtype::DType::U32  => Ok($macro!(u32)),
-            $crate::dtype::DType::U64  => Ok($macro!(u64)),
-            $crate::dtype::DType::F16  => Ok($macro!(::half::f16)),
+            $crate::dtype::DType::I8 => Ok($macro!(i8)),
+            $crate::dtype::DType::I16 => Ok($macro!(i16)),
+            $crate::dtype::DType::I32 => Ok($macro!(i32)),
+            $crate::dtype::DType::I64 => Ok($macro!(i64)),
+            $crate::dtype::DType::U8 => Ok($macro!(u8)),
+            $crate::dtype::DType::U16 => Ok($macro!(u16)),
+            $crate::dtype::DType::U32 => Ok($macro!(u32)),
+            $crate::dtype::DType::U64 => Ok($macro!(u64)),
+            $crate::dtype::DType::F16 => Ok($macro!(::half::f16)),
             $crate::dtype::DType::BF16 => Ok($macro!(::half::bf16)),
-            $crate::dtype::DType::F32  => Ok($macro!(f32)),
-            $crate::dtype::DType::F64  => Ok($macro!(f64)),
+            $crate::dtype::DType::F32 => Ok($macro!(f32)),
+            $crate::dtype::DType::F64 => Ok($macro!(f64)),
             other => Err($crate::MohuError::UnsupportedDType {
                 op: "real dispatch",
                 dtype: other.to_string(),
@@ -260,14 +298,14 @@ macro_rules! dispatch_real {
 macro_rules! dispatch_signed {
     ($dtype:expr, $macro:ident) => {
         match $dtype {
-            $crate::dtype::DType::I8   => Ok($macro!(i8)),
-            $crate::dtype::DType::I16  => Ok($macro!(i16)),
-            $crate::dtype::DType::I32  => Ok($macro!(i32)),
-            $crate::dtype::DType::I64  => Ok($macro!(i64)),
-            $crate::dtype::DType::F16  => Ok($macro!(::half::f16)),
+            $crate::dtype::DType::I8 => Ok($macro!(i8)),
+            $crate::dtype::DType::I16 => Ok($macro!(i16)),
+            $crate::dtype::DType::I32 => Ok($macro!(i32)),
+            $crate::dtype::DType::I64 => Ok($macro!(i64)),
+            $crate::dtype::DType::F16 => Ok($macro!(::half::f16)),
             $crate::dtype::DType::BF16 => Ok($macro!(::half::bf16)),
-            $crate::dtype::DType::F32  => Ok($macro!(f32)),
-            $crate::dtype::DType::F64  => Ok($macro!(f64)),
+            $crate::dtype::DType::F32 => Ok($macro!(f32)),
+            $crate::dtype::DType::F64 => Ok($macro!(f64)),
             other => Err($crate::MohuError::UnsupportedDType {
                 op: "signed dispatch",
                 dtype: other.to_string(),
@@ -297,21 +335,21 @@ macro_rules! dispatch_signed {
 #[macro_export]
 macro_rules! for_each_dtype {
     ($macro:ident) => {
-        $macro!(bool,                           $crate::dtype::DType::Bool);
-        $macro!(i8,                             $crate::dtype::DType::I8);
-        $macro!(i16,                            $crate::dtype::DType::I16);
-        $macro!(i32,                            $crate::dtype::DType::I32);
-        $macro!(i64,                            $crate::dtype::DType::I64);
-        $macro!(u8,                             $crate::dtype::DType::U8);
-        $macro!(u16,                            $crate::dtype::DType::U16);
-        $macro!(u32,                            $crate::dtype::DType::U32);
-        $macro!(u64,                            $crate::dtype::DType::U64);
-        $macro!(::half::f16,                    $crate::dtype::DType::F16);
-        $macro!(::half::bf16,                   $crate::dtype::DType::BF16);
-        $macro!(f32,                            $crate::dtype::DType::F32);
-        $macro!(f64,                            $crate::dtype::DType::F64);
-        $macro!(::num_complex::Complex<f32>,    $crate::dtype::DType::C64);
-        $macro!(::num_complex::Complex<f64>,    $crate::dtype::DType::C128);
+        $macro!(bool, $crate::dtype::DType::Bool);
+        $macro!(i8, $crate::dtype::DType::I8);
+        $macro!(i16, $crate::dtype::DType::I16);
+        $macro!(i32, $crate::dtype::DType::I32);
+        $macro!(i64, $crate::dtype::DType::I64);
+        $macro!(u8, $crate::dtype::DType::U8);
+        $macro!(u16, $crate::dtype::DType::U16);
+        $macro!(u32, $crate::dtype::DType::U32);
+        $macro!(u64, $crate::dtype::DType::U64);
+        $macro!(::half::f16, $crate::dtype::DType::F16);
+        $macro!(::half::bf16, $crate::dtype::DType::BF16);
+        $macro!(f32, $crate::dtype::DType::F32);
+        $macro!(f64, $crate::dtype::DType::F64);
+        $macro!(::num_complex::Complex<f32>, $crate::dtype::DType::C64);
+        $macro!(::num_complex::Complex<f64>, $crate::dtype::DType::C128);
     };
 }
 
@@ -335,7 +373,7 @@ macro_rules! assert_dtype {
         if $actual != $expected {
             return Err($crate::MohuError::DTypeMismatch {
                 expected: $expected.to_string(),
-                got:      $actual.to_string(),
+                got: $actual.to_string(),
             });
         }
     };
@@ -349,7 +387,7 @@ macro_rules! require_float {
     ($dtype:expr, $op:expr) => {
         if !$dtype.is_float() && !$dtype.is_complex() {
             return Err($crate::MohuError::UnsupportedDType {
-                op:    $op,
+                op: $op,
                 dtype: $dtype.to_string(),
             });
         }
@@ -364,7 +402,7 @@ macro_rules! require_numeric {
     ($dtype:expr, $op:expr) => {
         if $dtype.is_bool() {
             return Err($crate::MohuError::UnsupportedDType {
-                op:    $op,
+                op: $op,
                 dtype: "bool".to_string(),
             });
         }
@@ -379,7 +417,7 @@ macro_rules! require_real {
     ($dtype:expr, $op:expr) => {
         if $dtype.is_complex() || $dtype.is_bool() {
             return Err($crate::MohuError::UnsupportedDType {
-                op:    $op,
+                op: $op,
                 dtype: $dtype.to_string(),
             });
         }

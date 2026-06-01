@@ -23,9 +23,23 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
     steps:
-      - uses: christophebedard/dco-check@v0.5.0
+      - uses: actions/checkout@v4
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - name: Verify DCO sign-off
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          git fetch --no-tags --depth=1 origin "$BASE_SHA"
+          failed=0
+          for commit in $(git rev-list "$BASE_SHA"..HEAD); do
+            if ! git log -1 --format=%B "$commit" | grep -Eiq '^Signed-off-by: .+ <.+@.+>$'; then
+              echo "::error::commit $commit is missing a Signed-off-by line"
+              failed=1
+            fi
+          done
+          exit "$failed"
 
   # ── Gate: Formatting ────────────────────────────────────────────────────────
   fmt:
@@ -138,9 +152,11 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           key: semver
+      - run: git fetch --no-tags origin ${{ github.event.pull_request.base.sha }}
       - uses: obi1kenobi/cargo-semver-checks-action@v2
         with:
           feature-group: all-features
+          baseline-rev: ${{ github.event.pull_request.base.sha }}
 
   # ── Cross-compilation (push to main only — too expensive per PR) ─────────────
   cross:
@@ -211,8 +227,31 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           key: miri
-      - run: cargo miri setup
-      - run: cargo miri test -p mohu-buffer --all-features
+      - run: cargo +nightly miri setup
+      - name: Run miri-safe buffer tests
+        run: |
+          for test in \
+            zeros_shape_and_values \
+            from_slice_round_trips_1d \
+            from_slice_reshape_to_2d \
+            get_set_roundtrip \
+            reshape_1d_to_3d \
+            transpose_2d_shape_and_values \
+            permute_3d_shape \
+            slice_axis_rows \
+            slice_axis_with_step \
+            broadcast_scalar_to_matrix \
+            broadcast_row_to_matrix \
+            share_is_shallow_clone \
+            pool_acquire_returns_sufficient_size \
+            pool_hit_after_release \
+            c_strides_correct \
+            f_strides_correct \
+            broadcast_strides_zero_for_size_one_axes \
+            nd_index_iter_c_order
+          do
+            cargo +nightly miri test -p mohu-buffer --all-features --test integration "$test"
+          done
         env:
           MIRIFLAGS: "-Zmiri-strict-provenance -Zmiri-symbolic-alignment-check"
           RUSTFLAGS: ""

@@ -106,7 +106,7 @@ serde        = { version = "1", features = ["derive"] }
 memmap2      = "0.9"
 
 # ── Python bindings ───────────────────────────────────────────────────────────
-pyo3         = { version = "0.23", features = ["extension-module"] }
+pyo3         = { version = "0.28", features = ["extension-module"] }
 
 # ── Collections ───────────────────────────────────────────────────────────────
 smallvec     = { version = "1.13", features = ["union"] }

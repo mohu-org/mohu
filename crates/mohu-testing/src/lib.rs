@@ -7,8 +7,8 @@
 ///
 /// | Module        | Purpose                                               |
 /// |---------------|-------------------------------------------------------|
-/// | [`assert`]    | `assert_array_eq!`, `assert_allclose!`, numeric checks|
-/// | [`gen`]       | `proptest` strategies: random arrays of any dtype     |
+/// | [`mod@assert`]| `assert_array_eq!`, `assert_allclose!`, numeric checks|
+/// | `gen`       | `proptest` strategies: random arrays of any dtype     |
 /// | [`fixtures`]  | pre-built arrays used across mohu's own test suites   |
 /// | [`approx`]    | element-wise approximate equality with ULP tolerance  |
 /// | [`dtype`]     | dtype-parameterised test helpers                      |
@@ -32,13 +32,12 @@
 ///     }
 /// }
 /// ```
-
 pub mod approx;
 pub mod assert;
 pub mod dtype;
 pub mod fixtures;
-pub mod strategies;
 pub mod perf;
+pub mod strategies;
 
 pub use mohu_error::{MohuError, MohuResult};
 

@@ -16,14 +16,13 @@
 ///
 /// | Module       | Responsibility                                         |
 /// |--------------|--------------------------------------------------------|
-/// | [`array`]    | `MaskedArray` type, construction, fill_value           |
+/// | [`mod@array`]    | `MaskedArray` type, construction, fill_value           |
 /// | [`arith`]    | arithmetic with mask propagation                       |
 /// | [`reduce`]   | sum/mean/min/max/std skipping masked elements          |
 /// | [`compress`] | `compress`, `compressed` — extract non-masked elements |
 /// | [`fill`]     | `filled` — replace masked with fill_value              |
 /// | [`mask_ops`] | `masked_where`, `masked_equal`, `getmask`, `getdata`   |
 /// | [`io`]       | serialise/deserialise masked arrays (NPY extension)    |
-
 pub mod arith;
 pub mod array;
 pub mod compress;

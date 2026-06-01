@@ -16,8 +16,7 @@
 use mohu_error::{MohuError, MohuResult};
 
 use crate::strides::{
-    self, ShapeVec, StrideVec, broadcast_strides, c_strides, f_strides,
-    validate_strides,
+    self, ShapeVec, StrideVec, broadcast_strides, c_strides, f_strides, validate_strides,
 };
 
 // ─── Order ────────────────────────────────────────────────────────────────────
@@ -41,13 +40,17 @@ pub enum Order {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct SliceArg {
     pub start: Option<i64>,
-    pub stop:  Option<i64>,
-    pub step:  Option<i64>,
+    pub stop: Option<i64>,
+    pub step: Option<i64>,
 }
 
 impl SliceArg {
     /// A slice that selects the full axis (`..`).
-    pub const FULL: Self = Self { start: None, stop: None, step: None };
+    pub const FULL: Self = Self {
+        start: None,
+        stop: None,
+        step: None,
+    };
 
     /// Resolves this `SliceArg` against an axis of length `dim`, returning
     /// `(start_index, element_count, step)` in element units.
@@ -79,18 +82,28 @@ impl SliceArg {
             let e = self
                 .stop
                 .map(|v| {
-                    if v < 0 { ((v + idim).max(-1)) as usize } else { (v as usize).min(dim) }
+                    if v < 0 {
+                        ((v + idim).max(-1)) as usize
+                    } else {
+                        (v as usize).min(dim)
+                    }
                 })
                 .unwrap_or(usize::MAX); // sentinel for "before index 0"
             (s, e)
         };
 
         let count = if step > 0 {
-            if stop <= start { 0 } else { (stop - start + (step as usize) - 1) / (step as usize) }
+            if stop <= start {
+                0
+            } else {
+                (stop - start).div_ceil(step as usize)
+            }
         } else {
             let abs_step = (-step) as usize;
-            if e_reversed_empty(start, stop) { 0 } else {
-                (start.saturating_sub(stop) + abs_step - 1) / abs_step
+            if e_reversed_empty(start, stop) {
+                0
+            } else {
+                start.saturating_sub(stop).div_ceil(abs_step)
             }
         };
 
@@ -111,10 +124,10 @@ fn e_reversed_empty(start: usize, stop: usize) -> bool {
 /// Does not own memory — it is always paired with a backing `Buffer`.
 #[derive(Clone, PartialEq, Eq)]
 pub struct Layout {
-    shape:    ShapeVec,
-    strides:  StrideVec,
+    shape: ShapeVec,
+    strides: StrideVec,
     /// Byte offset from buffer start to element `[0, 0, …, 0]`.
-    offset:   usize,
+    offset: usize,
     /// Size in bytes of one scalar element.
     itemsize: usize,
 }
@@ -140,15 +153,16 @@ impl Layout {
     /// - `shape.len() == strides.len()`
     /// - All non-broadcast strides are multiples of `itemsize`
     pub fn new_custom(
-        shape:    &[usize],
-        strides:  &[isize],
-        offset:   usize,
+        shape: &[usize],
+        strides: &[isize],
+        offset: usize,
         itemsize: usize,
     ) -> MohuResult<Self> {
         if shape.len() != strides.len() {
             return Err(MohuError::bug(format!(
                 "Layout::new_custom: shape.len()={} != strides.len()={}",
-                shape.len(), strides.len()
+                shape.len(),
+                strides.len()
             )));
         }
         if itemsize == 0 {
@@ -156,8 +170,8 @@ impl Layout {
         }
         validate_strides(shape, strides, itemsize, false)?;
         Ok(Self {
-            shape:    ShapeVec::from_slice(shape),
-            strides:  StrideVec::from_slice(strides),
+            shape: ShapeVec::from_slice(shape),
+            strides: StrideVec::from_slice(strides),
             offset,
             itemsize,
         })
@@ -166,9 +180,9 @@ impl Layout {
     /// Creates a 0-dimensional (scalar) layout holding exactly one element.
     pub fn scalar(itemsize: usize) -> Self {
         Self {
-            shape:    ShapeVec::new(),
-            strides:  StrideVec::new(),
-            offset:   0,
+            shape: ShapeVec::new(),
+            strides: StrideVec::new(),
+            offset: 0,
             itemsize,
         }
     }
@@ -176,23 +190,40 @@ impl Layout {
     // ─── Properties ───────────────────────────────────────────────────────────
 
     /// Number of dimensions (axes).
-    #[inline] pub fn ndim(&self) -> usize { self.shape.len() }
+    #[inline]
+    pub fn ndim(&self) -> usize {
+        self.shape.len()
+    }
 
     /// Total number of elements (product of shape).
     #[inline]
-    pub fn size(&self) -> usize { self.shape.iter().product() }
+    pub fn size(&self) -> usize {
+        self.shape.iter().product()
+    }
 
     /// The shape of the array, as a slice of dimension sizes.
-    #[inline] pub fn shape(&self) -> &[usize] { &self.shape }
+    #[inline]
+    pub fn shape(&self) -> &[usize] {
+        &self.shape
+    }
 
     /// The byte strides of the array.
-    #[inline] pub fn strides(&self) -> &[isize] { &self.strides }
+    #[inline]
+    pub fn strides(&self) -> &[isize] {
+        &self.strides
+    }
 
     /// Byte offset of element `[0, 0, …, 0]` from the buffer start.
-    #[inline] pub fn offset(&self) -> usize { self.offset }
+    #[inline]
+    pub fn offset(&self) -> usize {
+        self.offset
+    }
 
     /// Size in bytes of a single element.
-    #[inline] pub fn itemsize(&self) -> usize { self.itemsize }
+    #[inline]
+    pub fn itemsize(&self) -> usize {
+        self.itemsize
+    }
 
     /// Total bytes in a contiguous copy of this array (`size * itemsize`).
     ///
@@ -214,10 +245,15 @@ impl Layout {
     }
 
     /// Returns `true` if this is a 0-dimensional (scalar) array.
-    #[inline] pub fn is_scalar(&self) -> bool { self.ndim() == 0 }
+    #[inline]
+    pub fn is_scalar(&self) -> bool {
+        self.ndim() == 0
+    }
 
     /// Returns `true` if any dimension is 0 (zero-element array).
-    pub fn is_empty(&self) -> bool { self.shape.iter().any(|&d| d == 0) }
+    pub fn is_empty(&self) -> bool {
+        self.shape.contains(&0)
+    }
 
     // ─── Contiguity checks ────────────────────────────────────────────────────
 
@@ -254,14 +290,17 @@ impl Layout {
     pub fn permute(&self, axes: &[usize]) -> MohuResult<Self> {
         let ndim = self.ndim();
         if axes.len() != ndim {
-            return Err(MohuError::DimensionMismatch { expected: ndim, got: axes.len() });
+            return Err(MohuError::DimensionMismatch {
+                expected: ndim,
+                got: axes.len(),
+            });
         }
         // Validate that `axes` is a proper permutation.
         let mut seen = vec![false; ndim];
         for &ax in axes {
             if ax >= ndim {
                 return Err(MohuError::AxisOutOfRange {
-                    axis:  ax as i64,
+                    axis: ax as i64,
                     ndim,
                     valid: format!("0..{ndim}"),
                 });
@@ -273,12 +312,12 @@ impl Layout {
             }
             seen[ax] = true;
         }
-        let new_shape:   ShapeVec = axes.iter().map(|&a| self.shape[a]).collect();
+        let new_shape: ShapeVec = axes.iter().map(|&a| self.shape[a]).collect();
         let new_strides: StrideVec = axes.iter().map(|&a| self.strides[a]).collect();
         Ok(Self {
-            shape:    new_shape,
-            strides:  new_strides,
-            offset:   self.offset,
+            shape: new_shape,
+            strides: new_strides,
+            offset: self.offset,
             itemsize: self.itemsize,
         })
     }
@@ -303,12 +342,12 @@ impl Layout {
         let ndim = self.ndim();
         if axis > ndim {
             return Err(MohuError::AxisOutOfRange {
-                axis:  axis as i64,
+                axis: axis as i64,
                 ndim,
                 valid: format!("0..={ndim}"),
             });
         }
-        let mut new_shape   = ShapeVec::with_capacity(ndim + 1);
+        let mut new_shape = ShapeVec::with_capacity(ndim + 1);
         let mut new_strides = StrideVec::with_capacity(ndim + 1);
         for i in 0..=ndim {
             if i == axis {
@@ -321,9 +360,9 @@ impl Layout {
             }
         }
         Ok(Self {
-            shape:    new_shape,
-            strides:  new_strides,
-            offset:   self.offset,
+            shape: new_shape,
+            strides: new_strides,
+            offset: self.offset,
             itemsize: self.itemsize,
         })
     }
@@ -332,15 +371,17 @@ impl Layout {
     ///
     /// Equivalent to `np.squeeze(a)`.
     pub fn squeeze(&self) -> Self {
-        let new_shape:   ShapeVec = self.shape.iter().copied().filter(|&d| d != 1).collect();
+        let new_shape: ShapeVec = self.shape.iter().copied().filter(|&d| d != 1).collect();
         let new_strides: StrideVec = self
-            .shape.iter().zip(self.strides.iter())
+            .shape
+            .iter()
+            .zip(self.strides.iter())
             .filter_map(|(&d, &s)| if d != 1 { Some(s) } else { None })
             .collect();
         Self {
-            shape:    new_shape,
-            strides:  new_strides,
-            offset:   self.offset,
+            shape: new_shape,
+            strides: new_strides,
+            offset: self.offset,
             itemsize: self.itemsize,
         }
     }
@@ -352,7 +393,7 @@ impl Layout {
         let ndim = self.ndim();
         if axis >= ndim {
             return Err(MohuError::AxisOutOfRange {
-                axis:  axis as i64,
+                axis: axis as i64,
                 ndim,
                 valid: format!("0..{ndim}"),
             });
@@ -363,14 +404,22 @@ impl Layout {
                 self.shape[axis]
             )));
         }
-        let new_shape:   ShapeVec = self.shape.iter().enumerate()
-            .filter_map(|(i, &d)| if i != axis { Some(d) } else { None }).collect();
-        let new_strides: StrideVec = self.strides.iter().enumerate()
-            .filter_map(|(i, &s)| if i != axis { Some(s) } else { None }).collect();
+        let new_shape: ShapeVec = self
+            .shape
+            .iter()
+            .enumerate()
+            .filter_map(|(i, &d)| if i != axis { Some(d) } else { None })
+            .collect();
+        let new_strides: StrideVec = self
+            .strides
+            .iter()
+            .enumerate()
+            .filter_map(|(i, &s)| if i != axis { Some(s) } else { None })
+            .collect();
         Ok(Self {
-            shape:    new_shape,
-            strides:  new_strides,
-            offset:   self.offset,
+            shape: new_shape,
+            strides: new_strides,
+            offset: self.offset,
             itemsize: self.itemsize,
         })
     }
@@ -394,9 +443,9 @@ impl Layout {
         }
         let new_strides = c_strides(new_shape, self.itemsize);
         Ok(Self {
-            shape:    ShapeVec::from_slice(new_shape),
-            strides:  new_strides,
-            offset:   self.offset,
+            shape: ShapeVec::from_slice(new_shape),
+            strides: new_strides,
+            offset: self.offset,
             itemsize: self.itemsize,
         })
     }
@@ -409,7 +458,7 @@ impl Layout {
         let ndim = self.ndim();
         if axis >= ndim {
             return Err(MohuError::AxisOutOfRange {
-                axis:  axis as i64,
+                axis: axis as i64,
                 ndim,
                 valid: format!("0..{ndim}"),
             });
@@ -418,22 +467,20 @@ impl Layout {
         let (start, count, step) = arg.resolve(dim)?;
 
         // Advance the base offset by `start` steps along this axis.
-        let new_offset = (self.offset as isize
-            + start as isize * self.strides[axis])
-            as usize;
+        let new_offset = (self.offset as isize + start as isize * self.strides[axis]) as usize;
 
         // Multiply the stride by the step size.
         let new_stride = self.strides[axis] * step;
 
-        let mut new_shape   = self.shape.clone();
+        let mut new_shape = self.shape.clone();
         let mut new_strides = self.strides.clone();
-        new_shape[axis]   = count;
+        new_shape[axis] = count;
         new_strides[axis] = new_stride;
 
         Ok(Self {
-            shape:    new_shape,
-            strides:  new_strides,
-            offset:   new_offset,
+            shape: new_shape,
+            strides: new_strides,
+            offset: new_offset,
             itemsize: self.itemsize,
         })
     }
@@ -445,9 +492,9 @@ impl Layout {
     pub fn broadcast_to(&self, new_shape: &[usize]) -> MohuResult<Self> {
         let new_strides = broadcast_strides(&self.shape, &self.strides, new_shape)?;
         Ok(Self {
-            shape:    ShapeVec::from_slice(new_shape),
-            strides:  new_strides,
-            offset:   self.offset,
+            shape: ShapeVec::from_slice(new_shape),
+            strides: new_strides,
+            offset: self.offset,
             itemsize: self.itemsize,
         })
     }
@@ -461,7 +508,7 @@ impl Layout {
         if indices.len() != self.ndim() {
             return Err(MohuError::TooManyIndices {
                 given: indices.len(),
-                ndim:  self.ndim(),
+                ndim: self.ndim(),
             });
         }
         for (axis, (&idx, &dim)) in indices.iter().zip(self.shape.iter()).enumerate() {
@@ -469,7 +516,7 @@ impl Layout {
                 return Err(MohuError::IndexOutOfBounds {
                     index: idx as i64,
                     axis,
-                    size:  dim,
+                    size: dim,
                 });
             }
         }
@@ -500,9 +547,15 @@ impl Layout {
         let mut lo = self.offset as isize;
         let mut hi = self.offset as isize;
         for (&dim, &stride) in self.shape.iter().zip(self.strides.iter()) {
-            if stride == 0 || dim == 0 { continue; }
+            if stride == 0 || dim == 0 {
+                continue;
+            }
             let span = stride * (dim as isize - 1);
-            if span > 0 { hi += span; } else { lo += span; }
+            if span > 0 {
+                hi += span;
+            } else {
+                lo += span;
+            }
         }
         (lo as usize, hi as usize)
     }
@@ -530,9 +583,9 @@ impl Layout {
     /// suitable for a freshly allocated contiguous copy.
     pub fn to_c_contiguous(&self) -> Self {
         Self {
-            shape:    self.shape.clone(),
-            strides:  c_strides(&self.shape, self.itemsize),
-            offset:   0,
+            shape: self.shape.clone(),
+            strides: c_strides(&self.shape, self.itemsize),
+            offset: 0,
             itemsize: self.itemsize,
         }
     }
@@ -557,9 +610,9 @@ impl Layout {
 impl std::fmt::Debug for Layout {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Layout")
-            .field("shape",    &self.shape.as_slice())
-            .field("strides",  &self.strides.as_slice())
-            .field("offset",   &self.offset)
+            .field("shape", &self.shape.as_slice())
+            .field("strides", &self.strides.as_slice())
+            .field("offset", &self.offset)
             .field("itemsize", &self.itemsize)
             .finish()
     }
@@ -567,9 +620,12 @@ impl std::fmt::Debug for Layout {
 
 impl std::fmt::Display for Layout {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Layout(shape={:?}, strides={:?}, itemsize={})",
-               self.shape.as_slice(),
-               self.strides.as_slice(),
-               self.itemsize)
+        write!(
+            f,
+            "Layout(shape={:?}, strides={:?}, itemsize={})",
+            self.shape.as_slice(),
+            self.strides.as_slice(),
+            self.itemsize
+        )
     }
 }
