@@ -1,0 +1,134 @@
+/* Inter font from Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+/* ── Typography ─────────────────────────────────────────────────────────── */
+
+:root {
+    --mono-font: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+    --body-font: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+body {
+    font-family: var(--body-font);
+    font-feature-settings: "liga" 1, "calt" 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── Reading width constraint ───────────────────────────────────────────── */
+
+.content main {
+    max-width: 780px;
+    margin-inline: auto;
+}
+
+/* ── Code blocks ────────────────────────────────────────────────────────── */
+
+code,
+pre,
+.hljs {
+    font-family: var(--mono-font);
+    font-size: 0.875em;
+}
+
+pre {
+    border-radius: 10px;
+    padding: 1.25rem 1.5rem;
+    overflow-x: auto;
+    line-height: 1.65;
+}
+
+:not(pre) > code {
+    border-radius: 5px;
+    padding: 0.15em 0.45em;
+}
+
+/* ── Sticky glassmorphism mobile menu bar ───────────────────────────────── */
+
+#menu-bar {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(12px) saturate(160%);
+    -webkit-backdrop-filter: blur(12px) saturate(160%);
+    background-color: rgba(255, 255, 255, 0.72);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+    box-shadow: 0 1px 8px rgba(0, 0, 0, 0.06);
+    transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.js #menu-bar:not(.bordered) {
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+}
+
+/* Dark theme glassmorphism */
+.navy #menu-bar,
+.coal #menu-bar,
+.ayu #menu-bar {
+    background-color: rgba(28, 32, 40, 0.80);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+    box-shadow: 0 1px 8px rgba(0, 0, 0, 0.28);
+}
+
+/* ── Sidebar polish ─────────────────────────────────────────────────────── */
+
+.sidebar {
+    font-family: var(--body-font);
+}
+
+.sidebar .chapter-item a {
+    border-radius: 6px;
+    transition: background-color 0.15s ease;
+}
+
+/* ── General prose readability ──────────────────────────────────────────── */
+
+.content p,
+.content li {
+    line-height: 1.75;
+}
+
+.content h1,
+.content h2,
+.content h3,
+.content h4 {
+    font-weight: 600;
+    letter-spacing: -0.015em;
+}
+
+.content a {
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+}
+
+/* ── Table styling ──────────────────────────────────────────────────────── */
+
+.content table {
+    border-radius: 8px;
+    overflow: hidden;
+    border-collapse: collapse;
+    width: 100%;
+}
+
+.content table th,
+.content table td {
+    padding: 0.6rem 1rem;
+}
+
+/* ── Mobile responsiveness ──────────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+    #menu-bar {
+        position: sticky;
+        top: 0;
+    }
+
+    .content main {
+        padding-inline: 1rem;
+    }
+
+    pre {
+        border-radius: 8px;
+        padding: 1rem;
+    }
+}
