@@ -102,6 +102,10 @@ impl SliceArg {
             let abs_step = (-step) as usize;
             if e_reversed_empty(start, stop) {
                 0
+            } else if stop == usize::MAX {
+                // Stop sentinel means "before index 0" for full reverse.
+                // Elements from start down to index 0 inclusive.
+                (start + 1).div_ceil(abs_step)
             } else {
                 start.saturating_sub(stop).div_ceil(abs_step)
             }
