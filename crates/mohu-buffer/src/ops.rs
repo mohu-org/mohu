@@ -183,10 +183,10 @@ pub fn copy_to_contiguous(src: &Buffer, dst: &mut Buffer) -> MohuResult<()> {
         let src_raw = src.as_ptr();
         let dst_raw = unsafe { dst.as_mut_ptr() };
 
-        let src_offsets = NdIndexIter::new(src.shape())
-            .map(|idx| relative_byte_offset(&idx, src.strides()));
-        let dst_offsets = NdIndexIter::new(dst.shape())
-            .map(|idx| relative_byte_offset(&idx, dst.strides()));
+        let src_offsets =
+            NdIndexIter::new(src.shape()).map(|idx| relative_byte_offset(&idx, src.strides()));
+        let dst_offsets =
+            NdIndexIter::new(dst.shape()).map(|idx| relative_byte_offset(&idx, dst.strides()));
 
         for (src_off, dst_off) in src_offsets.zip(dst_offsets) {
             // SAFETY: matching lengths were checked above, and both relative

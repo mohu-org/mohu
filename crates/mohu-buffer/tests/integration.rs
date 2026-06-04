@@ -286,7 +286,10 @@ fn copy_from_respects_fortran_destination_strides() {
 
 #[test]
 fn copy_to_contiguous_respects_nonzero_offset_destination() {
-    let src = Buffer::from_slice(&[1_i32, 2, 3, 4]).unwrap().reshape(&[2, 2]).unwrap();
+    let src = Buffer::from_slice(&[1_i32, 2, 3, 4])
+        .unwrap()
+        .reshape(&[2, 2])
+        .unwrap();
     let mut backing = vec![-1_i32; 9];
     let itemsize = std::mem::size_of::<i32>();
     let layout = Layout::new_custom(
@@ -300,14 +303,8 @@ fn copy_to_contiguous_respects_nonzero_offset_destination() {
 
     // SAFETY: backing stays alive for the whole test, and the custom layout
     // touches only elements 4, 5, 7, and 8 within the 9-element backing Vec.
-    let mut dst = unsafe {
-        Buffer::from_raw_parts(
-            ptr,
-            backing.len() * itemsize,
-            DType::I32,
-            layout,
-        )
-    };
+    let mut dst =
+        unsafe { Buffer::from_raw_parts(ptr, backing.len() * itemsize, DType::I32, layout) };
 
     assert_eq!(dst.offset(), 4 * itemsize);
     assert!(!dst.is_c_contiguous());
