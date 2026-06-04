@@ -483,28 +483,6 @@ impl BufferPool {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn stats_recovers_after_mutex_poison() {
-        let pool = BufferPool::new(1024);
-
-        std::thread::scope(|scope| {
-            let handle = scope.spawn(|| {
-                let _guard = pool.lock();
-                panic!("poison BufferPool lock");
-            });
-            assert!(handle.join().is_err());
-        });
-
-        let stats = pool.stats();
-        assert_eq!(stats.cached_bytes, 0);
-        assert_eq!(stats.cached_blocks, 0);
-    }
-}
-
 impl std::fmt::Debug for BufferPool {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let stats = self.stats();
@@ -531,3 +509,25 @@ impl std::fmt::Debug for BufferPool {
 /// ```
 pub static GLOBAL_POOL: std::sync::LazyLock<BufferPool> =
     std::sync::LazyLock::new(|| BufferPool::new(256 * 1024 * 1024));
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn stats_recovers_after_mutex_poison() {
+        let pool = BufferPool::new(1024);
+
+        std::thread::scope(|scope| {
+            let handle = scope.spawn(|| {
+                let _guard = pool.lock();
+                panic!("poison BufferPool lock");
+            });
+            assert!(handle.join().is_err());
+        });
+
+        let stats = pool.stats();
+        assert_eq!(stats.cached_bytes, 0);
+        assert_eq!(stats.cached_blocks, 0);
+    }
+}
