@@ -122,6 +122,19 @@ fn e_reversed_empty(start: usize, stop: usize) -> bool {
 /// array view.
 ///
 /// Does not own memory — it is always paired with a backing `Buffer`.
+///
+/// # Example
+///
+/// ```
+/// use mohu_buffer::layout::Layout;
+///
+/// let shape = [2, 3];
+/// let itemsize = 4; // e.g., f32
+/// let layout = Layout::new_c(&shape, itemsize).unwrap();
+///
+/// assert_eq!(layout.shape(), &[2, 3]);
+/// assert_eq!(layout.strides(), &[12, 4]); // C-contiguous strides
+/// ```
 #[derive(Clone, PartialEq, Eq)]
 pub struct Layout {
     shape: ShapeVec,
@@ -136,12 +149,28 @@ impl Layout {
     // ─── Constructors ─────────────────────────────────────────────────────────
 
     /// Creates a C-contiguous (row-major) layout for `shape`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use mohu_buffer::layout::Layout;
+    /// let layout = Layout::new_c(&[2, 3], 4).unwrap();
+    /// assert_eq!(layout.strides(), &[12, 4]);
+    /// ```
     pub fn new_c(shape: &[usize], itemsize: usize) -> MohuResult<Self> {
         let strides = c_strides(shape, itemsize);
         Self::new_custom(shape, &strides, 0, itemsize)
     }
 
     /// Creates a Fortran-contiguous (column-major) layout for `shape`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use mohu_buffer::layout::Layout;
+    /// let layout = Layout::new_f(&[2, 3], 4).unwrap();
+    /// assert_eq!(layout.strides(), &[4, 8]);
+    /// ```
     pub fn new_f(shape: &[usize], itemsize: usize) -> MohuResult<Self> {
         let strides = f_strides(shape, itemsize);
         Self::new_custom(shape, &strides, 0, itemsize)
