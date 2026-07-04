@@ -22,6 +22,24 @@ Polars proved you can rewrite the data layer in Rust and win. mohu is that same 
 - SIMD-accelerated math ops
 - Memory layouts NumPy can't express
 
+  ## project architecture
+
+this repo is organized as a cargo workspace. here's a quick map of where things live:
+- **`crates/`** — the actual library code, split into individual crates (core arrays, dispatch, compute kernels, I/O, etc). this is where most contributions happen.
+- **`tests/`** — integration tests that exercise the public API across crates, separate from the unit tests inside each crate.
+- **`examples/`** — small standalone programs showing how to use mohu, meant to be read and run directly.
+- **`docs/`** — longer-form documentation and design notes that don't fit in the README.
+- **`benches/`** — performance benchmarks used to track regressions and validate the "parallel by default" and zero-copy goals.
+- **`scripts/`** — developer tooling and automation scripts (setup, checks, etc) that aren't part of the library itself.
+
+- mohu/
+├── crates/       # library code, one crate per component
+├── tests/        # cross-crate integration tests
+├── examples/     # runnable usage examples
+├── docs/         # extended documentation
+├── benches/      # performance benchmarks
+└── scripts/      # dev tooling and automation
+
 ## status
 
 Early. The foundation is being laid. If you believe the Python numerical stack deserves a rewrite, watch this repo or contribute.
