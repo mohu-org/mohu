@@ -55,5 +55,5 @@ Early. The foundation is being laid. If you believe the Python numerical stack d
 
 ## license
 
-MIT
+MIT  
 
