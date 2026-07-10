@@ -34,3 +34,9 @@ changelog:
 
 size: release
 	@du -sh target/release/libmohu* 2>/dev/null || echo "no release artifacts found"
+
+contrib-guide:
+	@echo "Contributor Quick Reference"
+	@echo "Read CONTRIBUTING.md"
+	@echo "Workspace overview: CRATE_MAP.md"
+	@echo "AI coding guide: CLAUDE.md"

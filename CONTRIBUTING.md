@@ -129,6 +129,27 @@ docs/<short-description>        # documentation
 ci/<short-description>          # CI/tooling changes
 ```
 
+## Project Structure
+
+Before making changes, take a moment to familiarize yourself with the project layout.
+
+- [`CRATE_MAP.md`](CRATE_MAP.md) provides an overview of the workspace crates and explains the responsibility of each crate. It is the best place to start if you're unsure where a change belongs.
+- [`CLAUDE.md`](CLAUDE.md) contains guidance for contributors using AI coding assistants. If you're using AI tools to help with development, please review it before submitting a pull request.
+
+These documents can help you quickly identify the appropriate crate and follow the project's development practices.
+
+
+### Quick Reference
+
+| If you want to... | Start here |
+|-------------------|------------|
+| Understand the workspace architecture | `CRATE_MAP.md` |
+| Use AI coding assistance | `CLAUDE.md` |
+| Work on array operations | `crates/mohu-ops/` |
+| Work on SIMD optimizations | `crates/mohu-simd/` |
+| Add or update benchmarks | `benches/` |
+| Improve documentation | `docs/` |
+| Add or update tests | `tests/` or the relevant crate's `tests/` directory |
 ---
 
 ## Crate map
