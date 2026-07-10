@@ -150,6 +150,7 @@ These documents can help you quickly identify the appropriate crate and follow t
 | Add or update benchmarks | `benches/` |
 | Improve documentation | `docs/` |
 | Add or update tests | `tests/` or the relevant crate's `tests/` directory |
+
 ---
 
 ## Crate map

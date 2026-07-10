@@ -1,4 +1,4 @@
-.PHONY: build release test lint fmt fmt-check check clean bench deny changelog
+.PHONY: build release test lint fmt fmt-check check clean bench deny changelog contrib-guide
 
 build:
 	cargo build --workspace
