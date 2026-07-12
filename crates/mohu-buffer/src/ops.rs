@@ -17,7 +17,7 @@ use mohu_dtype::{
     promote::{CastMode, can_cast},
     scalar::Scalar,
 };
-use mohu_error::{MohuError, MohuResult};
+use mohu_error::{MohuError, MohuResult, bail};
 
 use crate::{
     buffer::Buffer,
@@ -811,6 +811,10 @@ pub fn div_scalar_inplace<T>(buf: &mut Buffer, scalar: T) -> MohuResult<()>
 where
     T: Scalar + Copy + Send + Sync + std::ops::Div<Output = T>,
 {
+    if T::DTYPE.is_integer() && scalar == T::ZERO {
+        bail!(MohuError::DivisionByZero);
+    }
+
     parallel_inplace::<T, _>(buf, |x| x / scalar)
 }
 
