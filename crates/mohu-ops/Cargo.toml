@@ -19,8 +19,6 @@ num-traits.workspace  = true
 rayon.workspace       = true
 thiserror.workspace   = true
 
-half.workspace        = true
-num-complex.workspace = true
 
 [dev-dependencies]
 mohu-testing = { workspace = true }
