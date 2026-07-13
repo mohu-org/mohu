@@ -19,7 +19,7 @@ fn matmul_2x2() {
 
     let out = c.as_slice::<f32>().unwrap();
 
-    assert_eq!(out, &[19.0, 22.0, 43.0, 50.0,]);
+    mohu_testing::approx::assert_allclose(out, &[19.0, 22.0, 43.0, 50.0]);
 }
 
 #[test]

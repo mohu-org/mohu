@@ -757,6 +757,7 @@ dependencies = [
  "mohu-core",
  "mohu-dtype",
  "mohu-error",
+ "mohu-testing",
  "num-complex",
  "num-traits",
  "rayon",
