@@ -137,6 +137,32 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - run: cargo bench --workspace --no-run --all-features
 
+    # ── Benchmark regression check (PR only, non-blocking — informational) ───────
+    bench-compare:
+    name: Benchmark Regression Check
+    runs-on: ubuntu-latest
+    needs: [fmt, clippy]
+    if: github.event_name == 'pull_request'
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: bench-compare
+      - name: Install critcmp
+        run: cargo install critcmp --locked
+      - name: Run benchmarks on PR branch
+        run: cargo bench -p mohu-buffer --bench ndarray_ops -- --save-baseline pr
+      - name: Compare against committed baseline
+        run: |
+          echo "## Benchmark comparison vs \`benches/baselines/main.json\`" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          critcmp benches/baselines/main.json pr >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Comparisons within ±5% are noise on shared CI runners. Larger deltas warrant a closer look before merging." >> "$GITHUB_STEP_SUMMARY"
+
   # ── Semver (PR only; non-blocking until crates are published) ────────────────
   semver:
     name: Semver Check
