@@ -7,11 +7,13 @@ Thank you for your interest in contributing. This document covers everything you
 ## Table of Contents
 
 - [Prerequisites](#prerequisites)
+- [Environment variables](#environment-variables)
 - [Setting up the environment](#setting-up-the-environment)
 - [Workflow](#workflow)
 - [DCO sign-off](#dco-sign-off)
 - [Commit convention](#commit-convention)
 - [Branch naming](#branch-naming)
+- [Running the project locally](#running-the-project-locally)
 - [Crate map](#crate-map)
 - [Running CI checks locally](#running-ci-checks-locally)
 - [Writing tests](#writing-tests)
@@ -31,14 +33,23 @@ Thank you for your interest in contributing. This document covers everything you
 | cargo-machete | latest | `cargo install cargo-machete` |
 
 Verify your setup:
-
 ```sh
 rustc --version        # >= 1.85
 cargo clippy --version
 ```
+---
+## Environment variables
+mohu doesn't require any environment variables to build or test. A couple are
+recognized optionally, to control error-message formatting from `mohu-error`:
+
+| Variable | Effect |
+|----------|--------|
+| `MOHU_COLOR` | Forces colored error output on/off regardless of terminal detection. |
+| `NO_COLOR` | Disables colored error output. Standard convention — see [no-color.org](https://no-color.org/). |
+
+Neither needs to be set for normal development.
 
 ---
-
 ## Setting up the environment
 
 ```sh
@@ -127,6 +138,38 @@ perf/<short-description>        # performance work
 refactor/<short-description>    # refactoring
 docs/<short-description>        # documentation
 ci/<short-description>          # CI/tooling changes
+```
+
+---
+
+## Running the project locally
+
+mohu is a library workspace, not an application — "running it locally" means
+building it, running the example programs, and (optionally) previewing the
+documentation book.
+
+**Run an example:**
+```sh
+cargo run -p mohu-buffer --example buffer_basics
+cargo run -p mohu-buffer --example alloc_and_pool
+cargo run -p mohu-dtype --example dtype_basics
+cargo run -p mohu-dtype --example type_promotion
+```
+
+> Note: the top-level `examples/` directory (`array_basics.rs`, `io_npy.rs`,
+> `linalg_matmul.rs`) currently isn't wired into any crate's `Cargo.toml`, so
+> `cargo run --example <name>` won't find them yet. The commands above use
+> the examples that are registered and runnable today.
+
+**Preview the documentation book** (`docs/` — built with [mdBook](https://rust-lang.github.io/mdBook/)):
+```sh
+cargo install mdbook   # one-time
+mdbook serve docs       # serves locally, live-reloads on save
+```
+
+**Build and inspect API docs:**
+```sh
+cargo doc --workspace --no-deps --all-features --open
 ```
 
 ## Project Structure
