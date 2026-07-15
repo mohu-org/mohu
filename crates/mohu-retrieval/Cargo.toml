@@ -1,0 +1,13 @@
+[package]
+name        = "mohu-retrieval"
+description = "Vector similarity search / ANN retrieval (planned — not yet implemented)"
+version.workspace     = true
+edition.workspace     = true
+license.workspace     = true
+authors.workspace     = true
+repository.workspace  = true
+homepage.workspace    = true
+keywords.workspace    = true
+categories.workspace  = true
+
+[dependencies]

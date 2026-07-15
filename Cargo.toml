@@ -26,6 +26,9 @@ members = [
     # ── I/O & interop ─────────────────────────────────────────────────────────
     "crates/mohu-io",         # .npy / .npz / CSV / HDF5 / Parquet
 
+    # ── Retrieval (placeholder — see ARCHITECTURE.md, issue #286) ─────────────
+    "crates/mohu-retrieval",  # vector similarity search / ANN retrieval
+
     # ── Developer tooling ─────────────────────────────────────────────────────
     "crates/mohu-testing",    # test fixtures, property tests, array comparison
 ]
@@ -66,8 +69,9 @@ mohu-sparse  = { path = "crates/mohu-sparse",  version = "0.1.0" }
 mohu-masked  = { path = "crates/mohu-masked",  version = "0.1.0" }
 
 # ── Internal crates — I/O & tooling ──────────────────────────────────────────
-mohu-io      = { path = "crates/mohu-io",      version = "0.1.0" }
-mohu-testing = { path = "crates/mohu-testing", version = "0.1.0" }
+mohu-io        = { path = "crates/mohu-io",        version = "0.1.0" }
+mohu-testing   = { path = "crates/mohu-testing",   version = "0.1.0" }
+mohu-retrieval = { path = "crates/mohu-retrieval", version = "0.1.0" }
 
 # ── External mohu-org crates (separate repos) ─────────────────────────────────
 mohu-compute = { git = "https://github.com/mohu-org/mohu-compute" }
