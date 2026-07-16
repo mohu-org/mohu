@@ -1,4 +1,4 @@
-[advisories]
+[advisories] 
 vulnerability = "deny"
 unmaintained = "warn"
 yanked = "deny"
