@@ -1,4 +1,4 @@
-[advisories] 
+[advisories]
 vulnerability = "deny"
 unmaintained = "warn"
 yanked = "deny"
@@ -13,13 +13,14 @@ allow = [
     "BSD-3-Clause",
     "ISC",
     "Unicode-DFS-2016",
-    "Zlib",
     "Unicode-3.0",
     "Unlicense",
     "CC0-1.0",
     "BSL-1.0",
     "LGPL-2.1-or-later",
+    "Zlib",
 ]
+confidence-threshold = 0.8
 copyleft = "deny"
 allow-osi-fsf-free = "neither"
 default = "deny"
@@ -31,7 +32,8 @@ wildcards = "deny"
 [sources]
 unknown-registry = "deny"
 unknown-git = "deny"
+allow-registry = ["https://crates.io"]
 allow-git = [
-    "https://github.com/mohu-org/mohu-compute",
-    "https://github.com/mohu-org/mohu-linalg",
+    "https://github.com",
+    "https://github.com",
 ]
