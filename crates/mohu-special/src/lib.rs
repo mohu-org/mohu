@@ -1,3 +1,4 @@
+pub mod bessel;
 /// Special mathematical functions for mohu.
 ///
 /// Equivalent to `scipy.special` — pure-Rust implementations with
@@ -28,9 +29,7 @@
 /// Every scalar function is `#[inline(always)]` and designed to auto-vectorise
 /// under LLVM.  `mohu-simd` provides hand-written AVX2 versions for the
 /// most common (erf, gamma, exp, log) on x86-64.
-
 pub mod beta;
-pub mod bessel;
 pub mod erf;
 pub mod expint;
 pub mod gamma;

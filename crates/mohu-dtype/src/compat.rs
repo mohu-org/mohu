@@ -42,9 +42,9 @@ impl ByteOrder {
     /// Returns the struct-module prefix character for this byte order.
     pub const fn struct_prefix(self) -> char {
         match self {
-            Self::Native      => '=',
-            Self::Little      => '<',
-            Self::Big         => '>',
+            Self::Native => '=',
+            Self::Little => '<',
+            Self::Big => '>',
             Self::NotApplicable => '|',
         }
     }
@@ -53,7 +53,11 @@ impl ByteOrder {
     /// item size.  Single-byte types use `NotApplicable`; multi-byte types
     /// use `Native`.
     pub const fn for_itemsize(itemsize: usize) -> Self {
-        if itemsize == 1 { Self::NotApplicable } else { Self::Native }
+        if itemsize == 1 {
+            Self::NotApplicable
+        } else {
+            Self::Native
+        }
     }
 
     /// Returns `true` if the current host is little-endian.
@@ -63,7 +67,11 @@ impl ByteOrder {
 
     /// Returns the concrete byte order of the host.
     pub fn host() -> Self {
-        if Self::host_is_little_endian() { Self::Little } else { Self::Big }
+        if Self::host_is_little_endian() {
+            Self::Little
+        } else {
+            Self::Big
+        }
     }
 }
 
@@ -88,20 +96,20 @@ impl DType {
     pub const fn struct_format_char(self) -> Option<char> {
         match self {
             Self::Bool => Some('?'),
-            Self::I8   => Some('b'),
-            Self::I16  => Some('h'),
-            Self::I32  => Some('i'),
-            Self::I64  => Some('q'),
-            Self::U8   => Some('B'),
-            Self::U16  => Some('H'),
-            Self::U32  => Some('I'),
-            Self::U64  => Some('Q'),
-            Self::F16  => Some('e'),
-            Self::BF16 => None,         // no struct code
-            Self::F32  => Some('f'),
-            Self::F64  => Some('d'),
+            Self::I8 => Some('b'),
+            Self::I16 => Some('h'),
+            Self::I32 => Some('i'),
+            Self::I64 => Some('q'),
+            Self::U8 => Some('B'),
+            Self::U16 => Some('H'),
+            Self::U32 => Some('I'),
+            Self::U64 => Some('Q'),
+            Self::F16 => Some('e'),
+            Self::BF16 => None, // no struct code
+            Self::F32 => Some('f'),
+            Self::F64 => Some('d'),
             // Complex: struct encodes as two consecutive floats
-            Self::C64  => None,
+            Self::C64 => None,
             Self::C128 => None,
         }
     }
@@ -115,12 +123,12 @@ impl DType {
     /// assert_eq!(DType::I64.to_struct_format().unwrap(), "=q");
     /// ```
     pub fn to_struct_format(self) -> MohuResult<String> {
-        let ch = self.struct_format_char().ok_or_else(|| {
-            MohuError::UnsupportedDType {
-                op:    "struct format",
+        let ch = self
+            .struct_format_char()
+            .ok_or_else(|| MohuError::UnsupportedDType {
+                op: "struct format",
                 dtype: self.to_string(),
-            }
-        })?;
+            })?;
         Ok(format!("={ch}"))
     }
 
@@ -146,19 +154,19 @@ impl DType {
     pub fn buffer_format(self) -> &'static str {
         match self {
             Self::Bool => "|?",
-            Self::I8   => "|b",
-            Self::U8   => "|B",
-            Self::I16  => "<h",
-            Self::U16  => "<H",
-            Self::I32  => "<i",
-            Self::U32  => "<I",
-            Self::I64  => "<q",
-            Self::U64  => "<Q",
-            Self::F16  => "<e",
-            Self::BF16 => "<e",  // non-standard; same size, different format
-            Self::F32  => "<f",
-            Self::F64  => "<d",
-            Self::C64  => "<Zf",
+            Self::I8 => "|b",
+            Self::U8 => "|B",
+            Self::I16 => "<h",
+            Self::U16 => "<H",
+            Self::I32 => "<i",
+            Self::U32 => "<I",
+            Self::I64 => "<q",
+            Self::U64 => "<Q",
+            Self::F16 => "<e",
+            Self::BF16 => "<e", // non-standard; same size, different format
+            Self::F32 => "<f",
+            Self::F64 => "<d",
+            Self::C64 => "<Zf",
             Self::C128 => "<Zd",
         }
     }
@@ -200,17 +208,17 @@ impl DType {
     pub const fn ctypes_name(self) -> Option<&'static str> {
         match self {
             Self::Bool => Some("c_bool"),
-            Self::I8   => Some("c_int8"),
-            Self::I16  => Some("c_int16"),
-            Self::I32  => Some("c_int32"),
-            Self::I64  => Some("c_int64"),
-            Self::U8   => Some("c_uint8"),
-            Self::U16  => Some("c_uint16"),
-            Self::U32  => Some("c_uint32"),
-            Self::U64  => Some("c_uint64"),
-            Self::F32  => Some("c_float"),
-            Self::F64  => Some("c_double"),
-            _ => None,   // F16, BF16, complex have no ctypes equivalent
+            Self::I8 => Some("c_int8"),
+            Self::I16 => Some("c_int16"),
+            Self::I32 => Some("c_int32"),
+            Self::I64 => Some("c_int64"),
+            Self::U8 => Some("c_uint8"),
+            Self::U16 => Some("c_uint16"),
+            Self::U32 => Some("c_uint32"),
+            Self::U64 => Some("c_uint64"),
+            Self::F32 => Some("c_float"),
+            Self::F64 => Some("c_double"),
+            _ => None, // F16, BF16, complex have no ctypes equivalent
         }
     }
 
@@ -220,19 +228,19 @@ impl DType {
     pub const fn c_type_name(self) -> &'static str {
         match self {
             Self::Bool => "_Bool",
-            Self::I8   => "int8_t",
-            Self::I16  => "int16_t",
-            Self::I32  => "int32_t",
-            Self::I64  => "int64_t",
-            Self::U8   => "uint8_t",
-            Self::U16  => "uint16_t",
-            Self::U32  => "uint32_t",
-            Self::U64  => "uint64_t",
-            Self::F16  => "__fp16",
+            Self::I8 => "int8_t",
+            Self::I16 => "int16_t",
+            Self::I32 => "int32_t",
+            Self::I64 => "int64_t",
+            Self::U8 => "uint8_t",
+            Self::U16 => "uint16_t",
+            Self::U32 => "uint32_t",
+            Self::U64 => "uint64_t",
+            Self::F16 => "__fp16",
             Self::BF16 => "__bfloat16",
-            Self::F32  => "float",
-            Self::F64  => "double",
-            Self::C64  => "float _Complex",
+            Self::F32 => "float",
+            Self::F64 => "double",
+            Self::C64 => "float _Complex",
             Self::C128 => "double _Complex",
         }
     }
@@ -243,19 +251,19 @@ impl DType {
     pub const fn rust_type_name(self) -> &'static str {
         match self {
             Self::Bool => "bool",
-            Self::I8   => "i8",
-            Self::I16  => "i16",
-            Self::I32  => "i32",
-            Self::I64  => "i64",
-            Self::U8   => "u8",
-            Self::U16  => "u16",
-            Self::U32  => "u32",
-            Self::U64  => "u64",
-            Self::F16  => "half::f16",
+            Self::I8 => "i8",
+            Self::I16 => "i16",
+            Self::I32 => "i32",
+            Self::I64 => "i64",
+            Self::U8 => "u8",
+            Self::U16 => "u16",
+            Self::U32 => "u32",
+            Self::U64 => "u64",
+            Self::F16 => "half::f16",
             Self::BF16 => "half::bf16",
-            Self::F32  => "f32",
-            Self::F64  => "f64",
-            Self::C64  => "num_complex::Complex<f32>",
+            Self::F32 => "f32",
+            Self::F64 => "f64",
+            Self::C64 => "num_complex::Complex<f32>",
             Self::C128 => "num_complex::Complex<f64>",
         }
     }
@@ -278,17 +286,17 @@ pub mod arrow_compat {
         pub fn to_arrow(self) -> Option<ArrowDataType> {
             match self {
                 Self::Bool => Some(ArrowDataType::Boolean),
-                Self::I8   => Some(ArrowDataType::Int8),
-                Self::I16  => Some(ArrowDataType::Int16),
-                Self::I32  => Some(ArrowDataType::Int32),
-                Self::I64  => Some(ArrowDataType::Int64),
-                Self::U8   => Some(ArrowDataType::UInt8),
-                Self::U16  => Some(ArrowDataType::UInt16),
-                Self::U32  => Some(ArrowDataType::UInt32),
-                Self::U64  => Some(ArrowDataType::UInt64),
-                Self::F16  => Some(ArrowDataType::Float16),
-                Self::F32  => Some(ArrowDataType::Float32),
-                Self::F64  => Some(ArrowDataType::Float64),
+                Self::I8 => Some(ArrowDataType::Int8),
+                Self::I16 => Some(ArrowDataType::Int16),
+                Self::I32 => Some(ArrowDataType::Int32),
+                Self::I64 => Some(ArrowDataType::Int64),
+                Self::U8 => Some(ArrowDataType::UInt8),
+                Self::U16 => Some(ArrowDataType::UInt16),
+                Self::U32 => Some(ArrowDataType::UInt32),
+                Self::U64 => Some(ArrowDataType::UInt64),
+                Self::F16 => Some(ArrowDataType::Float16),
+                Self::F32 => Some(ArrowDataType::Float32),
+                Self::F64 => Some(ArrowDataType::Float64),
                 // BF16 / complex have no standard Arrow equivalent
                 Self::BF16 | Self::C64 | Self::C128 => None,
             }
@@ -300,18 +308,18 @@ pub mod arrow_compat {
         /// no mohu equivalent (timestamps, dictionaries, lists, etc.).
         pub fn from_arrow(dt: &ArrowDataType) -> MohuResult<Self> {
             match dt {
-                ArrowDataType::Boolean   => Ok(Self::Bool),
-                ArrowDataType::Int8      => Ok(Self::I8),
-                ArrowDataType::Int16     => Ok(Self::I16),
-                ArrowDataType::Int32     => Ok(Self::I32),
-                ArrowDataType::Int64     => Ok(Self::I64),
-                ArrowDataType::UInt8     => Ok(Self::U8),
-                ArrowDataType::UInt16    => Ok(Self::U16),
-                ArrowDataType::UInt32    => Ok(Self::U32),
-                ArrowDataType::UInt64    => Ok(Self::U64),
-                ArrowDataType::Float16   => Ok(Self::F16),
-                ArrowDataType::Float32   => Ok(Self::F32),
-                ArrowDataType::Float64   => Ok(Self::F64),
+                ArrowDataType::Boolean => Ok(Self::Bool),
+                ArrowDataType::Int8 => Ok(Self::I8),
+                ArrowDataType::Int16 => Ok(Self::I16),
+                ArrowDataType::Int32 => Ok(Self::I32),
+                ArrowDataType::Int64 => Ok(Self::I64),
+                ArrowDataType::UInt8 => Ok(Self::U8),
+                ArrowDataType::UInt16 => Ok(Self::U16),
+                ArrowDataType::UInt32 => Ok(Self::U32),
+                ArrowDataType::UInt64 => Ok(Self::U64),
+                ArrowDataType::Float16 => Ok(Self::F16),
+                ArrowDataType::Float32 => Ok(Self::F32),
+                ArrowDataType::Float64 => Ok(Self::F64),
                 other => Err(MohuError::ArrowUnsupportedType {
                     arrow_type: format!("{other:?}"),
                 }),

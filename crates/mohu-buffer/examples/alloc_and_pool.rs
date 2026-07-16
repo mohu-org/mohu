@@ -6,12 +6,7 @@
 // This is the kind of low-level memory control that NumPy doesn't expose
 // directly, but is critical for high-performance scientific computing.
 
-use mohu_buffer::{
-    AllocHandle, AllocStats, Strategy,
-    BufferPool, PoolStats, GLOBAL_POOL,
-    SIMD_ALIGN, CACHE_LINE,
-    Buffer,
-};
+use mohu_buffer::{AllocHandle, AllocStats, Buffer, CACHE_LINE, GLOBAL_POOL, SIMD_ALIGN, Strategy};
 use mohu_dtype::DType;
 
 fn main() {
@@ -22,22 +17,32 @@ fn main() {
     // ── Direct allocation with AllocHandle ─────────────────────────────────
     println!("\n── AllocHandle (raw aligned allocation) ──");
     let handle = AllocHandle::alloc(1024, SIMD_ALIGN).unwrap();
-    println!("Allocated: len={}, align={}, strategy={:?}",
-        handle.len(), handle.align(), handle.strategy());
+    println!(
+        "Allocated: len={}, align={}, strategy={:?}",
+        handle.len(),
+        handle.align(),
+        handle.strategy()
+    );
     println!("  Pointer: {:p}", handle.as_ptr());
     println!("  Aligned to 64 bytes: {}", handle.is_aligned_to(64));
     assert!(matches!(handle.strategy(), Strategy::Heap));
 
     // Zeroed allocation
     let zeroed = AllocHandle::alloc_zeroed(512, SIMD_ALIGN).unwrap();
-    println!("\nZeroed alloc: len={}, all zeros: {}",
+    println!(
+        "\nZeroed alloc: len={}, all zeros: {}",
         zeroed.len(),
-        zeroed.as_byte_slice().iter().all(|&b| b == 0));
+        zeroed.as_byte_slice().iter().all(|&b| b == 0)
+    );
 
     // Zero-size allocation
     let empty = AllocHandle::alloc(0, SIMD_ALIGN).unwrap();
-    println!("Zero-size: len={}, is_empty={}, strategy={:?}",
-        empty.len(), empty.is_empty(), empty.strategy());
+    println!(
+        "Zero-size: len={}, is_empty={}, strategy={:?}",
+        empty.len(),
+        empty.is_empty(),
+        empty.strategy()
+    );
 
     // ── Global allocation stats ────────────────────────────────────────────
     println!("\n── Allocation stats (global) ──");
@@ -89,13 +94,17 @@ fn main() {
     println!("\n── Pool warm-up ──");
     pool.warm(&[8192, 32768], 2).unwrap();
     let after_warm = pool.stats();
-    println!("After warm-up: cached={} bytes, blocks={}",
-        after_warm.cached_bytes, after_warm.cached_blocks);
+    println!(
+        "After warm-up: cached={} bytes, blocks={}",
+        after_warm.cached_bytes, after_warm.cached_blocks
+    );
 
     // Per-size-class breakdown
     for sc in pool.size_class_stats() {
-        println!("  Class {:>8} bytes: {} handles ({} bytes cached)",
-            sc.size_class, sc.cached_handles, sc.cached_bytes);
+        println!(
+            "  Class {:>8} bytes: {} handles ({} bytes cached)",
+            sc.size_class, sc.cached_handles, sc.cached_bytes
+        );
     }
 
     // ── Pool trim (reduce memory footprint) ────────────────────────────────
@@ -106,8 +115,11 @@ fn main() {
     println!("\n── Buffer reuse pattern ──");
     for i in 0..3 {
         let buf = Buffer::zeros(DType::F32, &[1000]).unwrap();
-        println!("  Iteration {i}: allocated {} elements, {} bytes",
-            buf.len(), buf.nbytes());
+        println!(
+            "  Iteration {i}: allocated {} elements, {} bytes",
+            buf.len(),
+            buf.nbytes()
+        );
         // buf is dropped here, its allocation returns to the pool
     }
     println!("  Pool after loop: {} cached bytes", pool.cached_bytes());

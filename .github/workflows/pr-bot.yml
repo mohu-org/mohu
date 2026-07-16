@@ -39,24 +39,26 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event.action == 'opened'
     steps:
-      # Safe: fetch-depth 0 on base ref only — no fork code executed
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.base.ref }}
-          fetch-depth: 0
-
-      - name: Get changed files via API
+      - name: Get changed files
         id: changed
-        uses: tj-actions/changed-files@v46
-        with:
-          base_sha: ${{ github.event.pull_request.base.sha }}
-          sha: ${{ github.event.pull_request.head.sha }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          files=$(gh api "repos/$REPOSITORY/pulls/$PR_NUMBER/files" --paginate --jq '.[].filename')
+          count=$(printf '%s\n' "$files" | sed '/^$/d' | wc -l | tr -d ' ')
+          {
+            echo "all_changed_files<<EOF"
+            printf '%s\n' "$files"
+            echo "EOF"
+            echo "all_changed_files_count=$count"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Detect changed crates
         id: crates
         run: |
-          crates=$(echo "${{ steps.changed.outputs.all_changed_files }}" \
-            | tr ' ' '\n' \
+          crates=$(printf '%s\n' "${{ steps.changed.outputs.all_changed_files }}" \
             | grep -oP 'crates/[^/]+' \
             | sort -u \
             | tr '\n' ', ' \

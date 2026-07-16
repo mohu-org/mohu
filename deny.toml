@@ -16,6 +16,11 @@ allow = [
     "ISC",
     "Unicode-DFS-2016",
     "Zlib",
+    "Unicode-3.0",
+    "Unlicense",
+    "CC0-1.0",
+    "BSL-1.0",
+    "LGPL-2.1-or-later",
 ]
 copyleft = "deny"
 allow-osi-fsf-free = "neither"

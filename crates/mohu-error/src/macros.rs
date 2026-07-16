@@ -95,7 +95,11 @@ macro_rules! assert_axis_valid {
                 },
             });
         }
-        if ax < 0 { (nd_i + ax) as usize } else { ax as usize }
+        if ax < 0 {
+            (nd_i + ax) as usize
+        } else {
+            ax as usize
+        }
     }};
 }
 
@@ -117,6 +121,10 @@ macro_rules! assert_in_bounds {
                 size: sz,
             });
         }
-        if idx < 0 { (sz_i + idx) as usize } else { idx as usize }
+        if idx < 0 {
+            (sz_i + idx) as usize
+        } else {
+            idx as usize
+        }
     }};
 }
