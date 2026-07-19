@@ -70,8 +70,8 @@ mohu-io      = { path = "crates/mohu-io",      version = "0.1.0" }
 mohu-testing = { path = "crates/mohu-testing", version = "0.1.0" }
 
 # ── External mohu-org crates (separate repos) ─────────────────────────────────
-mohu-compute = { git = "https://github.com/mohu-org/mohu-compute" }
-mohu-linalg  = { git = "https://github.com/mohu-org/mohu-linalg" }
+mohu-compute = { git = "https://github.com/mohu-org/mohu-compute", rev = "9243ba1fcd292adf789b87ed7884f68ab3b6d9fb" }
+mohu-linalg  = { git = "https://github.com/mohu-org/mohu-linalg", rev = "2f4d83969b27a2d0e21f5c90ab92c2b078bb0844" }
 
 # ── Parallelism ───────────────────────────────────────────────────────────────
 rayon        = "1.10"
