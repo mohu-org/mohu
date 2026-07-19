@@ -84,10 +84,10 @@ num-complex  = "0.4"
 num-integer  = "0.1"
 
 # ── FFT ───────────────────────────────────────────────────────────────────────
-rustfft      = "6"
+rustfft      = "6.4.1"
 
 # ── PRNG ─────────────────────────────────────────────────────────────────────
-rand         = { version = "0.9", features = ["small_rng"] }
+rand         = { version = "0.9.4", features = ["small_rng"] }
 rand_chacha  = "0.9"
 
 # ── Sparse / linear algebra utilities ────────────────────────────────────────
