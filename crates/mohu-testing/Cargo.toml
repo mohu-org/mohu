@@ -3,6 +3,7 @@ name        = "mohu-testing"
 description = "Test utilities, fixtures, and property-test helpers for mohu"
 version.workspace     = true
 edition.workspace     = true
+rust-version.workspace = true
 license.workspace     = true
 authors.workspace     = true
 repository.workspace  = true

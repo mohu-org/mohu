@@ -3,6 +3,7 @@ name        = "mohu-array"
 description = "NdArray<T> — the core N-dimensional array type composing dtype, buffer, shape, and slice info"
 version.workspace     = true
 edition.workspace     = true
+rust-version.workspace = true
 license.workspace     = true
 authors.workspace     = true
 repository.workspace  = true
