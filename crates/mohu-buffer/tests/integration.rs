@@ -1,10 +1,13 @@
 //! Integration tests for mohu-buffer — exercises every major subsystem.
 
+use std::ptr::NonNull;
+
 use mohu_buffer::{
-    Buffer, GLOBAL_POOL, Order, SliceArg, ops,
+    Buffer, GLOBAL_POOL, Layout, Order, SliceArg, ops,
     strides::{NdIndexIter, broadcast_strides, c_strides, f_strides},
 };
 use mohu_dtype::{DType, promote::CastMode};
+use mohu_error::MohuError;
 
 // ── 1. Allocation ─────────────────────────────────────────────────────────────
 
@@ -230,6 +233,24 @@ fn fill_zero_clears_values() {
 }
 
 #[test]
+fn div_scalar_inplace_integer_zero_returns_error() {
+    let mut buf = Buffer::from_slice(&[2_i32, 4, 6]).unwrap();
+    let err = ops::div_scalar_inplace(&mut buf, 0_i32).unwrap_err();
+    assert!(matches!(err, MohuError::DivisionByZero));
+    assert_eq!(buf.as_slice::<i32>().unwrap(), &[2, 4, 6]);
+
+    let mut buf = Buffer::from_slice(&[8_i64, 16, 24]).unwrap();
+    let err = ops::div_scalar_inplace(&mut buf, 0_i64).unwrap_err();
+    assert!(matches!(err, MohuError::DivisionByZero));
+    assert_eq!(buf.as_slice::<i64>().unwrap(), &[8, 16, 24]);
+
+    let mut buf = Buffer::from_slice(&[10_u32, 20, 30]).unwrap();
+    let err = ops::div_scalar_inplace(&mut buf, 0_u32).unwrap_err();
+    assert!(matches!(err, MohuError::DivisionByZero));
+    assert_eq!(buf.as_slice::<u32>().unwrap(), &[10, 20, 30]);
+}
+
+#[test]
 fn copy_to_contiguous_from_transposed() {
     // Transposed 3×3: source is non-contiguous
     let data: Vec<f64> = (0..9).map(|x| x as f64).collect();
@@ -245,6 +266,77 @@ fn copy_to_contiguous_from_transposed() {
     assert_eq!(dst.get::<f64>(&[0, 1]).unwrap(), 3.0_f64);
     // transposed[1,0] = original[0,1] = 1.0
     assert_eq!(dst.get::<f64>(&[1, 0]).unwrap(), 1.0_f64);
+}
+
+#[test]
+fn copy_to_contiguous_respects_fortran_destination_strides() {
+    let data: Vec<i32> = (1..=6).collect();
+    let src = Buffer::from_slice(&data).unwrap().reshape(&[2, 3]).unwrap();
+    let mut dst = Buffer::alloc(DType::I32, &[2, 3], Order::F).unwrap();
+
+    assert!(!dst.is_c_contiguous());
+    assert!(dst.is_f_contiguous());
+
+    ops::copy_to_contiguous(&src, &mut dst).unwrap();
+
+    assert_eq!(dst.get::<i32>(&[0, 0]).unwrap(), 1);
+    assert_eq!(dst.get::<i32>(&[0, 1]).unwrap(), 2);
+    assert_eq!(dst.get::<i32>(&[0, 2]).unwrap(), 3);
+    assert_eq!(dst.get::<i32>(&[1, 0]).unwrap(), 4);
+    assert_eq!(dst.get::<i32>(&[1, 1]).unwrap(), 5);
+    assert_eq!(dst.get::<i32>(&[1, 2]).unwrap(), 6);
+}
+
+#[test]
+fn copy_from_respects_fortran_destination_strides() {
+    let data: Vec<i32> = (10..=15).collect();
+    let src = Buffer::from_slice(&data).unwrap().reshape(&[2, 3]).unwrap();
+    let mut dst = Buffer::alloc(DType::I32, &[2, 3], Order::F).unwrap();
+
+    dst.copy_from(&src).unwrap();
+
+    assert_eq!(dst.get::<i32>(&[0, 0]).unwrap(), 10);
+    assert_eq!(dst.get::<i32>(&[0, 1]).unwrap(), 11);
+    assert_eq!(dst.get::<i32>(&[0, 2]).unwrap(), 12);
+    assert_eq!(dst.get::<i32>(&[1, 0]).unwrap(), 13);
+    assert_eq!(dst.get::<i32>(&[1, 1]).unwrap(), 14);
+    assert_eq!(dst.get::<i32>(&[1, 2]).unwrap(), 15);
+}
+
+#[test]
+fn copy_to_contiguous_respects_nonzero_offset_destination() {
+    let src = Buffer::from_slice(&[1_i32, 2, 3, 4])
+        .unwrap()
+        .reshape(&[2, 2])
+        .unwrap();
+    let mut backing = vec![-1_i32; 9];
+    let itemsize = std::mem::size_of::<i32>();
+    let layout = Layout::new_custom(
+        &[2, 2],
+        &[(3 * itemsize) as isize, itemsize as isize],
+        4 * itemsize,
+        itemsize,
+    )
+    .unwrap();
+    let ptr = NonNull::new(backing.as_mut_ptr() as *mut u8).unwrap();
+
+    // SAFETY: backing stays alive for the whole test, and the custom layout
+    // touches only elements 4, 5, 7, and 8 within the 9-element backing Vec.
+    let mut dst =
+        unsafe { Buffer::from_raw_parts(ptr, backing.len() * itemsize, DType::I32, layout) };
+
+    assert_eq!(dst.offset(), 4 * itemsize);
+    assert!(!dst.is_c_contiguous());
+
+    ops::copy_to_contiguous(&src, &mut dst).unwrap();
+
+    assert_eq!(dst.get::<i32>(&[0, 0]).unwrap(), 1);
+    assert_eq!(dst.get::<i32>(&[0, 1]).unwrap(), 2);
+    assert_eq!(dst.get::<i32>(&[1, 0]).unwrap(), 3);
+    assert_eq!(dst.get::<i32>(&[1, 1]).unwrap(), 4);
+
+    drop(dst);
+    assert_eq!(backing, vec![-1, -1, -1, -1, 1, 2, -1, 3, 4]);
 }
 
 // ── 9. Buffer pool ────────────────────────────────────────────────────────────
