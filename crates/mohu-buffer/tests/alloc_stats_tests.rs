@@ -35,7 +35,7 @@ fn drop_decrements_live_bytes() {
 
     let after = AllocStats::snapshot();
 
-    assert!(after.free_count >= before.free_count + 1);
+    assert!(after.free_count > before.free_count);
 
     assert!(after.live_bytes <= before.live_bytes);
 }
