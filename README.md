@@ -37,7 +37,7 @@ one layer down.
 **Pre-alpha. Not usable as a NumPy replacement yet, and not published to crates.io or
 PyPI.** The memory foundation is real and tested; the compute layers above it are
 scaffolded but largely unimplemented. This table is the honest state of the workspace —
-if a crate says *stub*, its source files are empty.
+if a crate says *stub*, its implementation modules contain no public implementation.
 
 | Crate | What it does | State |
 |---|---|---|
