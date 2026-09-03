@@ -519,3 +519,108 @@ fn dlpack_rejects_negative_ndim_before_pointer_reads() {
         deleter(managed);
     }
 }
+
+#[test]
+fn sum_axis_dtype_and_values_follow_policy() {
+    let bools = Buffer::from_vec(vec![true, false, true]).unwrap();
+    let sum = bools.sum_axis(0, false).unwrap();
+    assert_eq!(sum.dtype(), DType::I64);
+    assert_eq!(sum.as_slice::<i64>().unwrap(), &[2]);
+
+    let signed = Buffer::from_vec(vec![1_i32, 2, 3, 4])
+        .unwrap()
+        .reshape(&[2, 2])
+        .unwrap();
+    let sum = signed.sum_axis(0, true).unwrap();
+    assert_eq!(sum.dtype(), DType::I64);
+    assert_eq!(sum.shape(), &[1, 2]);
+    assert_eq!(sum.as_slice::<i64>().unwrap(), &[4, 6]);
+
+    let unsigned = Buffer::from_vec(vec![1_u32, 2, 3, 4])
+        .unwrap()
+        .reshape(&[2, 2])
+        .unwrap();
+    let sum = unsigned.sum_axis(1, false).unwrap();
+    assert_eq!(sum.dtype(), DType::U64);
+    assert_eq!(sum.as_slice::<u64>().unwrap(), &[3, 7]);
+
+    let signed_overflow = Buffer::from_vec(vec![i64::MAX, 1])
+        .unwrap()
+        .sum_axis(0, false)
+        .unwrap();
+    assert_eq!(signed_overflow.as_slice::<i64>().unwrap(), &[i64::MIN]);
+    let unsigned_overflow = Buffer::from_vec(vec![u64::MAX, 1])
+        .unwrap()
+        .sum_axis(0, false)
+        .unwrap();
+    assert_eq!(unsigned_overflow.as_slice::<u64>().unwrap(), &[0]);
+}
+
+#[test]
+fn sum_axis_preserves_float_and_complex_output_dtypes() {
+    let f16 = Buffer::from_vec(vec![half::f16::from_f32(1.25), half::f16::from_f32(2.5)]).unwrap();
+    let sum = f16.sum_axis(0, false).unwrap();
+    assert_eq!(sum.dtype(), DType::F16);
+    assert!((sum.as_slice::<half::f16>().unwrap()[0].to_f32() - 3.75).abs() < 0.01);
+
+    let bf16 =
+        Buffer::from_vec(vec![half::bf16::from_f32(1.25), half::bf16::from_f32(2.5)]).unwrap();
+    let sum = bf16.sum_axis(0, false).unwrap();
+    assert_eq!(sum.dtype(), DType::BF16);
+    assert!((sum.as_slice::<half::bf16>().unwrap()[0].to_f32() - 3.75).abs() < 0.02);
+
+    let f32s = Buffer::from_vec(vec![1.25_f32, 2.5])
+        .unwrap()
+        .sum_axis(0, false)
+        .unwrap();
+    assert_eq!(f32s.dtype(), DType::F32);
+    assert!((f32s.as_slice::<f32>().unwrap()[0] - 3.75).abs() < 1e-6);
+    let f64s = Buffer::from_vec(vec![1.25_f64, 2.5])
+        .unwrap()
+        .sum_axis(0, false)
+        .unwrap();
+    assert_eq!(f64s.dtype(), DType::F64);
+    assert!((f64s.as_slice::<f64>().unwrap()[0] - 3.75).abs() < 1e-12);
+
+    let c64s = Buffer::from_vec(vec![
+        num_complex::Complex::new(1.0_f32, 2.0),
+        num_complex::Complex::new(3.0, 4.0),
+    ])
+    .unwrap()
+    .sum_axis(0, false)
+    .unwrap();
+    assert_eq!(c64s.dtype(), DType::C64);
+    assert_eq!(
+        c64s.as_slice::<num_complex::Complex<f32>>().unwrap(),
+        &[num_complex::Complex::new(4.0, 6.0)]
+    );
+    let c128s = Buffer::from_vec(vec![
+        num_complex::Complex::new(1.0_f64, 2.0),
+        num_complex::Complex::new(3.0, 4.0),
+    ])
+    .unwrap()
+    .sum_axis(0, false)
+    .unwrap();
+    assert_eq!(c128s.dtype(), DType::C128);
+    assert_eq!(
+        c128s.as_slice::<num_complex::Complex<f64>>().unwrap(),
+        &[num_complex::Complex::new(4.0, 6.0)]
+    );
+}
+
+#[test]
+fn sum_axis_handles_strided_and_empty_inputs() {
+    let transposed = Buffer::from_vec(vec![1_i32, 2, 3, 4, 5, 6])
+        .unwrap()
+        .reshape(&[2, 3])
+        .unwrap()
+        .transpose();
+    let sum = transposed.sum_axis(1, false).unwrap();
+    assert_eq!(sum.as_slice::<i64>().unwrap(), &[5, 7, 9]);
+
+    let empty = Buffer::zeros(DType::I32, &[2, 0]).unwrap();
+    let sum = empty.sum_axis(1, false).unwrap();
+    assert_eq!(sum.dtype(), DType::I64);
+    assert_eq!(sum.shape(), &[2]);
+    assert_eq!(sum.as_slice::<i64>().unwrap(), &[0, 0]);
+}
