@@ -16,6 +16,7 @@ Thank you for your interest in contributing. This document covers everything you
 - [Running the project locally](#running-the-project-locally)
 - [Crate map](#crate-map)
 - [Running CI checks locally](#running-ci-checks-locally)
+- [Troubleshooting](#troubleshooting)
 - [Writing tests](#writing-tests)
 - [Writing benchmarks](#writing-benchmarks)
 - [Documentation](#documentation)
@@ -271,6 +272,103 @@ cargo machete
 cargo bench --workspace --no-run --all-features
 ```
 
+---
+
+## Troubleshooting
+
+If you encounter build or installation issues, try the solutions below before opening an issue.
+
+### Rust toolchain version mismatch
+
+**Problem**
+
+The build fails because the required Rust toolchain is missing or outdated.
+
+**Solution**
+Ensure you're using Rust 1.85 or newer, as listed in the Prerequisites section.
+Update Rust and verify your installation:
+
+```sh
+rustup update stable
+rustup toolchain install stable
+rustc --version
+cargo --version
+```
+
+---
+
+### Cargo dependency resolution errors
+
+**Problem**
+
+Cargo reports dependency conflicts or fails to resolve package versions.
+
+**Solution**
+
+Clean the workspace and update dependencies:
+
+```sh
+cargo clean
+cargo update
+cargo build
+```
+
+If the issue persists, make sure your branch is up to date with `upstream/main`.
+
+---
+
+### Missing system dependencies
+
+Some crates require common system build tools.
+
+On Ubuntu/Debian:
+
+```sh
+sudo apt update
+sudo apt install build-essential pkg-config
+```
+
+Install any additional dependencies mentioned in compiler error messages.
+
+---
+
+### Python binding build failures
+
+If you are working with `mohu-py`, ensure that Python 3.10 or newer is installed.
+
+Verify your Python installation:
+
+```sh
+python --version
+python -m pip install --upgrade pip
+```
+
+If multiple Python versions are installed, ensure Cargo is using the intended interpreter.
+
+---
+
+### Platform-specific notes
+
+- **Linux:** Install the required build tools and keep Rust updated.
+- **Windows:** Use the latest Rust toolchain installed via `rustup`. Running commands from PowerShell or Git Bash is recommended.
+- **macOS:** Install Xcode Command Line Tools before building the project.
+
+---
+
+### Helpful Cargo commands
+
+These commands are useful when debugging build issues:
+
+```sh
+cargo check
+cargo build
+cargo test
+cargo clean
+cargo tree
+cargo metadata
+cargo fmt --all
+cargo clippy --workspace --all-targets --all-features -- -D warnings
+```
 ---
 
 ## Writing tests
