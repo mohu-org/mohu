@@ -1492,6 +1492,10 @@ impl Buffer {
 
     /// Sums over `axis`, returning a buffer with that axis collapsed.
     ///
+    /// Integer and boolean inputs use fixed-width wrapping accumulation. F16
+    /// and BF16 accumulate in F32, then round back to their input dtype.
+    /// Floating and complex outputs preserve their input dtype.
+    ///
     /// If `keepdims` is true, the result has a size-1 axis in place of `axis`.
     pub fn sum_axis(&self, axis: usize, keepdims: bool) -> MohuResult<Self> {
         if axis >= self.ndim() {
@@ -1500,7 +1504,8 @@ impl Buffer {
                 self.ndim()
             )));
         }
-        // Build output shape
+
+        let policy = SumPolicy::for_dtype(self.dtype);
         let mut out_shape: Vec<usize> = self.shape().to_vec();
         let axis_size = out_shape[axis];
         if keepdims {
@@ -1509,23 +1514,15 @@ impl Buffer {
             out_shape.remove(axis);
         }
 
-        let out = Self::zeros(DType::F64, &out_shape)?;
-        let out_raw = unsafe { out.as_mut_ptr() as *mut f64 };
-        let _ = out.len(); // shape check only; iteration is index-driven
-
-        // For each output element, sum the corresponding slice along axis.
-        // Iterate over all positions in the output.
-        use crate::strides::NdIndexIter;
-        let out_shape_full: Vec<usize> = out.shape().to_vec();
-
-        // Build src index from out index by inserting the axis.
+        let out = Self::zeros(policy.output, &out_shape)?;
+        let out_raw = unsafe { out.as_mut_ptr() };
         let itemsize = self.dtype.itemsize();
         let src_raw = self.as_ptr();
 
-        for (out_flat, out_idx) in NdIndexIter::new(&out_shape_full).enumerate() {
-            let mut acc = 0.0f64;
+        use crate::strides::NdIndexIter;
+        for (out_flat, out_idx) in NdIndexIter::new(out.shape()).enumerate() {
+            let mut acc = SumAccumulator::zero(policy.accumulator);
             for k in 0..axis_size {
-                // Build source index
                 let mut src_idx = out_idx.to_vec();
                 if keepdims {
                     src_idx[axis] = k;
@@ -1533,13 +1530,14 @@ impl Buffer {
                     src_idx.insert(axis, k);
                 }
                 let off = self.layout.byte_offset(&src_idx)?;
-                // Read element as f64 via dispatch
-                let val = read_as_f64(unsafe { src_raw.add(off) }, self.dtype, itemsize);
-                acc += val;
+                let value = read_sum_value(unsafe { src_raw.add(off) }, self.dtype, itemsize);
+                acc.add(value);
             }
-            unsafe {
-                out_raw.add(out_flat).write(acc);
-            }
+            write_sum_value(
+                unsafe { out_raw.add(out_flat * policy.output.itemsize()) },
+                policy.output,
+                acc,
+            );
         }
 
         Ok(out)
@@ -2067,6 +2065,121 @@ fn dtype_one_bytes(dtype: DType) -> Vec<u8> {
     }
     use mohu_dtype::dispatch_dtype;
     dispatch_dtype!(dtype, one_bytes)
+}
+
+#[derive(Debug, Clone, Copy)]
+enum SumAccumulator {
+    I64(i64),
+    U64(u64),
+    F32(f32),
+    F64(f64),
+    C64(num_complex::Complex<f32>),
+    C128(num_complex::Complex<f64>),
+}
+
+#[derive(Debug, Clone, Copy)]
+struct SumPolicy {
+    output: DType,
+    accumulator: DType,
+}
+
+impl SumPolicy {
+    fn for_dtype(dtype: DType) -> Self {
+        let (output, accumulator) = match dtype {
+            DType::Bool | DType::I8 | DType::I16 | DType::I32 | DType::I64 => {
+                (DType::I64, DType::I64)
+            },
+            DType::U8 | DType::U16 | DType::U32 | DType::U64 => (DType::U64, DType::U64),
+            DType::F16 | DType::BF16 => (dtype, DType::F32),
+            DType::F32 => (DType::F32, DType::F32),
+            DType::F64 => (DType::F64, DType::F64),
+            DType::C64 => (DType::C64, DType::C64),
+            DType::C128 => (DType::C128, DType::C128),
+        };
+        Self {
+            output,
+            accumulator,
+        }
+    }
+}
+
+impl SumAccumulator {
+    fn zero(dtype: DType) -> Self {
+        match dtype {
+            DType::I64 => Self::I64(0),
+            DType::U64 => Self::U64(0),
+            DType::F32 => Self::F32(0.0),
+            DType::F64 => Self::F64(0.0),
+            DType::C64 => Self::C64(num_complex::Complex::new(0.0, 0.0)),
+            DType::C128 => Self::C128(num_complex::Complex::new(0.0, 0.0)),
+            _ => unreachable!("sum accumulator dtype must be widened numeric dtype"),
+        }
+    }
+
+    fn add(&mut self, value: Self) {
+        match (self, value) {
+            (Self::I64(a), Self::I64(b)) => *a = a.wrapping_add(b),
+            (Self::U64(a), Self::U64(b)) => *a = a.wrapping_add(b),
+            (Self::F32(a), Self::F32(b)) => *a += b,
+            (Self::F64(a), Self::F64(b)) => *a += b,
+            (Self::C64(a), Self::C64(b)) => *a += b,
+            (Self::C128(a), Self::C128(b)) => *a += b,
+            _ => unreachable!("sum input and policy accumulator dtypes must agree"),
+        }
+    }
+}
+
+fn read_sum_value(ptr: *const u8, dtype: DType, _itemsize: usize) -> SumAccumulator {
+    use mohu_dtype::DType::*;
+    match dtype {
+        Bool => SumAccumulator::I64(unsafe { *ptr as i64 }),
+        I8 => SumAccumulator::I64(unsafe { ptr.cast::<i8>().read_unaligned() as i64 }),
+        I16 => SumAccumulator::I64(unsafe { ptr.cast::<i16>().read_unaligned() as i64 }),
+        I32 => SumAccumulator::I64(unsafe { ptr.cast::<i32>().read_unaligned() as i64 }),
+        I64 => SumAccumulator::I64(unsafe { ptr.cast::<i64>().read_unaligned() }),
+        U8 => SumAccumulator::U64(unsafe { *ptr as u64 }),
+        U16 => SumAccumulator::U64(unsafe { ptr.cast::<u16>().read_unaligned() as u64 }),
+        U32 => SumAccumulator::U64(unsafe { ptr.cast::<u32>().read_unaligned() as u64 }),
+        U64 => SumAccumulator::U64(unsafe { ptr.cast::<u64>().read_unaligned() }),
+        F16 => SumAccumulator::F32(
+            half::f16::from_bits(unsafe { ptr.cast::<u16>().read_unaligned() }).to_f32(),
+        ),
+        BF16 => SumAccumulator::F32(
+            half::bf16::from_bits(unsafe { ptr.cast::<u16>().read_unaligned() }).to_f32(),
+        ),
+        F32 => SumAccumulator::F32(unsafe { ptr.cast::<f32>().read_unaligned() }),
+        F64 => SumAccumulator::F64(unsafe { ptr.cast::<f64>().read_unaligned() }),
+        C64 => {
+            SumAccumulator::C64(unsafe { ptr.cast::<num_complex::Complex<f32>>().read_unaligned() })
+        },
+        C128 => SumAccumulator::C128(unsafe {
+            ptr.cast::<num_complex::Complex<f64>>().read_unaligned()
+        }),
+    }
+}
+
+fn write_sum_value(ptr: *mut u8, dtype: DType, value: SumAccumulator) {
+    match (dtype, value) {
+        (DType::I64, SumAccumulator::I64(v)) => unsafe { ptr.cast::<i64>().write_unaligned(v) },
+        (DType::U64, SumAccumulator::U64(v)) => unsafe { ptr.cast::<u64>().write_unaligned(v) },
+        (DType::F16, SumAccumulator::F32(v)) => unsafe {
+            ptr.cast::<u16>()
+                .write_unaligned(half::f16::from_f32(v).to_bits())
+        },
+        (DType::BF16, SumAccumulator::F32(v)) => unsafe {
+            ptr.cast::<u16>()
+                .write_unaligned(half::bf16::from_f32(v).to_bits())
+        },
+        (DType::F32, SumAccumulator::F32(v)) => unsafe { ptr.cast::<f32>().write_unaligned(v) },
+        (DType::F64, SumAccumulator::F64(v)) => unsafe { ptr.cast::<f64>().write_unaligned(v) },
+        (DType::C64, SumAccumulator::C64(v)) => unsafe {
+            ptr.cast::<num_complex::Complex<f32>>().write_unaligned(v)
+        },
+        (DType::C128, SumAccumulator::C128(v)) => unsafe {
+            ptr.cast::<num_complex::Complex<f64>>().write_unaligned(v)
+        },
+        _ => unreachable!("sum output and accumulator dtypes must agree"),
+    }
 }
 
 /// Reads a single element at `ptr` (of the given dtype) and casts to f64.
