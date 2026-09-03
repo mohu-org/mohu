@@ -110,6 +110,16 @@ struct DLExportCtx {
 }
 
 /// C-ABI DLManagedTensor (DLPack v0.8).
+#[repr(align(64))]
+struct ZeroSizeSentinel([u8; 64]);
+
+static ZERO_SIZE_SENTINEL: ZeroSizeSentinel = ZeroSizeSentinel([0; 64]);
+
+/// Returns non-null, SIMD-aligned storage suitable as a zero-byte sentinel.
+fn zero_size_ptr() -> NonNull<u8> {
+    NonNull::from(&ZERO_SIZE_SENTINEL.0[0])
+}
+
 #[repr(C)]
 pub struct DLManagedTensor {
     pub dl_tensor: DLTensor,
@@ -186,7 +196,7 @@ impl RawBuffer {
             AllocHandle::alloc(nbytes, SIMD_ALIGN)?
         };
         let ptr = if nbytes == 0 {
-            NonNull::dangling()
+            zero_size_ptr()
         } else {
             handle.as_non_null()?
         };
@@ -472,35 +482,78 @@ impl Buffer {
 
         let dtype = DType::from_dlpack(tensor_dtype.code, tensor_dtype.bits, tensor_dtype.lanes)?;
 
+        if tensor_ndim < 0 {
+            return Err(MohuError::DLPackInvalid(
+                "DLTensor.ndim must be non-negative".to_string(),
+            ));
+        }
         let ndim = tensor_ndim as usize;
-        let byte_offset = tensor_byte_offset as usize;
-        let base_ptr = unsafe { (tensor_data as *mut u8).add(byte_offset) };
-        let ptr = NonNull::new(base_ptr)
-            .ok_or_else(|| MohuError::DLPackInvalid("DLTensor.data is null".to_string()))?;
+        if ndim > 0 && tensor_shape.is_null() {
+            return Err(MohuError::DLPackInvalid(
+                "DLTensor.shape is null for non-zero ndim".to_string(),
+            ));
+        }
+        let byte_offset = usize::try_from(tensor_byte_offset).map_err(|_| {
+            MohuError::DLPackInvalid("DLTensor.byte_offset does not fit usize".to_string())
+        })?;
 
         let shape: Vec<usize> = if ndim == 0 {
             vec![]
         } else {
+            // SAFETY: non-zero ndim was checked with non-null shape above; the
+            // caller's DLPack contract guarantees ndim readable shape entries.
             unsafe { std::slice::from_raw_parts(tensor_shape, ndim) }
                 .iter()
-                .map(|&d| d as usize)
-                .collect()
+                .map(|&d| {
+                    usize::try_from(d).map_err(|_| {
+                        MohuError::DLPackInvalid(
+                            "DLTensor.shape contains a negative dimension".to_string(),
+                        )
+                    })
+                })
+                .collect::<MohuResult<Vec<_>>>()?
         };
+
+        let size = shape
+            .iter()
+            .try_fold(1usize, |size, &dim| size.checked_mul(dim))
+            .ok_or_else(|| {
+                MohuError::DLPackInvalid("DLTensor shape size overflows usize".to_string())
+            })?;
 
         // Build layout from DLPack strides (element counts → bytes).
         let layout = if tensor_strides.is_null() {
             Layout::new_c(&shape, dtype.itemsize())?
         } else {
+            // SAFETY: non-null strides with ndim entries is required by DLPack.
             let raw_strides = unsafe { std::slice::from_raw_parts(tensor_strides, ndim) };
             let byte_strides: Vec<isize> = raw_strides
                 .iter()
-                .map(|&s| (s * dtype.itemsize() as i64) as isize)
-                .collect();
+                .map(|&s| {
+                    s.checked_mul(dtype.itemsize() as i64)
+                        .and_then(|s| isize::try_from(s).ok())
+                        .ok_or_else(|| {
+                            MohuError::DLPackInvalid(
+                                "DLTensor.strides overflow byte stride".to_string(),
+                            )
+                        })
+                })
+                .collect::<MohuResult<Vec<_>>>()?;
             Layout::new_custom(&shape, &byte_strides, 0, dtype.itemsize())?
         };
 
-        let size = layout.size();
-        let nbytes = size * dtype.itemsize();
+        let nbytes = size
+            .checked_mul(dtype.itemsize())
+            .ok_or_else(|| MohuError::DLPackInvalid("DLTensor size overflows usize".to_string()))?;
+        let ptr = if nbytes == 0 {
+            zero_size_ptr()
+        } else {
+            // SAFETY: non-empty DLPack data must be valid for byte_offset plus
+            // the imported layout span, as required by from_dlpack's contract.
+            let base_ptr = unsafe { (tensor_data as *mut u8).add(byte_offset) };
+            NonNull::new(base_ptr)
+                .ok_or_else(|| MohuError::DLPackInvalid("DLTensor.data is null".to_string()))?
+        };
 
         let raw = Arc::new(unsafe { RawBuffer::from_dlpack_ptr(managed, ptr, nbytes) });
         let mut flags = Self::compute_flags(&raw, &layout);

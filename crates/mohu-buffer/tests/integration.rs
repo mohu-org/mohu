@@ -434,3 +434,88 @@ fn shape_predicates_cover_common_shapes() {
     let s = Buffer::zeros(DType::F64, &[]).unwrap();
     assert!(s.is_scalar_shape());
 }
+
+#[test]
+fn dlpack_zero_size_null_data_is_valid_and_deleter_runs() {
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    static DROPS: AtomicUsize = AtomicUsize::new(0);
+    unsafe extern "C" fn deleter(ptr: *mut mohu_buffer::DLManagedTensor) {
+        if ptr.is_null() {
+            return;
+        }
+        unsafe {
+            let shape = (*ptr).dl_tensor.shape as *mut i64;
+            if !shape.is_null() {
+                drop(Vec::from_raw_parts(shape, 1, 1));
+            }
+            drop(Box::from_raw(ptr));
+        }
+        DROPS.fetch_add(1, Ordering::SeqCst);
+    }
+    DROPS.store(0, Ordering::SeqCst);
+    let shape = Box::into_raw(Box::new([0_i64])) as *const i64;
+    let managed = Box::into_raw(Box::new(mohu_buffer::DLManagedTensor {
+        dl_tensor: mohu_buffer::DLTensor {
+            data: std::ptr::null_mut(),
+            device: mohu_buffer::RawDLDevice {
+                device_type: 1,
+                device_id: 0,
+            },
+            ndim: 1,
+            dtype: mohu_buffer::RawDLDataType {
+                code: 2,
+                bits: 64,
+                lanes: 1,
+            },
+            shape,
+            strides: std::ptr::null(),
+            byte_offset: 0,
+        },
+        manager_ctx: std::ptr::null_mut(),
+        deleter: Some(deleter),
+    }));
+    let buffer = unsafe { Buffer::from_dlpack(managed) }.unwrap();
+    assert_eq!(buffer.shape(), &[0]);
+    assert_eq!(buffer.nbytes(), 0);
+    assert!(!buffer.as_ptr().is_null());
+    assert_eq!((buffer.as_ptr() as usize) % std::mem::align_of::<f64>(), 0);
+    assert!(buffer.as_slice::<f64>().unwrap().is_empty());
+    drop(buffer);
+    assert_eq!(DROPS.load(Ordering::SeqCst), 1);
+}
+
+#[test]
+fn dlpack_rejects_negative_ndim_before_pointer_reads() {
+    unsafe extern "C" fn deleter(ptr: *mut mohu_buffer::DLManagedTensor) {
+        if !ptr.is_null() {
+            unsafe {
+                drop(Box::from_raw(ptr));
+            }
+        }
+    }
+    let managed = Box::into_raw(Box::new(mohu_buffer::DLManagedTensor {
+        dl_tensor: mohu_buffer::DLTensor {
+            data: std::ptr::null_mut(),
+            device: mohu_buffer::RawDLDevice {
+                device_type: 1,
+                device_id: 0,
+            },
+            ndim: -1,
+            dtype: mohu_buffer::RawDLDataType {
+                code: 2,
+                bits: 64,
+                lanes: 1,
+            },
+            shape: std::ptr::null(),
+            strides: std::ptr::null(),
+            byte_offset: 0,
+        },
+        manager_ctx: std::ptr::null_mut(),
+        deleter: Some(deleter),
+    }));
+    let result = unsafe { Buffer::from_dlpack(managed) };
+    assert!(matches!(result, Err(MohuError::DLPackInvalid(_))));
+    unsafe {
+        deleter(managed);
+    }
+}
