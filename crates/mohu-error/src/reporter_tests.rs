@@ -1,4 +1,4 @@
-use crate::{reporter::ErrorReporter, MohuError};
+use crate::{MohuError, reporter::ErrorReporter};
 
 #[test]
 fn compact_report_includes_message() {
@@ -26,8 +26,6 @@ fn json_report_contains_message_field() {
 
     assert!(result.contains("\"message\""));
     assert!(result.contains("json error"));
-    
-
 }
 
 #[test]
