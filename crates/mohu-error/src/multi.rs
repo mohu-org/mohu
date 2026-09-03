@@ -38,7 +38,9 @@ impl MultiError {
 
     /// Creates a `MultiError` pre-allocated for `capacity` errors.
     pub fn with_capacity(capacity: usize) -> Self {
-        Self { errors: Vec::with_capacity(capacity) }
+        Self {
+            errors: Vec::with_capacity(capacity),
+        }
     }
 
     /// Adds an error to the collection.
@@ -145,7 +147,9 @@ impl<'a> IntoIterator for &'a MultiError {
 
 impl FromIterator<MohuError> for MultiError {
     fn from_iter<I: IntoIterator<Item = MohuError>>(iter: I) -> Self {
-        Self { errors: iter.into_iter().collect() }
+        Self {
+            errors: iter.into_iter().collect(),
+        }
     }
 }
 

@@ -3,6 +3,7 @@ name        = "mohu-simd"
 description = "AVX2 / AVX-512 / NEON SIMD kernel primitives for mohu"
 version.workspace     = true
 edition.workspace     = true
+rust-version.workspace = true
 license.workspace     = true
 authors.workspace     = true
 repository.workspace  = true
@@ -24,3 +25,7 @@ mohu-dtype.workspace  = true
 cfg-if.workspace      = true
 
 [build-dependencies]
+
+
+[package.metadata.cargo-machete]
+ignored = ["cfg-if", "mohu-dtype"]

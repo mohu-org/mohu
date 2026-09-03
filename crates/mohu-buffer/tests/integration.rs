@@ -1,11 +1,13 @@
 //! Integration tests for mohu-buffer — exercises every major subsystem.
 
+use std::ptr::NonNull;
+
 use mohu_buffer::{
-    Buffer, Order, SliceArg,
-    ops, GLOBAL_POOL,
-    strides::{c_strides, f_strides, broadcast_strides, NdIndexIter},
+    Buffer, GLOBAL_POOL, Layout, Order, SliceArg, ops,
+    strides::{NdIndexIter, broadcast_strides, c_strides, f_strides},
 };
 use mohu_dtype::{DType, promote::CastMode};
+use mohu_error::MohuError;
 
 // ── 1. Allocation ─────────────────────────────────────────────────────────────
 
@@ -25,10 +27,15 @@ fn ones_values() {
 
 #[test]
 fn full_fills_bytes() {
-    // full() takes raw bytes — pass f32 3.14 as bytes
-    let fill: f32 = 3.14;
+    // full() takes raw bytes, so pass a non-special f32 value as bytes.
+    let fill: f32 = 3.125;
     let buf = Buffer::full(DType::F32, &[5, 5], &fill.to_le_bytes()).unwrap();
-    assert!(buf.as_slice::<f32>().unwrap().iter().all(|&x| (x - 3.14_f32).abs() < 1e-6));
+    assert!(
+        buf.as_slice::<f32>()
+            .unwrap()
+            .iter()
+            .all(|&x| (x - 3.125_f32).abs() < 1e-6)
+    );
 }
 
 // ── 2. from_slice + reshape + get/set ────────────────────────────────────────
@@ -81,7 +88,10 @@ fn transpose_2d_shape_and_values() {
 #[test]
 fn permute_3d_shape() {
     let data: Vec<f32> = (0..24).map(|x| x as f32).collect();
-    let buf = Buffer::from_slice(&data).unwrap().reshape(&[2, 3, 4]).unwrap();
+    let buf = Buffer::from_slice(&data)
+        .unwrap()
+        .reshape(&[2, 3, 4])
+        .unwrap();
     let p = buf.permute(&[2, 0, 1]).unwrap();
     assert_eq!(p.shape(), &[4, 2, 3]);
 }
@@ -92,7 +102,16 @@ fn permute_3d_shape() {
 fn slice_axis_rows() {
     let data: Vec<f64> = (0..12).map(|x| x as f64).collect();
     let buf = Buffer::from_slice(&data).unwrap().reshape(&[4, 3]).unwrap();
-    let s = buf.slice_axis(0, SliceArg { start: Some(1), stop: Some(3), step: Some(1) }).unwrap();
+    let s = buf
+        .slice_axis(
+            0,
+            SliceArg {
+                start: Some(1),
+                stop: Some(3),
+                step: Some(1),
+            },
+        )
+        .unwrap();
     assert_eq!(s.shape(), &[2, 3]);
     // row 1 of original starts at index 3 → [3, 4, 5]
     assert_eq!(s.get::<f64>(&[0, 0]).unwrap(), 3.0_f64);
@@ -104,7 +123,16 @@ fn slice_axis_with_step() {
     let data: Vec<i32> = (0..10).collect();
     let buf = Buffer::from_slice(&data).unwrap();
     // every other element: 0, 2, 4, 6, 8
-    let s = buf.slice_axis(0, SliceArg { start: Some(0), stop: Some(10), step: Some(2) }).unwrap();
+    let s = buf
+        .slice_axis(
+            0,
+            SliceArg {
+                start: Some(0),
+                stop: Some(10),
+                step: Some(2),
+            },
+        )
+        .unwrap();
     assert_eq!(s.shape(), &[5]);
     assert_eq!(s.get::<i32>(&[2]).unwrap(), 4);
 }
@@ -205,10 +233,32 @@ fn fill_zero_clears_values() {
 }
 
 #[test]
+fn div_scalar_inplace_integer_zero_returns_error() {
+    let mut buf = Buffer::from_slice(&[2_i32, 4, 6]).unwrap();
+    let err = ops::div_scalar_inplace(&mut buf, 0_i32).unwrap_err();
+    assert!(matches!(err, MohuError::DivisionByZero));
+    assert_eq!(buf.as_slice::<i32>().unwrap(), &[2, 4, 6]);
+
+    let mut buf = Buffer::from_slice(&[8_i64, 16, 24]).unwrap();
+    let err = ops::div_scalar_inplace(&mut buf, 0_i64).unwrap_err();
+    assert!(matches!(err, MohuError::DivisionByZero));
+    assert_eq!(buf.as_slice::<i64>().unwrap(), &[8, 16, 24]);
+
+    let mut buf = Buffer::from_slice(&[10_u32, 20, 30]).unwrap();
+    let err = ops::div_scalar_inplace(&mut buf, 0_u32).unwrap_err();
+    assert!(matches!(err, MohuError::DivisionByZero));
+    assert_eq!(buf.as_slice::<u32>().unwrap(), &[10, 20, 30]);
+}
+
+#[test]
 fn copy_to_contiguous_from_transposed() {
     // Transposed 3×3: source is non-contiguous
     let data: Vec<f64> = (0..9).map(|x| x as f64).collect();
-    let src = Buffer::from_slice(&data).unwrap().reshape(&[3, 3]).unwrap().transpose();
+    let src = Buffer::from_slice(&data)
+        .unwrap()
+        .reshape(&[3, 3])
+        .unwrap()
+        .transpose();
     assert!(!src.is_c_contiguous());
     let mut dst = Buffer::alloc(DType::F64, &[3, 3], Order::C).unwrap();
     ops::copy_to_contiguous(&src, &mut dst).unwrap();
@@ -216,6 +266,77 @@ fn copy_to_contiguous_from_transposed() {
     assert_eq!(dst.get::<f64>(&[0, 1]).unwrap(), 3.0_f64);
     // transposed[1,0] = original[0,1] = 1.0
     assert_eq!(dst.get::<f64>(&[1, 0]).unwrap(), 1.0_f64);
+}
+
+#[test]
+fn copy_to_contiguous_respects_fortran_destination_strides() {
+    let data: Vec<i32> = (1..=6).collect();
+    let src = Buffer::from_slice(&data).unwrap().reshape(&[2, 3]).unwrap();
+    let mut dst = Buffer::alloc(DType::I32, &[2, 3], Order::F).unwrap();
+
+    assert!(!dst.is_c_contiguous());
+    assert!(dst.is_f_contiguous());
+
+    ops::copy_to_contiguous(&src, &mut dst).unwrap();
+
+    assert_eq!(dst.get::<i32>(&[0, 0]).unwrap(), 1);
+    assert_eq!(dst.get::<i32>(&[0, 1]).unwrap(), 2);
+    assert_eq!(dst.get::<i32>(&[0, 2]).unwrap(), 3);
+    assert_eq!(dst.get::<i32>(&[1, 0]).unwrap(), 4);
+    assert_eq!(dst.get::<i32>(&[1, 1]).unwrap(), 5);
+    assert_eq!(dst.get::<i32>(&[1, 2]).unwrap(), 6);
+}
+
+#[test]
+fn copy_from_respects_fortran_destination_strides() {
+    let data: Vec<i32> = (10..=15).collect();
+    let src = Buffer::from_slice(&data).unwrap().reshape(&[2, 3]).unwrap();
+    let mut dst = Buffer::alloc(DType::I32, &[2, 3], Order::F).unwrap();
+
+    dst.copy_from(&src).unwrap();
+
+    assert_eq!(dst.get::<i32>(&[0, 0]).unwrap(), 10);
+    assert_eq!(dst.get::<i32>(&[0, 1]).unwrap(), 11);
+    assert_eq!(dst.get::<i32>(&[0, 2]).unwrap(), 12);
+    assert_eq!(dst.get::<i32>(&[1, 0]).unwrap(), 13);
+    assert_eq!(dst.get::<i32>(&[1, 1]).unwrap(), 14);
+    assert_eq!(dst.get::<i32>(&[1, 2]).unwrap(), 15);
+}
+
+#[test]
+fn copy_to_contiguous_respects_nonzero_offset_destination() {
+    let src = Buffer::from_slice(&[1_i32, 2, 3, 4])
+        .unwrap()
+        .reshape(&[2, 2])
+        .unwrap();
+    let mut backing = vec![-1_i32; 9];
+    let itemsize = std::mem::size_of::<i32>();
+    let layout = Layout::new_custom(
+        &[2, 2],
+        &[(3 * itemsize) as isize, itemsize as isize],
+        4 * itemsize,
+        itemsize,
+    )
+    .unwrap();
+    let ptr = NonNull::new(backing.as_mut_ptr() as *mut u8).unwrap();
+
+    // SAFETY: backing stays alive for the whole test, and the custom layout
+    // touches only elements 4, 5, 7, and 8 within the 9-element backing Vec.
+    let mut dst =
+        unsafe { Buffer::from_raw_parts(ptr, backing.len() * itemsize, DType::I32, layout) };
+
+    assert_eq!(dst.offset(), 4 * itemsize);
+    assert!(!dst.is_c_contiguous());
+
+    ops::copy_to_contiguous(&src, &mut dst).unwrap();
+
+    assert_eq!(dst.get::<i32>(&[0, 0]).unwrap(), 1);
+    assert_eq!(dst.get::<i32>(&[0, 1]).unwrap(), 2);
+    assert_eq!(dst.get::<i32>(&[1, 0]).unwrap(), 3);
+    assert_eq!(dst.get::<i32>(&[1, 1]).unwrap(), 4);
+
+    drop(dst);
+    assert_eq!(backing, vec![-1, -1, -1, -1, 1, 2, -1, 3, 4]);
 }
 
 // ── 9. Buffer pool ────────────────────────────────────────────────────────────
@@ -261,11 +382,11 @@ fn f_strides_correct() {
 
 #[test]
 fn broadcast_strides_zero_for_size_one_axes() {
-    let src_shape   = [1usize, 4];
+    let src_shape = [1usize, 4];
     let src_strides = c_strides(&src_shape, 4);
-    let tgt_shape   = [3usize, 4];
+    let tgt_shape = [3usize, 4];
     let bs = broadcast_strides(&src_shape, &src_strides, &tgt_shape).unwrap();
-    assert_eq!(bs[0], 0);  // size-1 axis → 0-stride
+    assert_eq!(bs[0], 0); // size-1 axis → 0-stride
     assert_ne!(bs[1], 0);
 }
 

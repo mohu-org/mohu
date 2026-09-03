@@ -1,8 +1,10 @@
 [package]
 name        = "mohu-dtype"
 description = "DType enum, scalar type traits, and type promotion rules for mohu"
+readme      = "README.md"
 version.workspace     = true
 edition.workspace     = true
+rust-version.workspace = true
 license.workspace     = true
 authors.workspace     = true
 repository.workspace  = true
@@ -28,3 +30,7 @@ optional = true
 [dependencies.arrow]
 workspace = true
 optional  = true
+
+
+[package.metadata.cargo-machete]
+ignored = ["num-traits"]

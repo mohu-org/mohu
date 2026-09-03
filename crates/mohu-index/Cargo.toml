@@ -3,6 +3,7 @@ name        = "mohu-index"
 description = "Advanced indexing for mohu: fancy, boolean mask, take/put, slice objects"
 version.workspace     = true
 edition.workspace     = true
+rust-version.workspace = true
 license.workspace     = true
 authors.workspace     = true
 repository.workspace  = true
@@ -16,3 +17,7 @@ mohu-dtype.workspace  = true
 mohu-buffer.workspace = true
 rayon.workspace       = true
 smallvec.workspace    = true
+
+
+[package.metadata.cargo-machete]
+ignored = ["mohu-buffer", "mohu-dtype", "rayon", "smallvec"]

@@ -30,7 +30,6 @@
 /// | [`math`]      | sqrt, rsqrt, exp, log, sin, cos (approx + exact)|
 /// | [`fma`]       | fused multiply-add / multiply-subtract           |
 /// | [`bitwise`]   | and, or, xor, not, shl, shr for integer types   |
-
 pub mod arith;
 pub mod bitwise;
 pub mod cast;
