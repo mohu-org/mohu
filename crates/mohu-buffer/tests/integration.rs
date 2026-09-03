@@ -401,10 +401,18 @@ fn nd_index_iter_c_order() {
     assert_eq!(indices[5].as_slice(), &[1, 2]);
 }
 #[test]
-#[test]
 fn reverse_full_slice_preserves_axis() {
     let buf = Buffer::from_slice(&(0..3).collect::<Vec<i32>>()).unwrap();
-    let s = buf.slice_axis(0, SliceArg { start: None, stop: None, step: Some(-1) }).unwrap();
+    let s = buf
+        .slice_axis(
+            0,
+            SliceArg {
+                start: None,
+                stop: None,
+                step: Some(-1),
+            },
+        )
+        .unwrap();
     assert_eq!(s.shape(), &[3]);
     assert_eq!(s.get::<i32>(&[0]).unwrap(), 2);
     assert_eq!(s.get::<i32>(&[2]).unwrap(), 0);
@@ -418,9 +426,11 @@ fn shape_predicates_cover_common_shapes() {
     let m = v.reshape(&[1, 2]).unwrap();
     assert!(m.is_matrix());
     assert!(!m.is_square());
-    let q = Buffer::from_slice(&[1_i32, 2, 3, 4]).unwrap().reshape(&[2, 2]).unwrap();
+    let q = Buffer::from_slice(&[1_i32, 2, 3, 4])
+        .unwrap()
+        .reshape(&[2, 2])
+        .unwrap();
     assert!(q.is_square());
     let s = Buffer::zeros(DType::F64, &[]).unwrap();
     assert!(s.is_scalar_shape());
-}
 }
