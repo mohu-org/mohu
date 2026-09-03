@@ -399,4 +399,21 @@ fn nd_index_iter_c_order() {
     assert_eq!(indices[1].as_slice(), &[0, 1]);
     assert_eq!(indices[3].as_slice(), &[1, 0]);
     assert_eq!(indices[5].as_slice(), &[1, 2]);
+    #[test]
+    fn reverse_full_slice_preserves_axis() {
+        let buf = Buffer::from_slice(&(0..3).collect::<Vec<i32>>()).unwrap();
+        let s = buf
+            .slice_axis(
+                0,
+                SliceArg {
+                    start: None,
+                    stop: None,
+                    step: Some(-1),
+                },
+            )
+            .unwrap();
+        assert_eq!(s.shape(), &[3]);
+        assert_eq!(s.get::<i32>(&[0]).unwrap(), 2);
+        assert_eq!(s.get::<i32>(&[2]).unwrap(), 0);
+    }
 }
