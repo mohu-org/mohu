@@ -400,3 +400,19 @@ fn nd_index_iter_c_order() {
     assert_eq!(indices[3].as_slice(), &[1, 0]);
     assert_eq!(indices[5].as_slice(), &[1, 2]);
 }
+#[test]
+fn shape_predicates_cover_common_shapes() {
+    let v = Buffer::from_slice(&[1_i32, 2]).unwrap();
+    assert!(v.is_vector());
+    assert!(!v.is_matrix());
+    let m = v.reshape(&[1, 2]).unwrap();
+    assert!(m.is_matrix());
+    assert!(!m.is_square());
+    let q = Buffer::from_slice(&[1_i32, 2, 3, 4])
+        .unwrap()
+        .reshape(&[2, 2])
+        .unwrap();
+    assert!(q.is_square());
+    let s = Buffer::zeros(DType::F64, &[]).unwrap();
+    assert!(s.is_scalar_shape());
+}
