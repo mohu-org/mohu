@@ -286,11 +286,11 @@ Structured map of all workspace crates, their dependencies, modules, and public 
 | Module | Format |
 |--------|--------|
 | `npy` | `.npy` / `.npz` read/write |
-| `csv` | CSV import/export |
+| `csv` | Typed homogeneous CSV reading; writing remains planned |
 | `arrow` | Apache Arrow IPC interop |
 | `mmap` | memory-mapped file arrays |
 
-**Note**: Module source files are stubs.
+**Status**: Partial — typed homogeneous CSV reading is implemented; CSV writing and the other listed formats remain incomplete.
 
 ---
 
@@ -360,5 +360,5 @@ mohu-testing ──► mohu-error, mohu-dtype, mohu-buffer, approx, proptest
 | `mohu-stats` | Stubs only |
 | `mohu-sparse` | Stubs only |
 | `mohu-masked` | Stubs only |
-| `mohu-io` | Stubs only |
+| `mohu-io` | Partial — typed homogeneous CSV reading implemented; other I/O remains incomplete |
 | `mohu-testing` | Stubs only |

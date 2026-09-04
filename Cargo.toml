@@ -83,6 +83,7 @@ half         = { version = "2.4", features = ["num-traits"] }
 num-traits   = "0.2"
 num-complex  = "0.4"
 num-integer  = "0.1"
+csv          = "1.3"
 
 # ── FFT ───────────────────────────────────────────────────────────────────────
 rustfft      = "6"
