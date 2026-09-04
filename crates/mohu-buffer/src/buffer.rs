@@ -14,9 +14,10 @@
 use std::{ptr::NonNull, sync::Arc};
 
 use mohu_dtype::{
+    dispatch_dtype,
     dlpack::{DLDataType, assert_cpu_device},
     dtype::DType,
-    promote::CastMode,
+    promote::{CastMode, common_type},
     scalar::Scalar,
 };
 use mohu_error::{MohuError, MohuResult};
@@ -24,7 +25,7 @@ use mohu_error::{MohuError, MohuResult};
 use crate::{
     alloc::{AllocHandle, SIMD_ALIGN},
     layout::{Layout, Order, SliceArg},
-    strides::contiguous_nbytes,
+    strides::{NdIndexIter, contiguous_nbytes},
 };
 
 // ─── BufferFlags ─────────────────────────────────────────────────────────────
@@ -1961,6 +1962,117 @@ impl Buffer {
         }
         let _ = writeln!(s, "}}");
         s
+    }
+
+    // ─── Combine ──────────────────────────────────────────────────────────────
+
+    /// Concatenates buffers along an existing axis into a new owning buffer.
+    ///
+    /// Inputs may be strided views. Their dtypes are promoted using the
+    /// established dtype promotion rules before values are copied.
+    pub fn concatenate(arrays: &[&Buffer], axis: usize) -> MohuResult<Self> {
+        if arrays.is_empty() {
+            return Err(MohuError::EmptyStackSequence);
+        }
+        let ndim = arrays[0].ndim();
+        if ndim == 0 {
+            return Err(MohuError::ScalarArray);
+        }
+        if axis >= ndim {
+            return Err(MohuError::AxisOutOfRange {
+                axis: axis as i64,
+                ndim,
+                valid: format!("0..{ndim}"),
+            });
+        }
+
+        let ref_shape = arrays[0].shape().to_vec();
+        let mut total_axis = 0usize;
+        for (index, array) in arrays.iter().enumerate() {
+            if array.ndim() != ndim {
+                return Err(MohuError::DimensionMismatch {
+                    expected: ndim,
+                    got: array.ndim(),
+                });
+            }
+            for (dimension, (&got, &expected)) in
+                array.shape().iter().zip(ref_shape.iter()).enumerate()
+            {
+                if dimension != axis && got != expected {
+                    return Err(MohuError::ConcatShapeMismatch {
+                        index,
+                        expected: ref_shape.clone(),
+                        got: array.shape().to_vec(),
+                    });
+                }
+            }
+            total_axis = total_axis
+                .checked_add(array.shape()[axis])
+                .ok_or(MohuError::ShapeOverflow { max: usize::MAX })?;
+        }
+
+        let output_dtype =
+            common_type(&arrays.iter().map(|array| array.dtype()).collect::<Vec<_>>())?;
+        let mut output_shape = ref_shape;
+        output_shape[axis] = total_axis;
+        let sources = arrays
+            .iter()
+            .map(|array| array.cast(output_dtype, CastMode::Safe))
+            .collect::<MohuResult<Vec<_>>>()?;
+        let mut output = Self::alloc(output_dtype, &output_shape, Order::C)?;
+
+        // Coordinate-based copying preserves logical order for every valid
+        // strided input and keeps raw-pointer arithmetic out of this API.
+        macro_rules! concatenate_typed {
+            ($T:ty) => {{
+                let mut axis_offset = 0usize;
+                for source in &sources {
+                    for source_coord in NdIndexIter::new(source.shape()) {
+                        let mut output_coord = source_coord.to_vec();
+                        output_coord[axis] += axis_offset;
+                        output.set::<$T>(&output_coord, source.get::<$T>(&source_coord)?)?;
+                    }
+                    axis_offset += source.shape()[axis];
+                }
+                Ok(output)
+            }};
+        }
+        dispatch_dtype!(output_dtype, concatenate_typed)
+    }
+
+    /// Stacks buffers along a new axis into a new owning buffer.
+    ///
+    /// All inputs must have identical shapes. The new axis may be inserted at
+    /// any position from `0` through the input rank, inclusive.
+    pub fn stack(arrays: &[&Buffer], axis: usize) -> MohuResult<Self> {
+        if arrays.is_empty() {
+            return Err(MohuError::EmptyStackSequence);
+        }
+        let ndim = arrays[0].ndim();
+        if axis > ndim {
+            return Err(MohuError::AxisOutOfRange {
+                axis: axis as i64,
+                ndim,
+                valid: format!("0..={ndim}"),
+            });
+        }
+        let shape = arrays[0].shape();
+        for (index, array) in arrays.iter().enumerate() {
+            if array.shape() != shape {
+                return Err(MohuError::ConcatShapeMismatch {
+                    index,
+                    expected: shape.to_vec(),
+                    got: array.shape().to_vec(),
+                });
+            }
+        }
+
+        let expanded = arrays
+            .iter()
+            .map(|array| array.expand_dims(axis))
+            .collect::<MohuResult<Vec<_>>>()?;
+        let refs = expanded.iter().collect::<Vec<_>>();
+        Self::concatenate(&refs, axis)
     }
 }
 
