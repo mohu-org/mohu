@@ -1,10 +1,9 @@
 pub mod bessel;
 /// Special mathematical functions for mohu.
 ///
-/// Equivalent to `scipy.special` — pure-Rust implementations with
-/// double-precision accuracy (< 1 ULP for most functions) and SIMD-ready
-/// scalar kernels that `mohu-ops` can vectorise.
-///
+/// The currently implemented surface is the stable elementary helper subset
+/// in [`misc`]. The remaining families are planned and are not yet equivalent
+/// to SciPy or covered by the long-term numerical accuracy target.
 /// # Function families
 ///
 /// | Module        | Functions                                              |
@@ -18,17 +17,15 @@ pub mod bessel;
 /// | [`stats_fn`]  | ndtr, ndtri, chdtr, fdtr, stdtr, gdtr (CDF/PPF)        |
 /// | [`misc`]      | log1p, expm1, logit, expit, xlogy, xlog1py             |
 ///
-/// # Accuracy targets
+/// # Implementation status
 ///
-/// All functions aim for < 5 ULP error on the standard IEEE double range.
-/// Where the underlying algorithm cannot achieve this, the docstring
-/// documents the actual error bound.
+/// Implemented: `misc::{log1p, expm1, logit, expit, xlogy, xlog1py}` using
+/// stable standard-library primitives where available.
 ///
-/// # Vectorisation
-///
-/// Every scalar function is `#[inline(always)]` and designed to auto-vectorise
-/// under LLVM.  `mohu-simd` provides hand-written AVX2 versions for the
-/// most common (erf, gamma, exp, log) on x86-64.
+/// Planned/incomplete: `erf`, `gamma`, `beta`, `bessel`, `expint`, `trig`, and
+/// distribution helpers. Future implementations require documented domain,
+/// pole, NaN/infinity behavior, reference vectors, boundary tests, and
+/// evidence before making ULP or SciPy-compatibility claims.
 pub mod beta;
 pub mod erf;
 pub mod expint;
