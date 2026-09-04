@@ -761,3 +761,49 @@ fn allclose_contract_rejects_shape_and_non_float_inputs() {
         Err(mohu_error::MohuError::DomainError { .. })
     ));
 }
+
+#[test]
+fn item_supports_scalar_singleton_and_strided_views() {
+    let scalar = Buffer::from_slice(&[42_i32]).unwrap().reshape(&[]).unwrap();
+    assert_eq!(scalar.item::<i32>().unwrap(), 42);
+
+    let singleton = Buffer::from_slice(&[7.5_f64]).unwrap();
+    assert_eq!(
+        singleton.item::<f64>().unwrap().to_bits(),
+        7.5_f64.to_bits()
+    );
+
+    let view = Buffer::from_slice(&[10_i32, 20, 30])
+        .unwrap()
+        .slice_axis(
+            0,
+            SliceArg {
+                start: Some(1),
+                stop: Some(2),
+                step: None,
+            },
+        )
+        .unwrap();
+    assert_eq!(view.item::<i32>().unwrap(), 20);
+}
+
+#[test]
+fn item_preserves_typed_and_cardinality_errors() {
+    let scalar = Buffer::from_slice(&[1_i32]).unwrap();
+    assert!(matches!(
+        scalar.item::<f64>(),
+        Err(MohuError::DTypeMismatch { .. })
+    ));
+
+    let empty = Buffer::zeros(DType::I32, &[0]).unwrap();
+    assert!(matches!(
+        empty.item::<i32>(),
+        Err(MohuError::DomainError { op: "item", .. })
+    ));
+
+    let many = Buffer::from_slice(&[1_i32, 2]).unwrap();
+    assert!(matches!(
+        many.item::<i32>(),
+        Err(MohuError::DomainError { op: "item", .. })
+    ));
+}

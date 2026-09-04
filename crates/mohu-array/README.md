@@ -26,7 +26,7 @@ Internal modules:
 
 ## Planned API Surface
 
-> **Status:** NdArray construction and introspection are implemented. Indexing, views, and arithmetic remain planned; signatures may change before stabilisation.
+> **Status:** NdArray construction, typed immutable access, and Buffer interop are implemented. Indexing, views, and arithmetic remain planned; signatures may change before stabilisation.
 > See the [issue tracker](https://github.com/mohu-org/mohu/issues?q=label%3A%22crate%3A+mohu-array%22) for progress.
 
 ### Construction
@@ -45,18 +45,18 @@ let c = NdArray::<i32>::from_slice(&[1, 2, 3, 4, 5, 6]); // 1-D
 let d = NdArray::<i32>::from_shape_slice(&[2, 3], &[1, 2, 3, 4, 5, 6]);
 ```
 
-### Indexing
+### Typed immutable access
 
 ```rust
-// Element access
-let val: f64 = a[[1, 2]];
+let a = NdArray::<i32>::from_shape_slice(&[2, 2], &[1, 2, 3, 4])?;
+assert_eq!(a.get(&[1, 0])?, 3);
 
-// Mutable element access
-a[[0, 0]] = 3.14;
-
-// Slicing — returns a zero-copy view
-let row = a.slice(s![0, ..]);
+let scalar = NdArray::<f64>::from_shape_slice(&[], &[3.14])?;
+assert_eq!(scalar.item()?, 3.14);
 ```
+
+Ergonomic indexing, mutation, and slicing are planned; `a[[0, 0]]` is not
+currently implemented.
 
 ### Arithmetic
 
@@ -84,7 +84,7 @@ let t = a.transpose();
 
 ## Status
 
-`mohu-array` is **under active development** and is not yet published to [crates.io](https://crates.io). Construction and metadata are implemented; indexing, views, and arithmetic remain incomplete. See the [issue tracker](https://github.com/mohu-org/mohu/issues?q=label%3A%22crate%3A+mohu-array%22).
+`mohu-array` is **under active development** and is not yet published to [crates.io](https://crates.io). Construction, metadata, typed immutable access, and Buffer interop are implemented; indexing, views, and arithmetic remain incomplete. See the [issue tracker](https://github.com/mohu-org/mohu/issues?q=label%3A%22crate%3A+mohu-array%22).
 
 Do not depend on this crate in production — public API stability is not guaranteed before the first versioned release.
 

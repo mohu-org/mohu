@@ -74,6 +74,35 @@ impl<T: MohuElement> NdArray<T> {
         self.buffer.dtype()
     }
 
+    /// Returns the element at `indices` using the array's compile-time type.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use mohu_array::NdArray;
+    /// let array = NdArray::<i32>::from_shape_slice(&[2, 2], &[1, 2, 3, 4])?;
+    /// assert_eq!(array.get(&[1, 0])?, 3);
+    /// # Ok::<(), mohu_error::MohuError>(())
+    /// ```
+    pub fn get(&self, indices: &[usize]) -> MohuResult<T> {
+        self.buffer.get::<T>(indices)
+    }
+
+    /// Extracts the sole logical element using the array's compile-time type.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use mohu_array::NdArray;
+    /// let scalar = NdArray::<f64>::from_shape_slice(&[], &[3.14])?;
+    /// assert_eq!(scalar.item()?, 3.14);
+    /// # Ok::<(), mohu_error::MohuError>(())
+    /// ```
+    #[must_use = "use the extracted item or handle the error"]
+    pub fn item(&self) -> MohuResult<T> {
+        self.buffer.item::<T>()
+    }
+
     /// Copies the logical elements into a typed vector.
     pub fn to_vec(&self) -> MohuResult<Vec<T>> {
         self.buffer.to_vec::<T>()
