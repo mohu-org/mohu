@@ -19,8 +19,9 @@
 /// | 2      | `kDLFloat`   |
 /// | 4      | `kDLBfloat`  |
 /// | 5      | `kDLComplex` |
+/// | 6      | `kDLBool`    |
 ///
-/// Bool is represented as `kDLUInt` with 8 bits (same as PyTorch/JAX).
+/// Bool is represented as `kDLBool` with 8 bits, as defined by DLPack v0.8.
 use mohu_error::{MohuError, MohuResult};
 
 use crate::dtype::DType;
@@ -38,6 +39,7 @@ pub enum DLDataTypeCode {
     Float = 2,
     BFloat = 4,
     Complex = 5,
+    Bool = 6,
 }
 
 impl DLDataTypeCode {
@@ -49,9 +51,10 @@ impl DLDataTypeCode {
             2 => Ok(Self::Float),
             4 => Ok(Self::BFloat),
             5 => Ok(Self::Complex),
+            6 => Ok(Self::Bool),
             n => Err(MohuError::DLPackInvalid(format!(
                 "unknown DLDataType code {n} — expected 0 (int), 1 (uint), \
-                 2 (float), 4 (bfloat), or 5 (complex)"
+                 2 (float), 4 (bfloat), 5 (complex), or 6 (bool)"
             ))),
         }
     }
@@ -108,7 +111,7 @@ impl DType {
     pub const fn to_dlpack(self) -> DLDataType {
         use DLDataTypeCode::*;
         match self {
-            Self::Bool => DLDataType::scalar(UInt, 8),
+            Self::Bool => DLDataType::scalar(Bool, 8),
             Self::I8 => DLDataType::scalar(Int, 8),
             Self::I16 => DLDataType::scalar(Int, 16),
             Self::I32 => DLDataType::scalar(Int, 32),
@@ -132,10 +135,8 @@ impl DType {
     /// - `lanes != 1` (mohu does not support multi-lane/vector dtypes)
     /// - the `(code, bits)` combination has no mohu equivalent
     ///
-    /// Note: Bool and U8 both map to `(kDLUInt, 8)` in DLPack.  Since there
-    /// is no Bool kind code in DLPack, this function returns `U8` for that
-    /// combination.  Callers that need to round-trip Bool should track the
-    /// dtype separately.
+    /// DLPack v0.8 has a dedicated Bool kind code, so Bool and U8 have
+    /// unambiguous representations.
     pub fn from_dlpack(code: u8, bits: u8, lanes: u16) -> MohuResult<Self> {
         if lanes != 1 {
             return Err(MohuError::DLPackInvalid(format!(
@@ -145,6 +146,7 @@ impl DType {
         }
         let kind = DLDataTypeCode::from_u8(code)?;
         match (kind, bits) {
+            (DLDataTypeCode::Bool, 8) => Ok(Self::Bool),
             (DLDataTypeCode::Int, 8) => Ok(Self::I8),
             (DLDataTypeCode::Int, 16) => Ok(Self::I16),
             (DLDataTypeCode::Int, 32) => Ok(Self::I32),
