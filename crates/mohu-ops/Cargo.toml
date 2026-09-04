@@ -24,4 +24,4 @@ thiserror.workspace   = true
 
 
 [package.metadata.cargo-machete]
-ignored = ["mohu-core", "num-traits", "rayon", "thiserror"]
+ignored = ["mohu-core", "num-traits", "rayon", "thiserror", "half"]
