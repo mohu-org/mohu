@@ -29,4 +29,7 @@ pub mod slice;
 pub mod take;
 pub mod where_op;
 
+pub use boolean::index_bool;
+pub use take::index_take;
+
 pub use mohu_error::{MohuError, MohuResult};
