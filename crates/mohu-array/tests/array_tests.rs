@@ -121,3 +121,29 @@ fn typed_interop_rejects_mismatched_dtype() {
     let result = NdArray::<i32>::try_from(buffer);
     assert!(matches!(result, Err(MohuError::DTypeMismatch { .. })));
 }
+
+#[test]
+fn typed_immutable_access_handles_scalar_nd_and_non_contiguous_arrays() {
+    let array = NdArray::<i32>::from_shape_slice(&[2, 2], &[1, 2, 3, 4]).unwrap();
+    assert_eq!(array.get(&[1, 0]).unwrap(), 3);
+    assert!(matches!(
+        array.get(&[2, 0]),
+        Err(MohuError::IndexOutOfBounds { .. })
+    ));
+    assert!(array.get(&[0]).is_err());
+
+    let scalar = NdArray::<f64>::from_shape_slice(&[], &[3.125]).unwrap();
+    assert_eq!(scalar.get(&[]).unwrap().to_bits(), 3.125_f64.to_bits());
+    assert_eq!(scalar.item().unwrap().to_bits(), 3.125_f64.to_bits());
+
+    let view = Buffer::from_slice(&[1_i32, 2, 3, 4, 5, 6])
+        .unwrap()
+        .reshape(&[2, 3])
+        .unwrap()
+        .transpose();
+    let typed = NdArray::<i32>::try_from(view).unwrap();
+    assert_eq!(typed.get(&[2, 1]).unwrap(), 6);
+
+    let singleton = NdArray::<i32>::from_shape_slice(&[1, 1], &[9]).unwrap();
+    assert_eq!(singleton.item().unwrap(), 9);
+}

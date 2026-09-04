@@ -807,6 +807,31 @@ impl Buffer {
         Ok(unsafe { ptr.read_unaligned() })
     }
 
+    /// Extracts the sole logical element as type `T`.
+    ///
+    /// This succeeds for any layout with exactly one element, including a
+    /// scalar shape and single-element strided views.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use mohu_buffer::Buffer;
+    /// let buffer = Buffer::from_slice(&[42_i32])?;
+    /// assert_eq!(buffer.item::<i32>()?, 42);
+    /// # Ok::<(), mohu_error::MohuError>(())
+    /// ```
+    #[must_use = "use the extracted item or handle the error"]
+    pub fn item<T: Scalar>(&self) -> MohuResult<T> {
+        if self.len() != 1 {
+            return Err(MohuError::domain(
+                "item",
+                format!("requires exactly one element, got {}", self.len()),
+            ));
+        }
+        let indices = vec![0; self.ndim()];
+        self.get::<T>(&indices)
+    }
+
     /// Sets the element at `indices` to `value`.
     pub fn set<T: Scalar>(&mut self, indices: &[usize], value: T) -> MohuResult<()> {
         if T::DTYPE != self.dtype {
