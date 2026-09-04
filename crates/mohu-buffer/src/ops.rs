@@ -645,10 +645,28 @@ where
 
 // ─── gather ───────────────────────────────────────────────────────────────────
 
+fn normalize_1d_index(index: i64, len: usize) -> MohuResult<usize> {
+    let len_i64 = len.min(i64::MAX as usize) as i64;
+    if index < -len_i64 || index >= len_i64 {
+        return Err(MohuError::IndexOutOfBounds {
+            index,
+            axis: 0,
+            size: len,
+        });
+    }
+    if index < 0 {
+        Ok((len_i64 + index) as usize)
+    } else {
+        Ok(index as usize)
+    }
+}
+
 /// Indexed gather: `dst[i] = src[indices[i]]`.
 ///
-/// `indices` must have dtype `I64`.  `src` and `dst` must be 1-D and C-contiguous.
-/// Panics in debug mode on out-of-bounds indices.
+/// indices must have dtype I64. src and dst must be 1-D and C-contiguous.
+/// Negative indices count from the end. Every index is validated before dst is
+/// changed; invalid indices return MohuError::IndexOutOfBounds without a panic
+/// or clamping.
 pub fn gather(src: &Buffer, indices: &Buffer, dst: &mut Buffer) -> MohuResult<()> {
     use mohu_dtype::DType;
 
@@ -676,36 +694,28 @@ pub fn gather(src: &Buffer, indices: &Buffer, dst: &mut Buffer) -> MohuResult<()
     if !dst.is_writeable() {
         return Err(MohuError::ReadOnly);
     }
-    dst.make_unique()?;
 
     let itemsize = src.dtype().itemsize();
     let src_len = src.len();
     let n_idx = indices.len();
-
-    // Build typed slices from the raw pointers.  All three buffers are
-    // exclusively borrowed (src immutably, dst mutably) for this call.
-    // Using &[u8] for src makes it Sync, enabling safe sharing across Rayon threads.
-    let src_bytes: &[u8] = unsafe { std::slice::from_raw_parts(src.as_ptr(), src_len * itemsize) };
     let idx_s: &[i64] =
         unsafe { std::slice::from_raw_parts(indices.as_ptr() as *const i64, n_idx) };
+    let normalized: Vec<usize> = idx_s
+        .iter()
+        .copied()
+        .map(|index| normalize_1d_index(index, src_len))
+        .collect::<MohuResult<_>>()?;
+
+    dst.make_unique()?;
+    let src_bytes: &[u8] = unsafe { std::slice::from_raw_parts(src.as_ptr(), src_len * itemsize) };
     let dst_b: &mut [u8] =
         unsafe { std::slice::from_raw_parts_mut(dst.as_mut_ptr(), n_idx * itemsize) };
 
-    idx_s
+    normalized
         .par_iter()
         .zip(dst_b.par_chunks_mut(itemsize))
-        .for_each(|(&idx, out)| {
-            let i = if idx < 0 {
-                (src_len as i64 + idx) as usize
-            } else {
-                idx as usize
-            };
-            debug_assert!(
-                i < src_len,
-                "gather: index {i} out of bounds (len {src_len})"
-            );
-            let i = i.min(src_len.saturating_sub(1)); // clamp in release
-            out.copy_from_slice(&src_bytes[i * itemsize..(i + 1) * itemsize]);
+        .for_each(|(&index, out)| {
+            out.copy_from_slice(&src_bytes[index * itemsize..(index + 1) * itemsize]);
         });
 
     Ok(())
@@ -715,11 +725,10 @@ pub fn gather(src: &Buffer, indices: &Buffer, dst: &mut Buffer) -> MohuResult<()
 
 /// Indexed scatter: `dst[indices[i]] = src[i]`.
 ///
-/// `indices` must have dtype `I64`.  `src` and `dst` must be 1-D and C-contiguous.
-///
-/// **Warning**: if two indices are equal, the result is non-deterministic (a
-/// data race between Rayon threads).  For safe scatter with duplicates, use
-/// the sequential variant or ensure indices are unique.
+/// indices must have dtype I64. src and dst must be 1-D and C-contiguous.
+/// Negative indices count from the end. Duplicate indices are applied
+/// sequentially, so the last occurrence wins. Every index is validated before
+/// dst is changed; invalid indices return MohuError::IndexOutOfBounds.
 pub fn scatter(dst: &mut Buffer, indices: &Buffer, src: &Buffer) -> MohuResult<()> {
     use mohu_dtype::DType;
 
@@ -731,8 +740,8 @@ pub fn scatter(dst: &mut Buffer, indices: &Buffer, src: &Buffer) -> MohuResult<(
     }
     if src.dtype() != dst.dtype() {
         return Err(MohuError::DTypeMismatch {
-            expected: src.dtype().to_string(),
-            got: dst.dtype().to_string(),
+            expected: "I64".to_string(),
+            got: src.dtype().to_string(),
         });
     }
     if !src.is_c_contiguous() || !indices.is_c_contiguous() || !dst.is_c_contiguous() {
@@ -747,33 +756,28 @@ pub fn scatter(dst: &mut Buffer, indices: &Buffer, src: &Buffer) -> MohuResult<(
     if !dst.is_writeable() {
         return Err(MohuError::ReadOnly);
     }
-    dst.make_unique()?;
 
     let itemsize = src.dtype().itemsize();
     let dst_len = dst.len();
     let n_src = src.len();
-    let idx_ptr = indices.as_ptr() as *const i64;
-    let src_ptr = src.as_ptr();
+    let idx_s: &[i64] =
+        unsafe { std::slice::from_raw_parts(indices.as_ptr() as *const i64, n_src) };
+    let normalized: Vec<usize> = idx_s
+        .iter()
+        .copied()
+        .map(|index| normalize_1d_index(index, dst_len))
+        .collect::<MohuResult<_>>()?;
+
+    dst.make_unique()?;
+    let src_b = unsafe { std::slice::from_raw_parts(src.as_ptr(), n_src * itemsize) };
     let dst_ptr = unsafe { dst.as_mut_ptr() };
-
-    let idx_s = unsafe { std::slice::from_raw_parts(idx_ptr, n_src) };
-    let src_b = unsafe { std::slice::from_raw_parts(src_ptr, n_src * itemsize) };
-
-    // Sequential scatter to avoid data races on duplicate indices.
-    for (i, &idx) in idx_s.iter().enumerate() {
-        let j = if idx < 0 {
-            (dst_len as i64 + idx) as usize
-        } else {
-            idx as usize
-        };
-        if j < dst_len {
-            unsafe {
-                std::ptr::copy_nonoverlapping(
-                    src_b.as_ptr().add(i * itemsize),
-                    dst_ptr.add(j * itemsize),
-                    itemsize,
-                );
-            }
+    for (i, &index) in normalized.iter().enumerate() {
+        unsafe {
+            std::ptr::copy_nonoverlapping(
+                src_b.as_ptr().add(i * itemsize),
+                dst_ptr.add(index * itemsize),
+                itemsize,
+            );
         }
     }
 
