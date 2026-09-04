@@ -29,6 +29,12 @@ pub enum Order {
     /// Column-major (Fortran) order — the first axis varies fastest.
     F,
 }
+impl Default for Order {
+    fn default() -> Self {
+        Self::C
+    }
+}
+
 
 // ─── SliceArg ────────────────────────────────────────────────────────────────
 
