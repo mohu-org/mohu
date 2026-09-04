@@ -99,8 +99,13 @@ impl MultiError {
         if self.errors.is_empty() {
             Ok(())
         } else if self.errors.len() == 1 {
-            // Unwrap the single error — no need to box it in Multiple.
-            Err(self.errors.into_iter().next().unwrap())
+            // There is exactly one error, so removing the sole item preserves
+            // the direct-error semantic without relying on unwrap.
+            Err(self
+                .errors
+                .into_iter()
+                .next()
+                .ok_or_else(|| MohuError::bug("MultiError length changed during into_result"))?)
         } else {
             Err(MohuError::Multiple(self))
         }
