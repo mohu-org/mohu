@@ -438,7 +438,7 @@ impl Layout {
             return Err(MohuError::NonContiguous);
         }
         let src_len = self.size();
-        let dst_len: usize = new_shape.iter().product();
+        let dst_len = crate::strides::shape_size(new_shape)?;
         if src_len != dst_len {
             return Err(MohuError::ReshapeIncompatible {
                 src_len,
