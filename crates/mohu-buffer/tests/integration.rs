@@ -174,7 +174,7 @@ fn broadcast_shapes_resolves_right_aligned_dimensions() {
     );
     assert_eq!(
         mohu_buffer::broadcast_shapes(&[], &[]).unwrap().as_slice(),
-        &[]
+        &[] as &[usize]
     );
 }
 
