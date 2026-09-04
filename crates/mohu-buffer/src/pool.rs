@@ -112,12 +112,6 @@ impl PoolBucket {
         Some(h)
     }
 
-    #[allow(dead_code)]
-    fn clear(&mut self) {
-        self.handles.clear();
-        self.cached_bytes = 0;
-    }
-
     fn len(&self) -> usize {
         self.handles.len()
     }
