@@ -17,7 +17,9 @@ mohu-dtype.workspace  = true
 mohu-buffer.workspace = true
 rayon.workspace       = true
 smallvec.workspace    = true
+half.workspace        = true
+num-complex.workspace = true
 
 
 [package.metadata.cargo-machete]
-ignored = ["mohu-buffer", "mohu-dtype", "rayon", "smallvec"]
+ignored = ["half", "mohu-buffer", "mohu-dtype", "num-complex", "rayon", "smallvec"]

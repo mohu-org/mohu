@@ -720,9 +720,11 @@ dependencies = [
 name = "mohu-index"
 version = "0.1.0"
 dependencies = [
+ "half",
  "mohu-buffer",
  "mohu-dtype",
  "mohu-error",
+ "num-complex",
  "rayon",
  "smallvec",
 ]
