@@ -79,6 +79,13 @@ fn reshape_1d_to_3d() {
 }
 
 #[test]
+fn reshape_rejects_overflowing_destination_shape() {
+    let buf = Buffer::from_slice(&[1_u8]).unwrap();
+    let result = buf.reshape(&[usize::MAX, 2]);
+    assert!(matches!(result, Err(MohuError::ShapeOverflow { .. })));
+}
+
+#[test]
 fn transpose_2d_shape_and_values() {
     let data: Vec<f64> = (0..6).map(|x| x as f64).collect();
     let buf = Buffer::from_slice(&data).unwrap().reshape(&[2, 3]).unwrap();
