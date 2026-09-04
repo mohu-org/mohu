@@ -1,10 +1,11 @@
 /// Fast Fourier Transforms for mohu.
 ///
-/// Wraps `rustfft` for the core Cooley-Tukey algorithm and adds:
-/// - N-dimensional FFT / IFFT over arbitrary axes
-/// - Real-input FFT (`rfft`) producing Hermitian-symmetric output
-/// - Frequency axis helpers (`fftfreq`, `rfftfreq`, `fftshift`)
-/// - Parallel batch transforms via Rayon
+/// Wraps `rustfft` for complex transforms over Buffer values.
+///
+/// Implemented here: C64/C128 FFT and inverse FFT along one arbitrary axis,
+/// including normalization, zero-padding, and truncation. Real-input transforms,
+/// frequency helpers, multidimensional transforms, and parallel batch execution
+/// remain tracked separately.
 ///
 /// # Equivalents
 ///
@@ -36,3 +37,4 @@ pub mod transform;
 
 pub use mohu_error::{MohuError, MohuResult};
 pub use norm::Norm;
+pub use transform::{fft, ifft};
