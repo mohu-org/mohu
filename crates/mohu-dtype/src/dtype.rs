@@ -597,7 +597,21 @@ impl<'de> serde::Deserialize<'de> for DType {
 }
 
 // ─── compile-time invariant checks ───────────────────────────────────────────
+// ─── Default ─────────────────────────────────────────────────────────────────
 
+impl Default for DType {
+    /// Returns [`DType::F64`] as the default dtype, matching NumPy's
+    /// default floating-point type (`float64`).
+    ///
+    /// # Example
+    /// ```
+    /// use mohu_dtype::DType;
+    /// assert_eq!(DType::default(), DType::F64);
+    /// ```
+    fn default() -> Self {
+        Self::F64
+    }
+}
 const _: () = {
     assert!(ALL_DTYPES.len() == DTYPE_COUNT);
     assert!(DType::Bool as u8 == 0);
