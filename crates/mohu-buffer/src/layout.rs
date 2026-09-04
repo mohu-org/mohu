@@ -22,19 +22,14 @@ use crate::strides::{
 // ─── Order ────────────────────────────────────────────────────────────────────
 
 /// Memory order preference for new contiguous allocations.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 pub enum Order {
     /// Row-major (C) order — the last axis varies fastest in memory.
+    #[default]
     C,
     /// Column-major (Fortran) order — the first axis varies fastest.
     F,
 }
-impl Default for Order {
-    fn default() -> Self {
-        Self::C
-    }
-}
-
 
 // ─── SliceArg ────────────────────────────────────────────────────────────────
 
