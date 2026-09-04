@@ -540,54 +540,24 @@ pub fn where_select<T: Scalar + Copy + Send + Sync>(
 
     if mask.dtype() != DType::U8 {
         return Err(MohuError::DTypeMismatch {
-            expected: "U8".to_string(),
+            expected: DType::U8.to_string(),
             got: mask.dtype().to_string(),
         });
     }
-    for (name, buf) in [("a", a), ("b", b)] {
-        if T::DTYPE != buf.dtype() {
-            return Err(MohuError::DTypeMismatch {
-                expected: T::DTYPE.to_string(),
-                got: buf.dtype().to_string(),
-            });
-        }
-        if buf.shape() != mask.shape() {
-            return Err(MohuError::ShapeMismatch {
-                expected: mask.shape().to_vec(),
-                got: buf.shape().to_vec(),
-            });
-        }
-        if !buf.is_c_contiguous() {
-            let _ = name;
-            return Err(MohuError::NonContiguous);
-        }
-    }
-    if !dst.is_writeable() {
-        return Err(MohuError::ReadOnly);
-    }
-    if dst.shape() != mask.shape() {
-        return Err(MohuError::ShapeMismatch {
-            expected: mask.shape().to_vec(),
-            got: dst.shape().to_vec(),
-        });
-    }
-    dst.make_unique()?;
+    mask.shape_matches(a)?;
+    mask.shape_matches(b)?;
+    mask.shape_matches(dst)?;
 
-    let len = mask.len();
-    let m_ptr = mask.as_ptr();
-    let a_ptr = a.as_ptr() as *const T;
-    let b_ptr = b.as_ptr() as *const T;
-    let d_ptr = unsafe { dst.as_mut_ptr() } as *mut T;
+    let mask_slice = mask.as_slice::<u8>()?;
+    let a_slice = a.as_slice::<T>()?;
+    let b_slice = b.as_slice::<T>()?;
+    let dst_slice = dst.as_mut_slice::<T>()?;
 
-    let m_s = unsafe { std::slice::from_raw_parts(m_ptr, len) };
-    let a_s = unsafe { std::slice::from_raw_parts(a_ptr, len) };
-    let b_s = unsafe { std::slice::from_raw_parts(b_ptr, len) };
-    let d_s = unsafe { std::slice::from_raw_parts_mut(d_ptr, len) };
-
-    m_s.par_iter()
-        .zip(a_s.par_iter())
-        .zip(b_s.par_iter())
-        .zip(d_s.par_iter_mut())
+    mask_slice
+        .par_iter()
+        .zip(a_slice.par_iter())
+        .zip(b_slice.par_iter())
+        .zip(dst_slice.par_iter_mut())
         .for_each(|(((m, av), bv), dv)| {
             *dv = if *m != 0 { *av } else { *bv };
         });
