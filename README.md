@@ -45,7 +45,7 @@ if a crate says *stub*, its implementation modules contain no public implementat
 | `mohu-dtype` | 15 dtypes, scalar traits, promotion, `finfo`/`iinfo`, DLPack codes | ✅ implemented |
 | `mohu-buffer` | Aligned/mmap allocation, layout, strides, views, DLPack, pool | ✅ implemented |
 | `mohu-random` | PCG64 / Philox PRNG + distributions | 🟡 partial |
-| `mohu-array` | `NdArray<T>` — the user-facing array type | ⬜ stub |
+| `mohu-array` | `NdArray<T>` — typed construction and metadata; indexing and views pending | ◐ partial |
 | `mohu-core` | Re-export facade over the foundation crates | ⬜ stub |
 | `mohu-simd` | AVX2 / AVX-512 / NEON kernels | ⬜ stub |
 | `mohu-ufunc` | Universal-function protocol: broadcast, reduce, outer | ⬜ stub |

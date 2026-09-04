@@ -65,11 +65,11 @@ Structured map of all workspace crates, their dependencies, modules, and public 
 ### `mohu-array`
 **Description**: NdArray — the core N-dimensional array type.
 **Dependencies**: `mohu-error`, `mohu-dtype`, `mohu-buffer`, `num-traits`, `rayon`
-**Status**: Module stubs declared; source files are empty (not yet implemented).
+**Status**: Partial — NdArray construction and metadata are implemented; indexing, views, and arithmetic remain incomplete.
 
 | Module | Status |
 |--------|--------|
-| `array` | `[stub]` |
+| `array` | NdArray construction and metadata |
 | `iter` | `[stub]` |
 | `shape` | `[stub]` |
 | `slice` | `[stub]` |
@@ -321,7 +321,7 @@ Structured map of all workspace crates, their dependencies, modules, and public 
 mohu-error (standalone)
   └─► mohu-dtype
         └─► mohu-buffer
-              └─► mohu-array [stub]
+              └─► mohu-array [partial]
                     └─► mohu-core (facade: re-exports error + dtype + buffer + array)
 
 mohu-simd ──► mohu-error, mohu-dtype
@@ -348,7 +348,7 @@ mohu-testing ──► mohu-error, mohu-dtype, mohu-buffer, approx, proptest
 | `mohu-error` | **Fully implemented** — all modules have source code |
 | `mohu-dtype` | **Fully implemented** — all modules have source code |
 | `mohu-buffer` | **Fully implemented** — all modules have source code |
-| `mohu-array` | Stubs only — module files empty |
+| `mohu-array` | Partial — NdArray construction and metadata implemented |
 | `mohu-core` | **Implemented** — re-export facade (5 lines) |
 | `mohu-simd` | Stubs only |
 | `mohu-ufunc` | Stubs only |

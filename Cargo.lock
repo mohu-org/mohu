@@ -649,9 +649,11 @@ dependencies = [
 name = "mohu-array"
 version = "0.1.0"
 dependencies = [
+ "half",
  "mohu-buffer",
  "mohu-dtype",
  "mohu-error",
+ "num-complex",
  "num-traits",
  "rayon",
 ]

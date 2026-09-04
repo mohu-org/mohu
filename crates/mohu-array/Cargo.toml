@@ -21,3 +21,7 @@ rayon.workspace       = true
 
 [package.metadata.cargo-machete]
 ignored = ["mohu-buffer", "mohu-dtype", "mohu-error", "num-traits", "rayon"]
+
+[dev-dependencies]
+half.workspace = true
+num-complex.workspace = true
