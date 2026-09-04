@@ -9,6 +9,11 @@ use mohu_buffer::{
 use mohu_dtype::{DType, promote::CastMode};
 use mohu_error::MohuError;
 
+#[test]
+fn default_order_is_c() {
+    assert_eq!(Order::default(), Order::C);
+}
+
 // ── 1. Allocation ─────────────────────────────────────────────────────────────
 
 #[test]
