@@ -624,3 +624,44 @@ fn sum_axis_handles_strided_and_empty_inputs() {
     assert_eq!(sum.shape(), &[2]);
     assert_eq!(sum.as_slice::<i64>().unwrap(), &[0, 0]);
 }
+#[test]
+fn allclose_contract_covers_values_nan_infinities_and_dtypes() {
+    let a = Buffer::from_slice(&[1.0_f64, 2.0, f64::INFINITY, f64::NEG_INFINITY]).unwrap();
+    let b = Buffer::from_slice(&[1.0_f64, 2.000001, f64::INFINITY, f64::NEG_INFINITY]).unwrap();
+    assert!(a.allclose(&b, 1e-5, 1e-8).unwrap());
+    let far = Buffer::from_slice(&[1.0_f64, 2.1, f64::INFINITY, f64::NEG_INFINITY]).unwrap();
+    assert!(!a.allclose(&far, 1e-5, 1e-8).unwrap());
+    let nan = Buffer::from_slice(&[f64::NAN, 2.0, f64::INFINITY, f64::NEG_INFINITY]).unwrap();
+    assert!(!a.allclose(&nan, 1e-5, 1e-8).unwrap());
+    assert!(!nan.allclose(&nan, 1e-5, 1e-8).unwrap());
+
+    let f32_a = Buffer::from_slice(&[1.0_f32, 2.0]).unwrap();
+    let f32_b = Buffer::from_slice(&[1.0_f32, 2.000001]).unwrap();
+    assert!(f32_a.allclose(&f32_b, 1e-5, 1e-8).unwrap());
+    let f16_a = Buffer::from_slice(&[half::f16::from_f32(1.0)]).unwrap();
+    let f16_b = Buffer::from_slice(&[half::f16::from_f32(1.0001)]).unwrap();
+    assert!(f16_a.allclose(&f16_b, 1e-3, 1e-8).unwrap());
+    let bf16_a = Buffer::from_slice(&[half::bf16::from_f32(1.0)]).unwrap();
+    let bf16_b = Buffer::from_slice(&[half::bf16::from_f32(1.001)]).unwrap();
+    assert!(bf16_a.allclose(&bf16_b, 1e-2, 1e-8).unwrap());
+}
+
+#[test]
+fn allclose_contract_rejects_shape_and_non_float_inputs() {
+    let a = Buffer::from_slice(&[1.0_f64, 2.0]).unwrap();
+    let shape_mismatch = Buffer::from_slice(&[1.0_f64]).unwrap();
+    assert!(matches!(
+        a.allclose(&shape_mismatch, 1e-5, 1e-8),
+        Err(mohu_error::MohuError::ShapeMismatch { .. })
+    ));
+    let integer = Buffer::from_slice(&[1_i32, 2]).unwrap();
+    assert!(matches!(
+        a.allclose(&integer, 1e-5, 1e-8),
+        Err(mohu_error::MohuError::DomainError { .. })
+    ));
+    let complex = Buffer::from_slice(&[num_complex::Complex::<f32>::new(1.0, 2.0)]).unwrap();
+    assert!(matches!(
+        complex.allclose(&complex, 1e-5, 1e-8),
+        Err(mohu_error::MohuError::DomainError { .. })
+    ));
+}

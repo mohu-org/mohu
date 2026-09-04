@@ -1763,12 +1763,28 @@ impl Buffer {
 
     // ─── Approximate equality ─────────────────────────────────────────────────
 
-    /// Returns `true` if all elements satisfy `|a - b| <= atol + rtol * |b|`.
+    /// Returns `true` if same-shaped float elements satisfy `|a - b| <= atol + rtol * |b|`.
     ///
-    /// NaN == NaN for this comparison (unlike IEEE 754).
+    /// NaN in either input returns `false`; same-sign infinities compare equal.
+    /// Integer and complex inputs return `MohuError::DomainError`.
     pub fn allclose(&self, other: &Buffer, rtol: f64, atol: f64) -> MohuResult<bool> {
+        if !self.dtype().is_float() {
+            return Err(MohuError::domain(
+                "allclose",
+                format!("unsupported dtype {:?}", self.dtype()),
+            ));
+        }
+        if !other.dtype().is_float() {
+            return Err(MohuError::domain(
+                "allclose",
+                format!("unsupported dtype {:?}", other.dtype()),
+            ));
+        }
         if self.shape() != other.shape() {
-            return Ok(false);
+            return Err(MohuError::ShapeMismatch {
+                expected: self.shape().to_vec(),
+                got: other.shape().to_vec(),
+            });
         }
         let a = self.cast(DType::F64, CastMode::Unsafe)?;
         let b = other.cast(DType::F64, CastMode::Unsafe)?;
@@ -1776,7 +1792,10 @@ impl Buffer {
         let bs = b.as_slice::<f64>()?;
         use rayon::prelude::*;
         Ok(as_.par_iter().zip(bs.par_iter()).all(|(a, b)| {
-            if a.is_nan() && b.is_nan() {
+            if a.is_nan() || b.is_nan() {
+                return false;
+            }
+            if a == b {
                 return true;
             }
             (a - b).abs() <= atol + rtol * b.abs()
