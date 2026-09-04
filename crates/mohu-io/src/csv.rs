@@ -1,6 +1,6 @@
-//! Typed, homogeneous CSV input for [`mohu_core::mohu_array::NdArray`].
+//! Typed, homogeneous CSV input and output for [`mohu_core::mohu_array::NdArray`].
 
-use std::{fmt::Display, fs::File, path::Path, str::FromStr};
+use std::{fmt::Display, fs::File, io::Write, path::Path, str::FromStr};
 
 use mohu_core::{
     mohu_array::{MohuElement, NdArray},
@@ -132,6 +132,79 @@ fn csv_error(row: usize, col: usize, detail: impl Into<String>) -> MohuError {
     }
 }
 
+/// Options controlling typed CSV output.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct CsvWriteOptions {
+    /// Single-byte field delimiter.
+    pub delimiter: u8,
+}
+
+impl Default for CsvWriteOptions {
+    fn default() -> Self {
+        Self { delimiter: b',' }
+    }
+}
+
+/// Writes a two-dimensional homogeneous array as row-major CSV records.
+///
+/// Headers are not emitted because [`NdArray`] does not retain column names.
+/// Zero-row arrays are allowed; zero-column arrays and arrays with any other
+/// rank are rejected.
+pub fn write_csv<T, P>(path: P, array: &NdArray<T>, options: CsvWriteOptions) -> MohuResult<()>
+where
+    T: MohuElement + Display,
+    P: AsRef<Path>,
+{
+    let file = File::create(path)?;
+    write_csv_writer(file, array, options)
+}
+
+fn write_csv_writer<T, W>(writer: W, array: &NdArray<T>, options: CsvWriteOptions) -> MohuResult<()>
+where
+    T: MohuElement + Display,
+    W: Write,
+{
+    if array.ndim() != 2 {
+        return Err(MohuError::DimensionMismatch {
+            expected: 2,
+            got: array.ndim(),
+        });
+    }
+    let shape = array.shape();
+    if shape[1] == 0 {
+        return Err(MohuError::ZeroSizedDimension { axis: 1 });
+    }
+    if options.delimiter == 0 {
+        return Err(MohuError::CorruptData {
+            format: "CSV",
+            detail: "NUL is not a valid CSV delimiter".to_owned(),
+        });
+    }
+
+    let values = array.to_vec()?;
+    let mut csv_writer = csv::WriterBuilder::new()
+        .delimiter(options.delimiter)
+        .from_writer(writer);
+    for row in values.chunks_exact(shape[1]) {
+        let fields = row.iter().map(ToString::to_string).collect::<Vec<_>>();
+        csv_writer.write_record(fields).map_err(csv_write_error)?;
+    }
+    csv_writer
+        .into_inner()
+        .map(|_| ())
+        .map_err(|error| MohuError::Io(error.into_error()))
+}
+
+fn csv_write_error(error: csv::Error) -> MohuError {
+    match error.into_kind() {
+        csv::ErrorKind::Io(error) => MohuError::Io(error),
+        other => MohuError::CorruptData {
+            format: "CSV",
+            detail: format!("{other:?}"),
+        },
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -211,5 +284,56 @@ mod tests {
         )
         .unwrap();
         assert_eq!(header.shape(), &[0, 3]);
+    }
+
+    #[test]
+    fn writes_rows_and_custom_delimiters() {
+        let array = NdArray::<i64>::from_shape_slice(&[2, 3], &[1, 2, 3, 4, 5, 6]).unwrap();
+        let mut output = Vec::new();
+        write_csv_writer(&mut output, &array, CsvWriteOptions::default()).unwrap();
+        assert_eq!(output, b"1,2,3\n4,5,6\n");
+
+        output.clear();
+        write_csv_writer(&mut output, &array, CsvWriteOptions { delimiter: b';' }).unwrap();
+        assert_eq!(output, b"1;2;3\n4;5;6\n");
+    }
+
+    #[test]
+    fn writes_non_contiguous_arrays_in_logical_order() {
+        let buffer = mohu_core::mohu_buffer::buffer::Buffer::from_slice(&[1_i32, 2, 3, 4, 5, 6])
+            .unwrap()
+            .reshape(&[2, 3])
+            .unwrap()
+            .transpose();
+
+        let array = NdArray::<i32>::try_from(buffer).unwrap();
+        let mut output = Vec::new();
+        write_csv_writer(&mut output, &array, CsvWriteOptions::default()).unwrap();
+        assert_eq!(output, b"1,4\n2,5\n3,6\n");
+    }
+
+    #[test]
+    fn rejects_unsupported_output_shapes() {
+        let one_dimensional = NdArray::<i64>::from_slice(&[1, 2]).unwrap();
+        assert!(matches!(
+            write_csv_writer(
+                &mut Vec::new(),
+                &one_dimensional,
+                CsvWriteOptions::default()
+            ),
+            Err(MohuError::DimensionMismatch {
+                expected: 2,
+                got: 1
+            })
+        ));
+        let zero_columns = NdArray::<i64>::zeros(&[2, 0]).unwrap();
+        assert!(matches!(
+            write_csv_writer(&mut Vec::new(), &zero_columns, CsvWriteOptions::default()),
+            Err(MohuError::ZeroSizedDimension { axis: 1 })
+        ));
+        let zero_rows = NdArray::<i64>::zeros(&[0, 2]).unwrap();
+        let mut output = Vec::new();
+        write_csv_writer(&mut output, &zero_rows, CsvWriteOptions::default()).unwrap();
+        assert!(output.is_empty());
     }
 }

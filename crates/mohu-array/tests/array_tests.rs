@@ -1,4 +1,5 @@
 use mohu_array::NdArray;
+use mohu_buffer::Buffer;
 use mohu_dtype::DType;
 use mohu_error::MohuError;
 
@@ -89,4 +90,34 @@ fn all_supported_dtypes_report_runtime_type() {
         num_complex::Complex<f32> => DType::C64,
         num_complex::Complex<f64> => DType::C128,
     );
+}
+
+#[test]
+fn typed_extraction_and_buffer_interop_preserve_layout() {
+    let array = NdArray::<i32>::from_shape_slice(&[2, 3], &[1, 2, 3, 4, 5, 6]).unwrap();
+    assert_eq!(array.to_vec().unwrap(), vec![1, 2, 3, 4, 5, 6]);
+    assert_eq!(array.as_buffer().shape(), &[2, 3]);
+
+    let buffer = array.into_buffer();
+    let restored = NdArray::<i32>::try_from(buffer).unwrap();
+    assert_eq!(restored.to_vec().unwrap(), vec![1, 2, 3, 4, 5, 6]);
+}
+
+#[test]
+fn typed_interop_preserves_non_contiguous_logical_values() {
+    let view = Buffer::from_slice(&[1_i32, 2, 3, 4, 5, 6])
+        .unwrap()
+        .reshape(&[2, 3])
+        .unwrap()
+        .transpose();
+    let array = NdArray::<i32>::try_from(view).unwrap();
+    assert_eq!(array.shape(), &[3, 2]);
+    assert_eq!(array.to_vec().unwrap(), vec![1, 4, 2, 5, 3, 6]);
+}
+
+#[test]
+fn typed_interop_rejects_mismatched_dtype() {
+    let buffer = Buffer::zeros(DType::F64, &[1]).unwrap();
+    let result = NdArray::<i32>::try_from(buffer);
+    assert!(matches!(result, Err(MohuError::DTypeMismatch { .. })));
 }

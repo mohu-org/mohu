@@ -1,9 +1,9 @@
-use std::marker::PhantomData;
+use std::{convert::TryFrom, marker::PhantomData};
 
 use mohu_buffer::buffer::Buffer;
 use mohu_dtype::dtype::DType;
 use mohu_dtype::scalar::Scalar;
-use mohu_error::MohuResult;
+use mohu_error::{MohuError, MohuResult};
 
 /// Element types supported by [`NdArray`].
 pub trait MohuElement: Scalar {}
@@ -72,6 +72,38 @@ impl<T: MohuElement> NdArray<T> {
     /// Returns the runtime dtype of the backing buffer.
     pub fn dtype(&self) -> DType {
         self.buffer.dtype()
+    }
+
+    /// Copies the logical elements into a typed vector.
+    pub fn to_vec(&self) -> MohuResult<Vec<T>> {
+        self.buffer.to_vec::<T>()
+    }
+
+    /// Borrows the underlying buffer for read-only integration.
+    pub fn as_buffer(&self) -> &Buffer {
+        &self.buffer
+    }
+
+    /// Consumes the array and returns its underlying buffer without cloning.
+    pub fn into_buffer(self) -> Buffer {
+        self.buffer
+    }
+}
+
+impl<T: MohuElement> TryFrom<Buffer> for NdArray<T> {
+    type Error = MohuError;
+
+    fn try_from(buffer: Buffer) -> MohuResult<Self> {
+        if buffer.dtype() != T::DTYPE {
+            return Err(MohuError::DTypeMismatch {
+                expected: T::DTYPE.to_string(),
+                got: buffer.dtype().to_string(),
+            });
+        }
+        Ok(Self {
+            buffer,
+            _marker: PhantomData,
+        })
     }
 }
 
