@@ -667,6 +667,7 @@ dependencies = [
  "mohu-error",
  "num-complex",
  "num-traits",
+ "proptest",
  "rayon",
  "smallvec",
  "tracing",
