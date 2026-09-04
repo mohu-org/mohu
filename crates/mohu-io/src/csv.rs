@@ -154,6 +154,21 @@ mod tests {
     }
 
     #[test]
+    fn supports_f64_bool_and_quoted_fields() {
+        let floats =
+            read_csv_reader::<f64, _>(Cursor::new("\"1.25\",2e1\n"), CsvReadOptions::default())
+                .unwrap();
+        assert_eq!(floats.shape(), &[1, 2]);
+        assert_eq!(floats.dtype(), mohu_core::mohu_dtype::dtype::DType::F64);
+
+        let booleans =
+            read_csv_reader::<bool, _>(Cursor::new("true,false\n"), CsvReadOptions::default())
+                .unwrap();
+        assert_eq!(booleans.shape(), &[1, 2]);
+        assert_eq!(booleans.dtype(), mohu_core::mohu_dtype::dtype::DType::Bool);
+    }
+
+    #[test]
     fn supports_header_and_custom_delimiter() {
         let array = read_csv_reader::<f32, _>(
             Cursor::new("x;y\n1.5;2.5\n"),
