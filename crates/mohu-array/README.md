@@ -26,7 +26,7 @@ Internal modules:
 
 ## Planned API Surface
 
-> **Status:** NdArray construction and introspection are implemented. Indexing, views, arithmetic, and shaped construction remain planned; signatures may change before stabilisation.
+> **Status:** NdArray construction and introspection are implemented. Indexing, views, and arithmetic remain planned; signatures may change before stabilisation.
 > See the [issue tracker](https://github.com/mohu-org/mohu/issues?q=label%3A%22crate%3A+mohu-array%22) for progress.
 
 ### Construction
@@ -40,6 +40,9 @@ let b = NdArray::<f32>::ones(&[2, 2, 2]);
 
 // From an existing flat slice (row-major by default)
 let c = NdArray::<i32>::from_slice(&[1, 2, 3, 4, 5, 6]); // 1-D
+
+// From flat data with an explicit row-major shape
+let d = NdArray::<i32>::from_shape_slice(&[2, 3], &[1, 2, 3, 4, 5, 6]);
 ```
 
 ### Indexing

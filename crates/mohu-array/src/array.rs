@@ -41,6 +41,14 @@ impl<T: MohuElement> NdArray<T> {
         })
     }
 
+    /// Creates an array by copying flat row-major data into `shape`.
+    pub fn from_shape_slice(shape: &[usize], data: &[T]) -> MohuResult<Self> {
+        Ok(Self {
+            buffer: Buffer::from_slice(data)?.reshape(shape)?,
+            _marker: PhantomData,
+        })
+    }
+
     /// Returns the array shape.
     pub fn shape(&self) -> &[usize] {
         self.buffer.shape()
@@ -82,5 +90,8 @@ mod tests {
         let data = [3_i32, -2, 7];
         let copied = NdArray::<i32>::from_slice(&data).unwrap();
         assert_eq!(copied.buffer.to_vec::<i32>().unwrap(), data);
+
+        let shaped = NdArray::<i32>::from_shape_slice(&[1, 3], &data).unwrap();
+        assert_eq!(shaped.buffer.to_vec::<i32>().unwrap(), data);
     }
 }

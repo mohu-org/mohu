@@ -1,5 +1,6 @@
 use mohu_array::NdArray;
 use mohu_dtype::DType;
+use mohu_error::MohuError;
 
 #[test]
 fn zeros_metadata() {
@@ -26,6 +27,40 @@ fn from_slice_is_one_dimensional() {
     assert_eq!(a.ndim(), 1);
     assert_eq!(a.len(), 3);
     assert_eq!(a.dtype(), DType::I32);
+}
+
+#[test]
+fn from_shape_slice_preserves_shape_and_row_major_values() {
+    let a = NdArray::<f64>::from_shape_slice(&[2, 3], &[1.0, 2.0, 3.0, 4.0, 5.0, 6.0]).unwrap();
+    assert_eq!(a.shape(), &[2, 3]);
+    assert_eq!(a.len(), 6);
+    assert_eq!(a.dtype(), DType::F64);
+}
+
+#[test]
+fn from_shape_slice_supports_scalar_and_zero_sized_shapes() {
+    let scalar = NdArray::<f64>::from_shape_slice(&[], &[3.0]).unwrap();
+    let scalar_shape: &[usize] = &[];
+    assert_eq!(scalar.shape(), scalar_shape);
+    assert_eq!(scalar.len(), 1);
+    assert!(!scalar.is_empty());
+
+    let empty = NdArray::<i32>::from_shape_slice(&[2, 0, 3], &[]).unwrap();
+    assert_eq!(empty.shape(), &[2, 0, 3]);
+    assert_eq!(empty.len(), 0);
+    assert!(empty.is_empty());
+}
+
+#[test]
+fn from_shape_slice_rejects_mismatch_and_overflow() {
+    let mismatch = NdArray::<i32>::from_shape_slice(&[3, 3], &[1, 2, 3, 4, 5, 6]);
+    assert!(matches!(
+        mismatch,
+        Err(MohuError::ReshapeIncompatible { .. })
+    ));
+
+    let overflow = NdArray::<u8>::from_shape_slice(&[usize::MAX, 2], &[]);
+    assert!(matches!(overflow, Err(MohuError::ShapeOverflow { .. })));
 }
 
 #[test]
