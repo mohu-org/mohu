@@ -625,6 +625,40 @@ fn sum_axis_handles_strided_and_empty_inputs() {
     assert_eq!(sum.as_slice::<i64>().unwrap(), &[0, 0]);
 }
 #[test]
+fn diagonal_operations_report_dimension_mismatches() {
+    let one_d = Buffer::from_slice(&[1_i32, 2, 3]).unwrap();
+    let two_d = one_d.reshape(&[1, 3]).unwrap();
+    assert!(matches!(
+        Buffer::diag(&two_d, 0),
+        Err(MohuError::DimensionMismatch {
+            expected: 1,
+            got: 2
+        })
+    ));
+    assert!(matches!(
+        one_d.diagonal(0),
+        Err(MohuError::DimensionMismatch {
+            expected: 2,
+            got: 1
+        })
+    ));
+    assert!(matches!(
+        one_d.tril(0),
+        Err(MohuError::DimensionMismatch {
+            expected: 2,
+            got: 1
+        })
+    ));
+    assert!(matches!(
+        one_d.triu(0),
+        Err(MohuError::DimensionMismatch {
+            expected: 2,
+            got: 1
+        })
+    ));
+}
+
+#[test]
 fn allclose_contract_covers_values_nan_infinities_and_dtypes() {
     let a = Buffer::from_slice(&[1.0_f64, 2.0, f64::INFINITY, f64::NEG_INFINITY]).unwrap();
     let b = Buffer::from_slice(&[1.0_f64, 2.000001, f64::INFINITY, f64::NEG_INFINITY]).unwrap();
