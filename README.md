@@ -78,6 +78,12 @@ cargo build --workspace
 cargo test --workspace
 ```
 
+For the canonical local validation loop, run:
+
+```bash
+make ci
+```
+
 Today the usable surface is `mohu-buffer` — the strided, dtype-tagged, reference-counted
 buffer that every future `NdArray` sits on top of:
 
