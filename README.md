@@ -56,7 +56,7 @@ if a crate says *stub*, its implementation modules contain no public implementat
 | `mohu-stats` | Descriptive statistics, hypothesis tests | ⬜ stub |
 | `mohu-sparse` | COO / CSR / CSC formats | ⬜ stub |
 | `mohu-masked` | Masked arrays, null propagation | ⬜ stub |
-| `mohu-io` | Typed homogeneous CSV reading; other I/O formats pending | ◐ partial |
+| `mohu-io` | Typed homogeneous CSV reading and writing; other I/O formats pending | ◐ partial |
 | `mohu-testing` | Fixtures, property strategies, array comparison | ⬜ stub |
 
 Companion repositories: [`mohu-compute`](https://github.com/mohu-org/mohu-compute)
