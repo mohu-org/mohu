@@ -807,3 +807,25 @@ fn item_preserves_typed_and_cardinality_errors() {
         Err(MohuError::DomainError { op: "item", .. })
     ));
 }
+
+#[test]
+fn shape_matches_requires_exact_shape() {
+    let a = Buffer::zeros(DType::I32, &[2, 3]).unwrap();
+    assert!(
+        a.shape_matches(&Buffer::zeros(DType::I32, &[2, 3]).unwrap())
+            .is_ok()
+    );
+    assert!(
+        matches!(a.shape_matches(&Buffer::zeros(DType::I32, &[3, 2]).unwrap()), Err(MohuError::ShapeMismatch { ref expected, ref got }) if expected == &[2, 3] && got == &[3, 2])
+    );
+    assert!(matches!(
+        a.shape_matches(&Buffer::zeros(DType::I32, &[6]).unwrap()),
+        Err(MohuError::ShapeMismatch { .. })
+    ));
+    assert!(
+        Buffer::zeros(DType::I32, &[])
+            .unwrap()
+            .shape_matches(&Buffer::zeros(DType::F64, &[]).unwrap())
+            .is_ok()
+    );
+}

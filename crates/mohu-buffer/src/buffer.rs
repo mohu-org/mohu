@@ -649,6 +649,18 @@ impl Buffer {
     pub fn shape(&self) -> &[usize] {
         self.layout.shape()
     }
+    /// Returns `Ok(())` when two buffers have exactly equal shapes.
+    pub fn shape_matches(&self, other: &Buffer) -> MohuResult<()> {
+        if self.shape() == other.shape() {
+            Ok(())
+        } else {
+            Err(MohuError::ShapeMismatch {
+                expected: self.shape().to_vec(),
+                got: other.shape().to_vec(),
+            })
+        }
+    }
+
     /// Returns the byte strides of this buffer.
     #[inline]
     pub fn strides(&self) -> &[isize] {
