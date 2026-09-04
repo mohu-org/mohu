@@ -1,4 +1,22 @@
-.PHONY: build release test lint fmt fmt-check check clean bench deny changelog contrib-guide
+.PHONY: build release test lint fmt fmt-check check ci clean bench deny changelog size contrib-guide help
+
+help:
+	@echo "Available targets:"
+	@echo "  build          Build the workspace"
+	@echo "  release        Build the workspace in release mode"
+	@echo "  test           Run workspace tests"
+	@echo "  lint           Run workspace clippy"
+	@echo "  fmt            Format all Rust code"
+	@echo "  fmt-check      Check Rust formatting"
+	@echo "  check          Run formatting, lint, and tests"
+	@echo "  ci             Run the local CI validation loop"
+	@echo "  clean          Remove build artifacts"
+	@echo "  bench          Run benchmarks"
+	@echo "  deny           Run cargo-deny"
+	@echo "  changelog      Regenerate the changelog"
+	@echo "  size           Show release library size"
+	@echo "  contrib-guide  Print contributor references"
+	@echo "Windows users: run make through WSL or Git Bash."
 
 build:
 	cargo build --workspace
@@ -19,6 +37,8 @@ fmt-check:
 	cargo fmt --all -- --check
 
 check: fmt-check lint test
+
+ci: check
 
 clean:
 	cargo clean
