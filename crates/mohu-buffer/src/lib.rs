@@ -39,8 +39,9 @@ pub use ops::{
 pub use pool::{BufferPool, GLOBAL_POOL, PoolStats};
 
 pub use strides::{
-    NdIndexIter, ShapeVec, StrideVec, StridedByteIter, broadcast_strides, byte_offset, c_strides,
-    contiguous_nbytes, f_strides, ravel_multi_index, shape_size, unravel_index, validate_strides,
+    NdIndexIter, ShapeVec, StrideVec, StridedByteIter, broadcast_shapes, broadcast_strides,
+    byte_offset, c_strides, contiguous_nbytes, f_strides, ravel_multi_index, shape_size,
+    unravel_index, validate_strides,
 };
 
 pub use view::{BufferView, BufferViewMut};

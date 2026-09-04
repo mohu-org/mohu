@@ -93,6 +93,44 @@ pub fn contiguous_nbytes(shape: &[usize], itemsize: usize) -> MohuResult<usize> 
         .ok_or(MohuError::ShapeOverflow { max: usize::MAX })
 }
 
+// ─── Broadcast shapes ────────────────────────────────────────────────────────
+
+/// Computes common shape for two arrays using right-aligned broadcasting.
+///
+/// Dimensions are compatible when equal or when either dimension is one.
+/// Zero-sized dimensions remain zero when paired with one; zero with any other
+/// dimension is incompatible.
+pub fn broadcast_shapes(a: &[usize], b: &[usize]) -> MohuResult<ShapeVec> {
+    let rank = a.len().max(b.len());
+    let a_offset = rank - a.len();
+    let b_offset = rank - b.len();
+    let mut shape = ShapeVec::with_capacity(rank);
+    for axis in 0..rank {
+        let adim = a
+            .get(axis.checked_sub(a_offset).unwrap_or(usize::MAX))
+            .copied()
+            .unwrap_or(1);
+        let bdim = b
+            .get(axis.checked_sub(b_offset).unwrap_or(usize::MAX))
+            .copied()
+            .unwrap_or(1);
+        let dim = if adim == bdim {
+            adim
+        } else if adim == 1 {
+            bdim
+        } else if bdim == 1 {
+            adim
+        } else {
+            return Err(MohuError::BroadcastError {
+                lhs: a.to_vec(),
+                rhs: b.to_vec(),
+            });
+        };
+        shape.push(dim);
+    }
+    Ok(shape)
+}
+
 // ─── Broadcast strides ────────────────────────────────────────────────────────
 
 /// Computes broadcast-compatible strides for a source shape/stride pair when
