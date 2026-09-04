@@ -112,7 +112,6 @@ impl PoolBucket {
         Some(h)
     }
 
-
     fn len(&self) -> usize {
         self.handles.len()
     }

@@ -159,13 +159,19 @@ unsafe impl Sync for BufferSource {}
 
 impl Drop for BufferSource {
     fn drop(&mut self) {
-        if let BufferSource::DLPack { managed } = self {
-            if !(*managed).is_null() {
-                let m = unsafe { &**managed };
-                if let Some(deleter) = m.deleter {
-                    unsafe { deleter(*managed) };
+        match self {
+            BufferSource::Owned(handle) => {
+                // Read field explicitly: ownership is released by normal drop.
+                let _ = handle;
+            },
+            BufferSource::DLPack { managed } => {
+                if !(*managed).is_null() {
+                    let m = unsafe { &**managed };
+                    if let Some(deleter) = m.deleter {
+                        unsafe { deleter(*managed) };
+                    }
                 }
-            }
+            },
         }
     }
 }
