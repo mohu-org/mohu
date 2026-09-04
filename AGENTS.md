@@ -125,7 +125,7 @@ ci: add musl cross-compile target
 - Title = commit subject format above.
 - Target `mohu-org/mohu:main`.
 - All commits must be signed (`Signed-off-by`). DCO check blocks merge.
-- Required status: `CI Pass` (the `ci-pass` job aggregates all 13 checks).
+- Required status: `CI Pass` (the `ci-pass` job aggregates the blocking jobs listed in `.github/workflows/ci.yml`; it is the source of truth).
 - Do not force-push after review — amend is allowed only before first review comment.
 
 ---
@@ -150,7 +150,9 @@ ci: add musl cross-compile target
 
 ## CI pipeline summary
 
-All 13 jobs must pass (aggregated under `ci-pass`):
+`ci-pass` is the source of truth for required validation. It aggregates the
+blocking jobs listed in `.github/workflows/ci.yml`; the set is intentionally
+not described by a hard-coded job count.
 
 | Job | What it checks |
 |-----|---------------|
@@ -163,7 +165,7 @@ All 13 jobs must pass (aggregated under `ci-pass`):
 | `doc` | Docs build with `-D warnings` |
 | `msrv` | Builds on Rust 1.85 |
 | `bench-check` | All benchmarks compile |
-| `semver` | No accidental breaking API changes (PR only) |
-| `cross` | Builds for aarch64-linux, aarch64-darwin, x86_64-musl |
-| `coverage` | Test coverage reported to Codecov |
-| `miri` | `mohu-buffer` unsafe code passes Miri strict provenance |
+| `semver` | Advisory PR-only API check; non-blocking until crates are published |
+| `cross` | Push-to-main cross-build check; not run on every PR due to cost |
+| `coverage` | Advisory coverage report; upload may be flaky |
+| `miri` | Advisory nightly strict-provenance check for `mohu-buffer` |
