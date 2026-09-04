@@ -153,6 +153,56 @@ fn broadcast_scalar_to_matrix() {
 }
 
 #[test]
+fn broadcast_shapes_resolves_right_aligned_dimensions() {
+    assert_eq!(
+        mohu_buffer::broadcast_shapes(&[3], &[2, 3])
+            .unwrap()
+            .as_slice(),
+        &[2, 3]
+    );
+    assert_eq!(
+        mohu_buffer::broadcast_shapes(&[1, 1, 3], &[4, 5, 3])
+            .unwrap()
+            .as_slice(),
+        &[4, 5, 3]
+    );
+    assert_eq!(
+        mohu_buffer::broadcast_shapes(&[], &[2, 3])
+            .unwrap()
+            .as_slice(),
+        &[2, 3]
+    );
+    assert_eq!(
+        mohu_buffer::broadcast_shapes(&[], &[]).unwrap().as_slice(),
+        &[] as &[usize]
+    );
+}
+
+#[test]
+fn broadcast_shapes_rejects_incompatible_and_handles_empty_axes() {
+    assert!(matches!(
+        mohu_buffer::broadcast_shapes(&[2, 3], &[2, 4]),
+        Err(MohuError::BroadcastError { .. })
+    ));
+    assert!(matches!(
+        mohu_buffer::broadcast_shapes(&[0], &[2]),
+        Err(MohuError::BroadcastError { .. })
+    ));
+    assert_eq!(
+        mohu_buffer::broadcast_shapes(&[0], &[1])
+            .unwrap()
+            .as_slice(),
+        &[0]
+    );
+    assert_eq!(
+        mohu_buffer::broadcast_shapes(&[0], &[0])
+            .unwrap()
+            .as_slice(),
+        &[0]
+    );
+}
+
+#[test]
 fn broadcast_row_to_matrix() {
     let data = vec![1.0_f32, 2.0, 3.0];
     let buf = Buffer::from_slice(&data).unwrap().reshape(&[1, 3]).unwrap();
