@@ -24,6 +24,13 @@ mohu-error.workspace  = true
 mohu-dtype.workspace  = true
 cfg-if.workspace      = true
 
+[dev-dependencies]
+criterion.workspace = true
+
+[[bench]]
+name = "simd_bench"
+harness = false
+
 [build-dependencies]
 
 
