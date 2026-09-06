@@ -1,3 +1,21 @@
+[package]
+name        = "mohu-demo"
+version     = "0.1.0"
+edition     = "2024"
+rust-version = "1.85"
+publish     = false
+autoexamples = false
+
+[dependencies]
+mohu-array  = { workspace = true }
+mohu-buffer = { workspace = true }
+mohu-ops    = { workspace = true }
+mohu-random = { workspace = true }
+
+[[example]]
+name = "college_demo"
+path = "examples/college_demo.rs"
+
 [workspace]
 members = [
     # ── Foundation layer (order = dependency depth) ──────────────────────────
