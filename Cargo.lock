@@ -839,6 +839,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "mohu-demo"
+version = "0.1.0"
+dependencies = [
+ "mohu-array",
+ "mohu-buffer",
+ "mohu-ops",
+ "mohu-random",
+]
+
+[[package]]
 name = "mohu-dtype"
 version = "0.1.0"
 dependencies = [
