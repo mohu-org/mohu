@@ -1185,7 +1185,13 @@ impl Buffer {
         } else {
             ((-k) as usize, 0usize)
         };
-        let diag_len = (n - row_start).min(m.saturating_sub(col_start));
+        // `row_start`/`col_start` can each exceed the matrix bounds when `k`
+        // lies entirely outside the matrix (e.g. `k` very negative, or `k`
+        // large positive). Use `saturating_sub` on both sides so an
+        // out-of-bounds diagonal yields `diag_len == 0` (an all-zero matrix)
+        // instead of underflowing in debug builds or silently going wrong
+        // in release builds.
+        let diag_len = n.saturating_sub(row_start).min(m.saturating_sub(col_start));
 
         for i in 0..diag_len {
             let off = buf.layout.byte_offset(&[row_start + i, col_start + i])?;
@@ -2409,3 +2415,40 @@ fn flat_to_indices(mut flat: usize, shape: &[usize]) -> Vec<usize> {
 #[cfg(unix)]
 use libc;
 use num_traits;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// `Buffer::eye` with a negative offset whose magnitude exceeds the
+    /// number of rows must return an all-zero matrix of the requested
+    /// shape instead of panicking (debug) or erroring (release).
+    /// Regression test for https://github.com/mohu-org/mohu/issues/362.
+    #[test]
+    fn eye_negative_offset_out_of_bounds_returns_zero_matrix() {
+        let buf = Buffer::eye(3, 3, -10, DType::F64).expect("eye must not error");
+        assert_eq!(buf.shape(), &[3, 3]);
+        let data: Vec<f64> = buf.to_vec().expect("to_vec");
+        assert!(data.iter().all(|&v| v == 0.0));
+    }
+
+    /// The positive-offset analog: `k` large enough that the diagonal lies
+    /// entirely outside the matrix must also yield an all-zero matrix.
+    #[test]
+    fn eye_positive_offset_out_of_bounds_returns_zero_matrix() {
+        let buf = Buffer::eye(3, 3, 10, DType::F64).expect("eye must not error");
+        assert_eq!(buf.shape(), &[3, 3]);
+        let data: Vec<f64> = buf.to_vec().expect("to_vec");
+        assert!(data.iter().all(|&v| v == 0.0));
+    }
+
+    /// Sanity check that a normal, in-bounds offset still produces the
+    /// expected diagonal (guards against an overly aggressive fix).
+    #[test]
+    fn eye_in_bounds_offset_sets_diagonal() {
+        let buf = Buffer::eye(3, 3, -1, DType::F64).expect("eye must not error");
+        let data: Vec<f64> = buf.to_vec().expect("to_vec");
+        // Row-major 3x3, sub-diagonal (k = -1): positions (1,0) and (2,1).
+        assert_eq!(data, vec![0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0]);
+    }
+}
