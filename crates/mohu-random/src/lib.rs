@@ -1,33 +1,44 @@
 /// PRNG engines and statistical distributions for mohu.
 ///
-/// PRNG engines and statistical distributions for mohu.
-///
 /// The seeded convenience generator is deterministic for the selected engine
 /// implementation; it does not promise stability across engine changes.
 ///
 /// # Generators
 ///
+/// All four engines below are implemented and conform to the [`generator::Generator`]
+/// trait (`seed`, `next_u64`, `fill_bytes`).
+///
 /// | Type         | Algorithm     | Notes                                 |
 /// |--------------|---------------|---------------------------------------|
 /// | `Pcg64`      | PCG-64-DXSM   | Default — fast, statistically strong  |
 /// | `Philox4x64` | Philox 4×64   | Counter-based, GPU-friendly           |
-/// | `ChaCha8`    | ChaCha8       | Cryptographically secure              |
+/// | `ChaCha8`    | ChaCha8       | 8-round ChaCha, CSPRNG-style          |
 /// | `SplitMix64` | SplitMix64    | Lightweight, used for seeding         |
 ///
 /// # Distributions
 ///
-/// | Module          | Distributions                                       |
+/// The modules below are declared but **not yet implemented** (empty stubs);
+/// see [mohu-org/mohu#361](https://github.com/mohu-org/mohu/issues/361) for
+/// tracking. `Rng::uniform`, `Rng::normal`, and `Rng::integers` are available
+/// today as the only implemented distributions, layered directly on top of
+/// the `Pcg64` engine.
+///
+/// | Module          | Distributions (planned)                             |
 /// |-----------------|-----------------------------------------------------|
 /// | [`continuous`]  | uniform, normal, standard_t, gamma, beta, chi2, …   |
 /// | [`discrete`]    | integers, binomial, poisson, geometric, hypergeom   |
 /// | [`multivariate`]| multivariate_normal, dirichlet, multinomial          |
 /// | [`permutation`] | shuffle, permutation, choice                        |
+/// | [`seeding`]     | seed sequences, entropy-derived seeding             |
+/// | [`entropy`]     | OS entropy sources                                  |
 ///
 /// # Reproducibility
 ///
-/// ```rust,ignore
-/// let mut rng = mohu_random::Pcg64::seed(42);
-/// let data = rng.standard_normal::<f64>(&[1000]);
+/// ```rust
+/// use mohu_random::generator::{Generator, Pcg64};
+///
+/// let mut rng = Pcg64::seed(42);
+/// let _first_u64 = rng.next_u64();
 /// ```
 ///
 /// Low-level engines expose explicit seeding and stateful streams.
@@ -42,7 +53,7 @@ pub mod seeding;
 use mohu_buffer::{buffer::Buffer, layout::Order};
 use mohu_dtype::dtype::DType;
 
-pub use generator::{Generator, Pcg64, Philox4x64};
+pub use generator::{ChaCha8, Generator, Pcg64, Philox4x64, SplitMix64};
 pub use mohu_error::{MohuError, MohuResult};
 
 /// Stateful convenience generator backed by the default `Pcg64` engine.

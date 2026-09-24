@@ -31,4 +31,4 @@ optional  = true
 
 
 [package.metadata.cargo-machete]
-ignored = ["mohu-buffer", "mohu-dtype", "num-complex", "num-traits", "rand", "rand_chacha", "rayon", "serde"]
+ignored = ["mohu-buffer", "mohu-dtype", "num-complex", "num-traits", "rayon", "serde"]
