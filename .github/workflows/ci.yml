@@ -157,6 +157,7 @@ jobs:
         with:
           feature-group: all-features
           baseline-rev: ${{ github.event.pull_request.base.sha }}
+          exclude: mohu-demo
 
   # ── Cross-compilation (push to main only — too expensive per PR) ─────────────
   cross:
